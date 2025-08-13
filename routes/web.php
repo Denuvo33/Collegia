@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\CreatePostController;
+use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -8,10 +10,8 @@ Route::get('/', function () {
 })->name('home');
 
 
-// User Routes
-Route::get('/user/home', function () {
-    return Inertia::render('user/Home');
-})->middleware(['auth', 'verified'])->name('user.home');
+// User Routes Get
+Route::get('/user/home', [HomeController::class, 'index'])->middleware(['auth', 'verified'])->name('user.home');
 Route::get('/user/explore', function () {
     return Inertia::render('user/Explore');
 })->middleware(['auth', 'verified'])->name('user.explore');
@@ -21,9 +21,9 @@ Route::get('/user/notifications', function () {
 Route::get('/user/profile', function () {
     return Inertia::render('user/Profile');
 })->middleware(['auth', 'verified'])->name('user.profile');
-Route::get('/user/create-post', function () {
-    return Inertia::render('user/CreatePost');
-})->middleware(['auth', 'verified'])->name('user.create-post');
+Route::get('/user/create-post', [CreatePostController::class, 'index'])->middleware(['auth', 'verified'])->name('user.create-post');
+// User Routes Post
+Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified'])->name('user.post.store');
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
