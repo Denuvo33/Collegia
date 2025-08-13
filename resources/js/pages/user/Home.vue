@@ -3,6 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import { Label } from "@/components/ui/label"
+import { Heart, MessageCircle } from 'lucide-vue-next';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -37,8 +38,16 @@ defineProps<{
                 <hr>
                 <p>{{ posts.content }}</p>
                 <img v-if="posts.image" :src="`/storage/${posts.image}`" alt="Post Image" class="w-80 h-80 object-contain" />
-                <div class="flex flex-row">
-                    
+                <div class="flex flex-row gap-6">
+                    <input type="hidden" name="like" id="like" />
+                    <Label class="cursor-pointer">
+                         <Heart class="" for="like" />
+                    </Label>
+                    <input type="hidden" name="comment" id="comment" />
+                    <Label class="cursor-pointer">
+                         <MessageCircle class="" for="comment" />
+                    </Label>
+                     
                 </div>
                 <p class="text-gray-400">Dibuat pada {{ posts.created_at }}</p>
             </div>
