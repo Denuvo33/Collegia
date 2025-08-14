@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CreatePostController;
 use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
@@ -22,8 +23,11 @@ Route::get('/user/profile', function () {
     return Inertia::render('user/Profile');
 })->middleware(['auth', 'verified'])->name('user.profile');
 Route::get('/user/create-post', [CreatePostController::class, 'index'])->middleware(['auth', 'verified'])->name('user.create-post');
+Route::get('/user/post/{id}', [HomeController::class, 'details'])->middleware(['auth', 'verified'])->name('user.post.details');
+
 // User Routes Post
 Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified'])->name('user.post.store');
+Route::post('/user/create-comment',[CommentController::class,'store'])->middleware('auth')->name('post.store.comment');
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');

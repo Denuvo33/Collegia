@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
+use App\Models\CommentModel;
 
 class Post extends Model
 {
@@ -15,8 +16,13 @@ class Post extends Model
         'image',
     ];
 
-    public function user()
+     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class,'user_id');
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(CommentModel::class, 'post_id');
     }
 }

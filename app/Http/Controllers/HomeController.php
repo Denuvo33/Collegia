@@ -22,6 +22,17 @@ class HomeController extends Controller
         ]);
     }
 
+    public function details($id){
+        $data = Post::with([
+            'user',
+            'comments.user',
+        ])->findOrFail($id);
+        return Inertia::render('user/DetailPost', [
+            'data' => $data,
+        ]);
+
+    }
+
     /**
      * Show the form for creating a new resource.
      */

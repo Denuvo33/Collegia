@@ -22,9 +22,9 @@ Route::get('/auth/google/callback', function () {
     $googleUser = Socialite::driver('google')->user();
 
 
-    if (!str_ends_with($googleUser->getEmail(), '@student.unri.ac.id')) {
-        abort(403, 'Login hanya untuk email @student.unri.ac.id');
-    }
+    // if (!str_ends_with($googleUser->getEmail(), '@student.unri.ac.id')) {
+    //     abort(403, 'Login hanya untuk email @student.unri.ac.id');
+    // }
 
 
     $user = User::updateOrCreate(
