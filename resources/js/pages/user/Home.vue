@@ -5,6 +5,21 @@ import { Head } from '@inertiajs/vue3';
 import { Label } from "@/components/ui/label"
 import { Heart, MessageCircle,EllipsisVertical } from 'lucide-vue-next';
 import { computed } from 'vue';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -48,7 +63,16 @@ const sortedPosts = computed(() => {
                 <div class="flex flex-wrap gap-2">
                      <h1 class="text-2xl font-bold text-white">{{ posts.user.name }}</h1>
                      <p v-if="posts.user.role === 'moderator'" class="px-1 py-1 bg-blue-600 rounded">Moderator</p>
-                     <input type="text">
+                     <div class="ml-auto">
+                        <DropdownMenu>
+                        <DropdownMenuTrigger><EllipsisVertical></EllipsisVertical></DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                        <DropdownMenuItem>Profile</DropdownMenuItem>
+                        <DropdownMenuItem>Laporkan Postingan</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                     </div>
+                      
                 </div>
                 <hr>
                 <p>{{ posts.content }}</p>
