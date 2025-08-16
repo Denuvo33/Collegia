@@ -80,7 +80,29 @@ class CommentController extends Controller
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
-    {
-        //
+{
+    try {
+        $comment = CommentModel::findOrFail($id);
+
+        if ($comment->user_id !== Auth::id()) {
+            return redirect()->back()->withErrors([
+                'error' => 'Anda tidak memiliki izin untuk menghapus komentar ini.'
+            ]);
+        }
+
+        $comment->delete();
+
+        return redirect()->back()->with('success', 'Komentar berhasil dihapus.');
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return redirect()->back()->withErrors([
+            'message' => 'Komentar tidak ditemukan.'
+        ]);
+    } catch (\Exception $e) {
+
+        return redirect()->back()->withErrors([
+            'error' => 'Terjadi kesalahan, coba lagi nanti.'
+        ]);
     }
+}
+
 }

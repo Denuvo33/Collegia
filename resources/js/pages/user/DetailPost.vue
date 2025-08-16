@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm, usePage,router } from '@inertiajs/vue3';
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { EllipsisVertical } from 'lucide-vue-next';
@@ -22,9 +22,14 @@ import {
 import dayjs from 'dayjs';
 import 'dayjs/locale/id'
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { ref } from 'vue';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
 
 dayjs.locale('id')
 dayjs.extend(relativeTime)
+
+const successComment = ref<String | null>();
 
 
 
@@ -76,14 +81,34 @@ function submit(){
         onError: (Errors)=>{
             console.log('erros',Errors)
         },onSuccess: (Success)=>{
-            console.log('succes',Success)
             form.content = '';
         }
     })
 }
 
+
 function formatTime(date:string){
     return dayjs(date).fromNow();
+}
+
+function deleteComment(id:number){
+    try {
+        router.delete(route('user.comment.delete',id),{
+            onSuccess:()=>{
+                successComment.value = 'Komentar telah di hapus'
+            },
+            onError:()=>{
+                successComment.value = 'Gagal menghapus komentar, periksa kembali jaringan anda'
+            }
+        })
+    } catch (e) {
+        successComment.value = 'Gagal menghapus komentar, periksa kembali jaringan anda'
+    }
+}
+
+
+const closeAlert = ()=>{
+    successComment.value = null;
 }
 
 </script>
@@ -92,6 +117,20 @@ function formatTime(date:string){
     <Head title="Detail Post" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
+        <div v-if="successComment" class="p-4">
+            <Alert >
+                <Rocket class="h-4 w-4" />
+                <div class="flex flex-row justify-between">
+                    <AlertTitle :class="successComment && successComment.includes('Gagal') ? 'text-red-600' : 'text-green-600'">{{ successComment && successComment.includes('Gagal') ? 'Error' : 'Berhasil' }}</AlertTitle>
+                    <h1 @click="closeAlert" class="text-gray-400 font-bold text-lg cursor-pointer">X</h1>
+
+                </div>
+                <AlertDescription >
+                {{ successComment }}
+                </AlertDescription>
+            </Alert>
+        </div>
+         
         <div class="">
             <div class="p-4 bg-black rounded space-y-4">
                 <h1 class="text-2xl font-bold text-white">{{ data.user.name }}</h1>
@@ -114,7 +153,7 @@ function formatTime(date:string){
                                   <DropdownMenuTrigger><EllipsisVertical class="cursor-pointer"></EllipsisVertical> </DropdownMenuTrigger>
                                   <DropdownMenuContent>
                                     <DropdownMenuItem>Laporkan</DropdownMenuItem>
-                                    <DropdownMenuItem v-if="comment.user.id === usePage().props.auth.user.id">Hapus</DropdownMenuItem>
+                                    <DropdownMenuItem @click="deleteComment(comment.id)" v-if="comment.user.id === usePage().props.auth.user.id">Hapus</DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                                 

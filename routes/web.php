@@ -28,6 +28,9 @@ Route::get('/user/post/{id}', [HomeController::class, 'details'])->middleware(['
 Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified'])->name('user.post.store');
 Route::post('/user/create-comment',[CommentController::class,'store'])->middleware('auth')->name('post.store.comment');
 
+//user Routes Destroy
+Route::delete('user/post/comment/${id}',[CommentController::class,'destroy'])->middleware('auth')->name('user.comment.delete');
+
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
