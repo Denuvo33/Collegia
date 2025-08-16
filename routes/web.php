@@ -3,6 +3,7 @@
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CreatePostController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -16,9 +17,7 @@ Route::get('/user/home', [HomeController::class, 'index'])->middleware(['auth', 
 Route::get('/user/explore', function () {
     return Inertia::render('user/Explore');
 })->middleware(['auth', 'verified'])->name('user.explore');
-Route::get('/user/notifications', function () {
-    return Inertia::render('user/Notification');
-})->middleware(['auth', 'verified'])->name('user.notifications');
+Route::get('/user/notifications',[NotificationController::class,'index'] )->middleware(['auth', 'verified'])->name('user.notifications');
 Route::get('/user/profile', function () {
     return Inertia::render('user/Profile');
 })->middleware(['auth', 'verified'])->name('user.profile');

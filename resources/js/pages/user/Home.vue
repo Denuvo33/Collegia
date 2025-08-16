@@ -70,7 +70,7 @@ const sortedPosts = computed(() => {
                         <DropdownMenuItem>Profile</DropdownMenuItem>
                         <DropdownMenuItem>Laporkan Postingan</DropdownMenuItem>
                         </DropdownMenuContent>
-                    </DropdownMenu>
+                         </DropdownMenu>
                      </div>
                       
                 </div>

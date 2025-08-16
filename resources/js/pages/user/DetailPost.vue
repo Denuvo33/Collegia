@@ -4,6 +4,21 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { EllipsisVertical } from 'lucide-vue-next';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 
 
@@ -78,8 +93,23 @@ function submit(){
                 <h2 class="text-xl font-bold text-white mt-4">Komentar</h2>
                 <div v-if="data.comments.length > 0" class="space-y-4 p-4 max-h-96 overflow-y-auto">
                     <div class=" space-y-1 p-2" v-for="comment in data.comments" :key="comment.id">
-                        <p class="font-bold">{{ comment.user.name }}</p>
+                        <div class="flex flex-row">
+                            <div clas="flex flex-col">
+                            <p class="font-bold">{{ comment.user.name }}</p>
                         <p>{{ comment.content }}</p>
+                            </div>
+                            <div class="">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger><EllipsisVertical class="cursor-pointer"></EllipsisVertical> </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem>Laporkan</DropdownMenuItem>
+                                    <DropdownMenuItem v-if="comment.user.id === usePage().props.auth.user.id">Hapus</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                
+                            </div>
+                        </div>
+                      
                     </div>
                 </div>
                 <Input class="w-8/12" v-model="form.content" placeholder="Kirim Komentar" />

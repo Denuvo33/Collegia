@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CommentRequest;
 use App\Models\CommentModel;
+use App\Models\Notification;
+use App\Models\Post;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CommentController extends Controller
 {
@@ -33,9 +36,18 @@ class CommentController extends Controller
     {
         try{
             $data = $request->validated();
-             CommentModel::create($data);
-        }catch(Exception $e){
+            CommentModel::create($data);
 
+            $post = Post::findOrFail($data['post_id']);
+
+            Notification::create([
+                'message'=> Auth::user()->name . ' commented on your post: '.$request->content,
+                'post_id'=> $post->id,
+                'user_id'=> $post->user_id,
+                'is_read'=> 0,
+            ]);
+        }catch(Exception $e){
+          
         }
       
     }

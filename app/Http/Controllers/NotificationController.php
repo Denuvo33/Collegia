@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Notification;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\NotificationRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class NotificationController extends Controller
 {
@@ -13,7 +16,9 @@ class NotificationController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render('user/Notification',[
+            'notification'=> Notification::where('user_id',Auth::id())->get()
+        ]);
     }
 
     /**
@@ -27,9 +32,9 @@ class NotificationController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(NotificationRequest $request)
     {
-        //
+        
     }
 
     /**
