@@ -19,6 +19,13 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import dayjs from 'dayjs';
+import 'dayjs/locale/id'
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.locale('id')
+dayjs.extend(relativeTime)
+
 
 
 
@@ -75,6 +82,10 @@ function submit(){
     })
 }
 
+function formatTime(date:string){
+    return dayjs(date).fromNow();
+}
+
 </script>
 
 <template>
@@ -87,7 +98,7 @@ function submit(){
                 <hr>
                 <p>{{ data.content }}</p>
                 <img v-if="data.image" :src="`/storage/${data.image}`" alt="Post Image" class="w-80 h-80 object-contain" />
-                <p class="text-gray-400">Dibuat pada {{ data.created_at }}</p>
+                <p class="text-gray-400">Dibuat {{ formatTime(data.created_at) }}</p>
             </div>
             <div class="p-4 ">
                 <h2 class="text-xl font-bold text-white mt-4">Komentar</h2>

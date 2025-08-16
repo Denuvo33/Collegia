@@ -19,6 +19,12 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import dayjs from "dayjs";
+import 'dayjs/locale/id'
+import relativeTime from 'dayjs/plugin/relativeTime'
+
+dayjs.extend(relativeTime)
+dayjs.locale('id')
 
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -51,6 +57,10 @@ const sortedPosts = computed(() => {
     return dateB.getTime() - dateA.getTime();
   });
 });
+
+function formatDate(date:string){
+    return dayjs(date).fromNow();
+}
 
 </script>
 
@@ -88,7 +98,7 @@ const sortedPosts = computed(() => {
 
                      
                 </div>
-                <p class="text-gray-400">Dibuat pada {{ posts.created_at }}</p>
+                <p class="text-gray-400">Dibuat {{ formatDate(posts.created_at) }}</p>
             </div>
         </div>
         

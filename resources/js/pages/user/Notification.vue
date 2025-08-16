@@ -2,6 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
+import { computed } from 'vue';
 
 
 
@@ -18,6 +19,7 @@ const props = defineProps<{
         id:number,
         message:string,
         post_id:number,
+        created_at: string,
     }>
 }>()
 
@@ -31,6 +33,14 @@ function splitName(text: string) {
   return { name, rest };
 }
 
+
+const sortNotif = computed(()=>{
+    return props.notification.sort((a, b) => {
+        const dateA = new Date (a.created_at)
+        const dateB = new Date (b.created_at)
+        return dateB.getTime() - dateA.getTime();
+    })
+})
 
 </script>
 
@@ -48,7 +58,7 @@ function splitName(text: string) {
 
             </div>
 
-            <div v-for="notif in notification" class="p-2" :key="notif.id">
+            <div v-for="notif in sortNotif" class="p-2" :key="notif.id">
                 <div class="cursor-pointer" @click="$inertia.visit(route('user.post.details',notif.post_id))">
                     <h1 class="font-bold">{{ splitName(notif.message).name }}</h1>
                     <p>{{ splitName(notif.message).rest }}</p>
