@@ -131,15 +131,15 @@ const closeAlert = ()=>{
         </div>
          
         <div class="">
-            <div class="p-4 bg-black rounded space-y-4">
-                <h1 class="text-2xl font-bold text-white cursor-pointer" @click="$inertia.visit(route('user.details',{ id: data.user_id, name: data.user.name }))">{{ data.user.name }}</h1>
+            <div class="p-4 bg-white shadow dark:bg-black rounded space-y-4">
+                <h1 class="text-2xl font-bold cursor-pointer" @click="$inertia.visit(route('user.details',{ id: data.user_id, name: data.user.name.split(' ').join('-').toLowerCase() }))">{{ data.user.name }}</h1>
                 <hr>
                 <p>{{ data.content }}</p>
                 <img v-if="data.image" :src="`/storage/${data.image}`" alt="Post Image" class="w-80 h-80 object-contain" />
                 <p class="text-gray-400">Dibuat {{ formatTime(data.created_at) }}</p>
             </div>
             <div class="p-4 ">
-                <h2 class="text-xl font-bold text-white mt-4">Komentar</h2>
+                <h2 class="text-xl font-bold mt-4">Komentar</h2>
                 <div v-if="data.comments.length > 0" class="space-y-4 p-4 max-h-96 overflow-y-auto">
                     <div class=" space-y-1 p-2" v-for="comment in data.comments" :key="comment.id">
                         <div class="flex flex-row">

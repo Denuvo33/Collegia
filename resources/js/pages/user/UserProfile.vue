@@ -66,9 +66,9 @@ function sortList<T extends { created_at: string }>(list: Array<T>) {
       </div>
 
       <div class="flex justify-center gap-8">
-       <button class="text-lg" @click="activeTabs='posts'" :class="activeTabs == 'posts' ? 'border-b-2 border-white text-white' : 'text-white' ">Post</button>
-       <button  @click="activeTabs='comments'" class="text-lg" :class="activeTabs == 'comments' ? 'border-b-2 border-white text-white' : 'text-white' ">Comment</button>
-       <button  @click="activeTabs='inkrip'" class="text-lg" :class="activeTabs == 'inkrip' ? 'border-b-2 border-white text-white' : 'text-white' ">Inkrip</button>
+       <button class="text-lg" @click="activeTabs='posts'" :class="activeTabs == 'posts' ? 'border-b-2 border-black dark:border-white ' : '' ">Post</button>
+       <button  @click="activeTabs='comments'" class="text-lg" :class="activeTabs == 'comments' ? 'border-b-2 border-black dark:border-white ' : '' ">Comment</button>
+       <button  @click="activeTabs='inkrip'" class="text-lg" :class="activeTabs == 'inkrip' ? 'border-b-2 border-black dark:border-white ' : '' ">Inkrip</button>
       </div>
       
       <hr>
@@ -76,7 +76,7 @@ function sortList<T extends { created_at: string }>(list: Array<T>) {
       <div class="p-1">
         <div v-if="activeTabs == 'posts'">
           <div v-for="post in sortList(posts)" @click="$inertia.visit(route('user.post.details',post.id))" :key="post.id" class="p-4">
-            <div class="flex flex-col bg-black rounded p-4 gap-4">
+            <div class="flex flex-col shadow bg-white dark:bg-black rounded p-4 gap-4">
                 <p class="font-bold">{{ user.name }}</p>
                 <hr>
                 <p>{{ post.content }}</p>
@@ -89,7 +89,7 @@ function sortList<T extends { created_at: string }>(list: Array<T>) {
         
         <div v-else-if="activeTabs == 'comments'">
           <div @click="$inertia.visit(route('user.post.details',comment.post_id))" v-for="comment in sortList(comments)" :key="comment.id" class="p-4">
-            <div class="flex flex-col bg-black rounded p-4">
+            <div class="flex flex-col bg-white shadow dark:bg-black rounded p-4">
                 <p class="font-bold">{{ user.name }}</p>
                 <hr>
                 <p>{{ comment.content }}</p>
