@@ -20,6 +20,7 @@ const props = defineProps<{
         message:string,
         post_id:number,
         created_at: string,
+        hash_id: string
     }>
 }>()
 
@@ -59,7 +60,7 @@ const sortNotif = computed(()=>{
             </div>
 
             <div v-for="notif in sortNotif" class="p-2" :key="notif.id">
-                <div class="cursor-pointer" @click="$inertia.visit(route('user.post.details',notif.post_id))">
+                <div class="cursor-pointer" @click="$inertia.visit(route('user.post.details',notif.hash_id))">
                     <h1 class="font-bold">{{ splitName(notif.message).name }}</h1>
                     <p>{{ splitName(notif.message).rest }}</p>
                 </div>

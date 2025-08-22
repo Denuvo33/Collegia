@@ -39,6 +39,7 @@ const props = defineProps<{
         id: number;
         user_id: number;
         content: string;
+        hash_id: string;
         image?: string;
         created_at: string;
         user: {
@@ -49,6 +50,8 @@ const props = defineProps<{
         };
     }>
 }>()
+
+console.log(`has id is ${props.data.map(post => post.hash_id).join(', ')}`)
 
 const sortedPosts = computed(() => {
   return props.data.slice().sort((a, b) => {
@@ -71,7 +74,7 @@ function formatDate(date:string){
         <div class="p-4 space-y-4">
             <div class="p-4 bg-white dark:bg-black shadow rounded space-y-4" v-for="posts in sortedPosts" :key="posts.id">
                 <div class="flex flex-wrap gap-2">
-                     <h1 class="text-2xl font-bold font-cursor-pointer" @click="$inertia.visit(`/user/post/${posts.id}`)">{{ posts.user.name }}</h1>
+                     <h1 class="text-2xl font-bold cursor-pointer" @click="$inertia.visit(`/user/post/${posts.hash_id}`)">{{ posts.user.name }}</h1>
                      <p v-if="posts.user.role === 'moderator'" class="px-1 py-1 bg-blue-600 rounded text-white dark:text-black ">Moderator</p>
                      <div class="ml-auto">
                         <DropdownMenu>
@@ -92,7 +95,7 @@ function formatDate(date:string){
                     <Label class="cursor-pointer">
                          <Heart for="like" />
                     </Label>
-                     <Label class="cursor-pointer" @click="$inertia.visit(`/user/post/${posts.id}`)">
+                     <Label class="cursor-pointer" @click="$inertia.visit(`/user/post/${posts.hash_id}`)">
                         <MessageCircle />
                     </Label>
 

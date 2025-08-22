@@ -23,16 +23,23 @@ class HomeController extends Controller
         ]);
     }
 
-    public function details($id){
-        $data = Post::with([
-            'user',
-            'comments.user',
-        ])->findOrFail($id);
-        return Inertia::render('user/DetailPost', [
-            'data' => $data,
-        ]);
+    public function details($hashId)
+{
+    $decoded = \Vinkla\Hashids\Facades\Hashids::decode($hashId);
 
+    if (empty($decoded)) {
+        abort(404, 'Invalid Post');
     }
+
+    $id = $decoded[0]; 
+
+    $data = Post::with(['user', 'comments.user'])->findOrFail($id);
+
+    return Inertia::render('user/DetailPost', [
+        'data' => $data,
+    ]);
+}
+
 
     public function user($id)
     {
