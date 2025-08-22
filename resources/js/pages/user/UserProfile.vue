@@ -3,26 +3,12 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useRemember} from '@inertiajs/vue3';
 
-import { EllipsisVertical,MessageCircle } from 'lucide-vue-next';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { MessageCircle } from 'lucide-vue-next';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id'
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { ref } from 'vue';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
 
 
 dayjs.locale('id')

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CreatePostController;
+use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
@@ -14,15 +15,19 @@ Route::get('/', function () {
 
 // User Routes Get
 Route::get('/user/home', [HomeController::class, 'index'])->middleware(['auth', 'verified'])->name('user.home');
-Route::get('/user/explore', function () {
-    return Inertia::render('user/Explore');
-})->middleware(['auth', 'verified'])->name('user.explore');
+
+Route::get('/user/explore',[ExploreController::class,'index'])->middleware(['auth', 'verified'])->name('user.explore');
+
 Route::get('/user/notifications',[NotificationController::class,'index'] )->middleware(['auth', 'verified'])->name('user.notifications');
+
 Route::get('/user/profile', function () {
     return Inertia::render('user/Profile');
 })->middleware(['auth', 'verified'])->name('user.profile');
+
 Route::get('/user/create-post', [CreatePostController::class, 'index'])->middleware(['auth', 'verified'])->name('user.create-post');
+
 Route::get('/user/post/{id}', [HomeController::class, 'details'])->middleware(['auth', 'verified'])->name('user.post.details');
+
 Route::get('/user/{id}/{name}',[HomeController::class,'user'])->middleware(['auth'])->name('user.details');
 
 // User Routes Post
