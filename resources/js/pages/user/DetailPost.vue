@@ -53,7 +53,6 @@ const props =defineProps<{
         image?: string;
         created_at: string;
         user: {
-            id: number;
             name: string;
             email: string;
         };
@@ -133,7 +132,7 @@ const closeAlert = ()=>{
          
         <div class="">
             <div class="p-4 bg-black rounded space-y-4">
-                <h1 class="text-2xl font-bold text-white">{{ data.user.name }}</h1>
+                <h1 class="text-2xl font-bold text-white cursor-pointer" @click="$inertia.visit(route('user.details',{ id: data.user_id, name: data.user.name }))">{{ data.user.name }}</h1>
                 <hr>
                 <p>{{ data.content }}</p>
                 <img v-if="data.image" :src="`/storage/${data.image}`" alt="Post Image" class="w-80 h-80 object-contain" />

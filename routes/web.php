@@ -23,6 +23,7 @@ Route::get('/user/profile', function () {
 })->middleware(['auth', 'verified'])->name('user.profile');
 Route::get('/user/create-post', [CreatePostController::class, 'index'])->middleware(['auth', 'verified'])->name('user.create-post');
 Route::get('/user/post/{id}', [HomeController::class, 'details'])->middleware(['auth', 'verified'])->name('user.post.details');
+Route::get('/user/{id}/{name}',[HomeController::class,'user'])->middleware(['auth'])->name('user.details');
 
 // User Routes Post
 Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified'])->name('user.post.store');

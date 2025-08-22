@@ -6,6 +6,7 @@ use App\Models\Home;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\HomeRequest;
 use App\Models\Post;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -31,6 +32,19 @@ class HomeController extends Controller
             'data' => $data,
         ]);
 
+    }
+
+    public function user($id)
+    {
+        $user = User::with([
+            'posts',
+            'comments'
+        ])->findOrFail($id);
+        return Inertia::render('user/UserProfile', [
+            'user' => $user,
+            'posts' => $user->posts,
+            'comments' => $user->comments
+        ]);
     }
 
     /**

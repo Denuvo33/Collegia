@@ -71,7 +71,7 @@ function formatDate(date:string){
         <div class="p-4 space-y-4">
             <div class="p-4 bg-black rounded space-y-4" v-for="posts in sortedPosts" :key="posts.id">
                 <div class="flex flex-wrap gap-2">
-                     <h1 class="text-2xl font-bold text-white">{{ posts.user.name }}</h1>
+                     <h1 class="text-2xl font-bold text-white cursor-pointer" @click="$inertia.visit(`/user/post/${posts.id}`)">{{ posts.user.name }}</h1>
                      <p v-if="posts.user.role === 'moderator'" class="px-1 py-1 bg-blue-600 rounded">Moderator</p>
                      <div class="ml-auto">
                         <DropdownMenu>
