@@ -9,6 +9,7 @@ use App\Models\Post;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Vinkla\Hashids\Facades\Hashids;
 
 class HomeController extends Controller
 {
@@ -41,8 +42,12 @@ class HomeController extends Controller
 }
 
 
-    public function user($id)
+    public function user($hashId)
     {
+        $encoded = Hashids::decode($hashId);
+
+        $id = $encoded[0];
+
         $user = User::with([
             'posts',
             'comments'

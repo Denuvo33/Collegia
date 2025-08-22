@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Post;
+use Vinkla\Hashids\Facades\Hashids;
 
 class User extends Authenticatable
 {
@@ -34,6 +35,8 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    protected $appends = ['hash_id'];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -56,5 +59,8 @@ class User extends Authenticatable
         return $this->hasMany(CommentModel::class,'user_id');
     }
 
+    public function getHashIdAttribute(){
+        return Hashids::encode($this->id);
+    }
     
 }

@@ -47,15 +47,17 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const props =defineProps<{
     data: {
-        id: number;
-        user_id: number;
-        content: string;
-        image?: string;
-        created_at: string;
+        id: number
+        user_id: number
+        content: string
+        hash_id:string
+        image?: string
+        created_at: string
         user: {
-            name: string;
-            email: string;
-        };
+            name: string
+            email: string
+            hash_id:string
+        }
         comments:Array<{
             id:number,
             content:string,
@@ -132,7 +134,7 @@ const closeAlert = ()=>{
          
         <div class="">
             <div class="p-4 bg-white shadow dark:bg-black rounded space-y-4">
-                <h1 class="text-2xl font-bold cursor-pointer" @click="$inertia.visit(route('user.details',{ id: data.user_id, name: data.user.name.split(' ').join('-').toLowerCase() }))">{{ data.user.name }}</h1>
+                <h1 class="text-2xl font-bold cursor-pointer" @click="$inertia.visit(route('user.details',{ hashId: data.user.hash_id, name: data.user.name.split(' ').join('-').toLowerCase() }))">{{ data.user.name }}</h1>
                 <hr>
                 <p>{{ data.content }}</p>
                 <img v-if="data.image" :src="`/storage/${data.image}`" alt="Post Image" class="w-80 h-80 object-contain" />

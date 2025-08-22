@@ -21,12 +21,14 @@ defineProps<{
     posts: Array<{
         id: number,
         content:string,
+        hash_id:string
         image: string | null,
         created_at: string,
     }>
     comments: Array<{
       content: string,
       created_at: string
+      hash_id:string
       id:number
       post_id: number
     }>
@@ -75,20 +77,20 @@ function sortList<T extends { created_at: string }>(list: Array<T>) {
       
       <div class="p-1">
         <div v-if="activeTabs == 'posts'">
-          <div v-for="post in sortList(posts)" @click="$inertia.visit(route('user.post.details',post.id))" :key="post.id" class="p-4">
+          <div v-for="post in sortList(posts)" @click="$inertia.visit(route('user.post.details',post.hash_id))" :key="post.id" class="p-4">
             <div class="flex flex-col shadow bg-white dark:bg-black rounded p-4 gap-4">
                 <p class="font-bold">{{ user.name }}</p>
                 <hr>
                 <p>{{ post.content }}</p>
                 <img v-if="post.image" :src="`/storage/${post.image}`" class="w-80 h-80 object-contain" alt="post image">
                 <p class="text-gray-400">dibuat {{ formatTime(post.created_at) }}</p>
-                <MessageCircle class="cursor-pointer" @click="$inertia.visit(route('user.post.details',post.id))"></MessageCircle>
+                <MessageCircle class="cursor-pointer" @click="$inertia.visit(route('user.post.details',post.hash_id))"></MessageCircle>
             </div>
           </div>
         </div>
         
         <div v-else-if="activeTabs == 'comments'">
-          <div @click="$inertia.visit(route('user.post.details',comment.post_id))" v-for="comment in sortList(comments)" :key="comment.id" class="p-4">
+          <div @click="$inertia.visit(route('user.post.details',comment.hash_id))" v-for="comment in sortList(comments)" :key="comment.id" class="p-4">
             <div class="flex flex-col bg-white shadow dark:bg-black rounded p-4">
                 <p class="font-bold">{{ user.name }}</p>
                 <hr>

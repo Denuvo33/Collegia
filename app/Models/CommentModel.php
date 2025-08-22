@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Post as ModelsPost;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
+use Vinkla\Hashids\Facades\Hashids;
 
 class CommentModel extends Model
 {
@@ -15,6 +16,12 @@ class CommentModel extends Model
         'user_id',
         'post_id',
     ];
+
+    protected $appends = ['hash_id'];
+
+    public function getHashIdAttribute(){
+        return Hashids::encode($this->post_id);
+    }
 
     function post(){
         return $this->belongsTo(ModelsPost::class,'post_id');

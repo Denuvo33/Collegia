@@ -28,7 +28,7 @@ Route::get('/user/create-post', [CreatePostController::class, 'index'])->middlew
 
 Route::get('/user/post/{hashId}', [HomeController::class, 'details'])->middleware(['auth', 'verified'])->name('user.post.details');
 
-Route::get('/user/{id}/{name}',[HomeController::class,'user'])->middleware(['auth'])->name('user.details');
+Route::get('/user/{hashId}/{name}',[HomeController::class,'user'])->middleware(['auth'])->name('user.details');
 
 // User Routes Post
 Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified'])->name('user.post.store');

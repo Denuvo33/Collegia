@@ -4,6 +4,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import { Input } from "@/components/ui/input"
 import { computed, ref } from 'vue';
+import { CircleUser} from 'lucide-vue-next';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -38,8 +39,14 @@ const filteredUsers = computed(() => {
         </div>
     <div class="flex flex-col items-center">
         <div v-if="searchUser && filteredUsers.length == 0">User Tidak ditemukan</div>
-        <div v-for="user in filteredUsers" :key="user.id" class="w-full max-w-md">
-            <p class="text-left">{{ user.name }}</p>
+        <div v-for="user in filteredUsers" :key="user.id" class="w-full max-w-md p-1">
+            <div class="bg-white dark:bg-black shadow p-4 rounded flex gap-2">
+                <CircleUser></CircleUser>
+                <p class="text-left cursor-pointer" @click="$inertia.visit(route('user.details',{
+                    id: user.id,
+                    name: user.name
+                }))">{{ user.name }}</p>
+            </div>
         </div>
     </div>
 
