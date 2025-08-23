@@ -4,7 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Profile;
 use App\Http\Controllers\Controller;
+use App\Models\Post;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
@@ -13,7 +17,11 @@ class ProfileController extends Controller
      */
     public function index()
     {
-        //
+        return Inertia::render('user/Profile',
+            [
+                'data' => User::with(['posts','comments'])->findOrFail(Auth::id())
+            ]
+        );
     }
 
     /**

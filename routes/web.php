@@ -5,6 +5,7 @@ use App\Http\Controllers\CreatePostController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -20,9 +21,7 @@ Route::get('/user/explore',[ExploreController::class,'index'])->middleware(['aut
 
 Route::get('/user/notifications',[NotificationController::class,'index'] )->middleware(['auth', 'verified'])->name('user.notifications');
 
-Route::get('/user/profile', function () {
-    return Inertia::render('user/Profile');
-})->middleware(['auth', 'verified'])->name('user.profile');
+Route::get('/user/profile',[ProfileController::class,'index'])->middleware(['auth', 'verified'])->name('user.profile');
 
 Route::get('/user/create-post', [CreatePostController::class, 'index'])->middleware(['auth', 'verified'])->name('user.create-post');
 
