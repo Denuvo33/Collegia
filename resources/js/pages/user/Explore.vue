@@ -19,6 +19,7 @@ const props = defineProps<{
     users: Array<{
         id:number,
         name:string
+        hash_id:string
     }>
 }>()
 
@@ -39,11 +40,14 @@ const filteredUsers = computed(() => {
         </div>
     <div class="flex flex-col items-center">
         <div v-if="searchUser && filteredUsers.length == 0">User Tidak ditemukan</div>
-        <div v-for="user in filteredUsers" :key="user.id" class="w-full max-w-md p-1">
+        <div v-for="user in filteredUsers" :key="user.id" class="w-full max-w-md p-1"  @click="$inertia.visit(route('user.details',{
+                    hashId: user.hash_id,
+                    name: user.name
+                }))">
             <div class="bg-white dark:bg-black shadow p-4 rounded flex gap-2">
                 <CircleUser></CircleUser>
                 <p class="text-left cursor-pointer" @click="$inertia.visit(route('user.details',{
-                    id: user.id,
+                    hashId: user.hash_id,
                     name: user.name
                 }))">{{ user.name }}</p>
             </div>
