@@ -23,7 +23,7 @@ class HomeRequest extends FormRequest
     {
         return [
             'content' => 'required|string|max:255',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5048',
             'user_id' => 'required|exists:users,id',
             
         ];
