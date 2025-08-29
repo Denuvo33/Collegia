@@ -20,7 +20,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { EllipsisVertical, Heart, MessageCircle } from 'lucide-vue-next';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css';
 
@@ -79,31 +79,6 @@ function deletePost(id: number) {
         // preserveState: false,
     });
 }
-
-onMounted(() => {
-    if (page.props.flash?.success) {
-        toast.success('Postingan berhasil dibuat!', {
-            duration: 4000,
-            action: {
-                label: 'Tutup',
-                onClick: () => {
-                    toast.dismiss();
-                },
-            },
-        });
-    }
-    if (page.props.flash?.error) {
-        toast.error(page.props.flash.error, {
-            duration: 4000,
-            action: {
-                label: 'Tutup',
-                onClick: () => {
-                    toast.dismiss();
-                },
-            },
-        });
-    }
-});
 
 watch(
     () => page.props.flash,
@@ -188,7 +163,17 @@ function reportPost(postId: number) {
                         <DropdownMenu>
                             <DropdownMenuTrigger><EllipsisVertical></EllipsisVertical></DropdownMenuTrigger>
                             <DropdownMenuContent>
-                                <DropdownMenuItem>Profile</DropdownMenuItem>
+                                <DropdownMenuItem
+                                    @click="
+                                        $inertia.visit(
+                                            route('user.details', {
+                                                hashId: posts.user.hash_id,
+                                                name: posts.user.name.toLowerCase().split(' ').join('-'),
+                                            }),
+                                        )
+                                    "
+                                    >Profile</DropdownMenuItem
+                                >
                                 <AlertDialog>
                                     <AlertDialogTrigger as-child>
                                         <DropdownMenuItem @select.prevent>Laporkan</DropdownMenuItem>
