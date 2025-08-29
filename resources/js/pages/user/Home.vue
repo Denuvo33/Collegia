@@ -20,7 +20,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { EllipsisVertical, Heart, MessageCircle } from 'lucide-vue-next';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css';
 
@@ -80,6 +80,42 @@ function deletePost(id: number) {
     });
 }
 
+onMounted(() => {
+    if (page.props.flash?.success) {
+        toast.success('Postingan berhasil dibuat!', {
+            duration: 4000,
+            action: {
+                label: 'Tutup',
+                onClick: () => {
+                    toast.dismiss();
+                },
+            },
+        });
+    }
+    if (page.props.flash?.error) {
+        toast.error(page.props.flash.error, {
+            duration: 4000,
+            action: {
+                label: 'Tutup',
+                onClick: () => {
+                    toast.dismiss();
+                },
+            },
+        });
+    }
+});
+
+watch(
+    () => page.props.flash,
+    (flash: any) => {
+        if (flash?.success) {
+            toast.success(flash.success, {
+                dismissible: true,
+            });
+        }
+    },
+);
+
 watch(
     () => page.props.flash,
     (flash: any) => {
@@ -108,7 +144,7 @@ watch(
             });
         }
     },
-    { deep: true },
+    { deep: true, immediate: true },
 );
 
 function reportPost(postId: number) {

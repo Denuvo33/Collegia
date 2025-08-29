@@ -18,7 +18,7 @@ class CreatePostController extends Controller
     public function index()
     {
         $auth = Auth::user();
-        return Inertia::render('user/CreatePost',[
+        return Inertia::render('user/CreatePost', [
             'user' => $auth,
         ]);
     }
@@ -42,10 +42,9 @@ class CreatePostController extends Controller
             }
 
             Post::create($data);
+            return redirect()->route('user.home')->with('success', 'Post created successfully!');
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Failed to create post: ' . $e->getMessage()]);
         }
-        return redirect()->route('user.home')->with('success', 'Post created successfully!');
     }
-
 }
