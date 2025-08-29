@@ -174,6 +174,7 @@ const sortList = <T extends { created_at: string }>(list: Array<T>) => {
                     <p class="text-gray-400">dibuat {{ formatTime(comment.created_at) }}</p>
                 </div>
             </div>
+            <div v-if="data.comments.length == 0" class="flex justify-center">Tidak ada Komentar</div>
         </div>
     </AppLayout>
 </template>

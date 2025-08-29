@@ -1,4 +1,15 @@
 <script setup lang="ts">
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Toaster } from '@/components/ui/sonner';
@@ -9,14 +20,18 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { EllipsisVertical, Heart, MessageCircle } from 'lucide-vue-next';
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css';
+
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 dayjs.extend(relativeTime);
 dayjs.locale('id');
 
 const page = usePage();
+
+const reportValue = ref('spam');
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -69,16 +84,50 @@ watch(
     () => page.props.flash,
     (flash: any) => {
         if (flash?.success) {
-            // Panggil toast dari Sonner untuk notifikasi sukses
-            toast.success(flash.success);
+            toast.success(flash.success, {
+                dismissible: true,
+                duration: 5000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
+                    },
+                },
+            });
         }
         if (flash?.error) {
-            // Panggil toast dari Sonner untuk notifikasi error
-            toast.error(flash.error);
+            toast.error(flash.error, {
+                dismissible: true,
+                duration: 5000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
+                    },
+                },
+            });
         }
     },
     { deep: true },
 );
+
+function reportPost(postId: number) {
+    router.post(
+        route('user.post.report'),
+        {
+            post_id: postId,
+            reason: reportValue.value,
+        },
+        {
+            preserveScroll: true,
+
+            onError: (errors) => {
+                toast.error('Gagal mengirim laporan.');
+                console.error(errors);
+            },
+        },
+    );
+}
 </script>
 
 <template>
@@ -104,7 +153,51 @@ watch(
                             <DropdownMenuTrigger><EllipsisVertical></EllipsisVertical></DropdownMenuTrigger>
                             <DropdownMenuContent>
                                 <DropdownMenuItem>Profile</DropdownMenuItem>
-                                <DropdownMenuItem>Laporkan Postingan</DropdownMenuItem>
+                                <AlertDialog>
+                                    <AlertDialogTrigger as-child>
+                                        <DropdownMenuItem @select.prevent>Laporkan</DropdownMenuItem>
+                                    </AlertDialogTrigger>
+
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Pilih alasan laporan</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Laporan ini akan dikirim ke moderator untuk ditinjau lebih lanjut.
+                                            </AlertDialogDescription>
+                                            <RadioGroup v-model="reportValue" default-value="spam">
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem id="r1" value="spam" />
+                                                    <Label for="r1">Spam</Label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem id="r2" value="inappropriate" />
+                                                    <Label for="r2">Tidak Pantas</Label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem id="r3" value="harassment" />
+                                                    <Label for="r3">Pelecehan</Label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem id="r3" value="abusive" />
+                                                    <Label for="r3">Kekerasan</Label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem id="r3" value="porn" />
+                                                    <Label for="r3">Pornografi</Label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem id="r3" value="pretend to be other people" />
+                                                    <Label for="r3">Berpura-pura menjadi orang lain</Label>
+                                                </div>
+                                            </RadioGroup>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                                            <AlertDialogAction @click="reportPost(posts.id)">Kirim</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+
                                 <DropdownMenuItem v-if="posts.user.id === usePage().props.auth.user.id" @click="deletePost(posts.id)"
                                     >Hapus</DropdownMenuItem
                                 >
