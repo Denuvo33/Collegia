@@ -5,23 +5,22 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
-import { Home,Telescope,Bell,User,Megaphone, LayoutGrid } from 'lucide-vue-next';
+import { Bell, CalendarClock, Home, Telescope, User } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
-
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Home',
+        title: 'Beranda',
         href: '/user/home',
         icon: Home,
     },
     {
-        title: 'Explore',
+        title: 'Jelajah',
         href: '/user/explore',
         icon: Telescope,
     },
     {
-        title: 'Notifications',
+        title: 'Notifikasi',
         href: '/user/notifications',
         icon: Bell,
     },
@@ -31,16 +30,13 @@ const mainNavItems: NavItem[] = [
         icon: User,
     },
     {
-        title: 'Create Post',
-        href: '/user/create-post',
-        icon: Megaphone,
+        title: 'Event',
+        href: '/user/event',
+        icon: CalendarClock,
     },
-
 ];
 
-const footerNavItems: NavItem[] = [
-    
-];
+const footerNavItems: NavItem[] = [];
 </script>
 
 <template>

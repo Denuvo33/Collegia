@@ -10,6 +10,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Toaster } from '@/components/ui/sonner';
@@ -22,6 +23,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import { EllipsisVertical, Heart, MessageCircle } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
+
 import 'vue-sonner/style.css';
 
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -155,6 +157,12 @@ function reportPost(postId: number) {
         <!-- Nuxt, vue-sonner v2 no need to ClientOnly -->
         <Toaster />
         <div class="space-y-4 p-4">
+            <div>
+                <Button @click="$inertia.visit(route('user.create-post'))" class="text-lg">Tulis Cerita</Button>
+            </div>
+            <div class="fixed right-8 bottom-8 z-50">
+                <Button class="text-lg font-bold" @click="$inertia.visit(route('user.create-post'))">+</Button>
+            </div>
             <div class="space-y-4 rounded bg-white p-4 shadow dark:bg-black" v-for="posts in sortedPosts" :key="posts.id">
                 <div class="flex flex-wrap gap-2">
                     <h1 class="cursor-pointer text-2xl font-bold" @click="$inertia.visit(`/user/post/${posts.hash_id}`)">{{ posts.user.name }}</h1>

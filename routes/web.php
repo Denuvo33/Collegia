@@ -9,6 +9,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\EventController;
 
 Route::get('/', function () {
     return Inertia::render('auth/Google');
@@ -30,8 +31,13 @@ Route::get('/user/post/{hashId}', [HomeController::class, 'details'])->middlewar
 
 Route::get('/user/{hashId}/{name}', [HomeController::class, 'user'])->middleware(['auth'])->name('user.details');
 
+Route::get('/user/event', [EventController::class, 'index'])->middleware(['auth', 'verified'])->name('user.event');
+
+Route::get('/user/create-event', [EventController::class, 'create'])->middleware(['auth', 'verified'])->name('user.create-event');
+
 // User Routes Post
 Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified'])->name('user.post.store');
+
 Route::post('/user/create-comment', [CommentController::class, 'store'])->middleware('auth')->name('post.store.comment');
 
 Route::post('/user/post/report', [ReportController::class, 'store'])->middleware('auth')->name('user.post.report');
