@@ -42,6 +42,8 @@ Route::post('/user/create-comment', [CommentController::class, 'store'])->middle
 
 Route::post('/user/post/report', [ReportController::class, 'store'])->middleware('auth')->name('user.post.report');
 
+Route::post('/user/create-event', [EventController::class, 'store'])->middleware(['auth', 'verified'])->name('user.event.store');
+
 //user Routes Destroy
 Route::delete('/user/post/comment/${id}', [CommentController::class, 'destroy'])->middleware('auth')->name('user.comment.delete');
 

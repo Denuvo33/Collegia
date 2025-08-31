@@ -16,7 +16,10 @@ class EventController extends Controller
      */
     public function index()
     {
-        return Inertia::render('user/Event', []);
+
+        return Inertia::render('user/Event', [
+            'data' => EventModel::with('user')->get()
+        ]);
     }
 
     /**
@@ -34,6 +37,9 @@ class EventController extends Controller
     {
         try {
             $data = $request->validated();
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('images', 'public');
+            }
             EventModel::create($data);
             return redirect()->route('user.event')->with('success', 'Event telah dibuat');
         } catch (Exception $e) {

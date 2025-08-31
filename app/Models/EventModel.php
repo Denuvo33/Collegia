@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+
 class EventModel extends Model
 {
     protected $table = 'event';
@@ -19,4 +20,9 @@ class EventModel extends Model
         'location',
         'status',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }
