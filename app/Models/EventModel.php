@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
+use Vinkla\Hashids\Facades\Hashids;
 
 class EventModel extends Model
 {
@@ -21,8 +21,15 @@ class EventModel extends Model
         'status',
     ];
 
+    protected $appends = ['hash_id'];
+
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function getHashIdAttribute()
+    {
+        return Hashids::encode($this->id);
     }
 }

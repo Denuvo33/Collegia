@@ -2,7 +2,13 @@
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { BreadcrumbItem } from '@/types';
+import dayjs from 'dayjs';
+import 'dayjs/locale/id';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import { Calendar, MapPin, User, Wallet } from 'lucide-vue-next';
+
+dayjs.locale('id');
+dayjs.extend(relativeTime);
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -22,6 +28,7 @@ defineProps<{
         organizer: string;
         date_event: string;
         location: string;
+        hash_id: string;
 
         user: {
             name: string;
@@ -43,6 +50,9 @@ function getEventStatus(dateEvent: string): 'Akan Datang' | 'Sedang Berjalan' | 
     } else {
         return 'Selesai';
     }
+}
+function formatTime(date: string) {
+    return dayjs(date).fromNow();
 }
 </script>
 
@@ -99,13 +109,24 @@ function getEventStatus(dateEvent: string): 'Akan Datang' | 'Sedang Berjalan' | 
                                         ? 'bg-blue-500'
                                         : getEventStatus(event.date_event) == 'Sedang Berjalan'
                                           ? 'bg-green-500'
-                                          : 'bg-red-500'
+                                          : 'bg-gray-500'
                                 "
                             >
                                 <h1>Status: {{ getEventStatus(event.date_event) }}</h1>
                             </div>
+                            <div>Dibuat {{ formatTime(event.created_at) }}</div>
                             <div>
-                                <Button>Lihat Selengkapnya</Button>
+                                <Button
+                                    @click="
+                                        $inertia.visit(
+                                            route('user.details.event', {
+                                                hashId: event.hash_id,
+                                                title: event.title.toLowerCase().split(' ').join('-'),
+                                            }),
+                                        )
+                                    "
+                                    >Lihat Selengkapnya</Button
+                                >
                             </div>
                         </div>
                     </div>

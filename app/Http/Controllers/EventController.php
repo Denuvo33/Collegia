@@ -8,6 +8,7 @@ use App\Models\EventModel;
 use Exception;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Vinkla\Hashids\Facades\Hashids;
 
 class EventController extends Controller
 {
@@ -50,9 +51,15 @@ class EventController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(string $hashId)
     {
-        //
+        $decoded = Hashids::decode($hashId);
+
+        $id = $decoded[0];
+        $event = EventModel::with('user')->findOrFail($id);
+        return Inertia::render('user/DetailEvent', [
+            'event' => $event,
+        ]);
     }
 
     /**
