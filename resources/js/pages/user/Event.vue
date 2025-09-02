@@ -90,6 +90,15 @@ watch(
     { deep: true, immediate: true },
 );
 
+function sortList<T extends { created_at: string }>(list: Array<T>) {
+    return list.slice().sort((a, b) => {
+        const dateA = new Date(a.created_at);
+        const dateB = new Date(b.created_at);
+
+        return dateB.getTime() - dateA.getTime();
+    });
+}
+
 function getEventStatus(dateEvent: string): 'Akan Datang' | 'Sedang Berjalan' | 'Selesai' {
     const today = new Date();
     const eventDate = new Date(dateEvent);
@@ -148,7 +157,7 @@ function reportEvent(id: number) {
 
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <div
-                    v-for="event in data"
+                    v-for="event in sortList(data)"
                     :key="event.id"
                     class="flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-lg dark:bg-black"
                 >
