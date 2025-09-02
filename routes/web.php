@@ -43,6 +43,7 @@ Route::post('/user/create-post', [CreatePostController::class, 'store'])->middle
 Route::post('/user/create-comment', [CommentController::class, 'store'])->middleware('auth')->name('post.store.comment');
 
 Route::post('/user/post/report', [ReportController::class, 'store'])->middleware('auth')->name('user.post.report');
+Route::post('/user/event/report', [ReportController::class, 'store'])->middleware('auth')->name('user.event.report');
 
 Route::post('/user/create-event', [EventController::class, 'store'])->middleware(['auth', 'verified'])->name('user.event.store');
 
@@ -50,6 +51,8 @@ Route::post('/user/create-event', [EventController::class, 'store'])->middleware
 Route::delete('/user/post/comment/${id}', [CommentController::class, 'destroy'])->middleware('auth')->name('user.comment.delete');
 
 Route::delete('/user/post/delete/{id}', [ProfileController::class, 'destroy'])->middleware('auth')->name('user.post.delete');
+
+Route::delete('/user/event/delete/{id}', [EventController::class, 'destroy'])->middleware('auth')->name('user.delete.event');
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard');

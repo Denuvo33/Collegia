@@ -7,6 +7,7 @@ use App\Http\Requests\EventRequest;
 use App\Models\EventModel;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Vinkla\Hashids\Facades\Hashids;
 
@@ -83,6 +84,16 @@ class EventController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        try {
+            $data = EventModel::findOrFail($id);
+            if ($data->user_id == Auth::id()) {
+                $data->delete();
+                return redirect()->back()->with('success', 'Event telah dihapus');
+            } else {
+                return redirect()->back()->with('failed', 'Anda tidak memiliki izin untuk menghapus event ini');
+            }
+        } catch (Exception $e) {
+            return redirect()->back()->with('failed', 'Event gagal dihapus');
+        }
     }
 }

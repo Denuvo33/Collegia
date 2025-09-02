@@ -1,11 +1,31 @@
 <script setup lang="ts">
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { BreadcrumbItem } from '@/types';
+import { router, usePage } from '@inertiajs/vue3';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Calendar, MapPin, User, Wallet } from 'lucide-vue-next';
+import { Calendar, EllipsisVertical, MapPin, User, Wallet } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
+import { toast } from 'vue-sonner';
+
+import 'vue-sonner/style.css';
 
 dayjs.locale('id');
 dayjs.extend(relativeTime);
@@ -16,6 +36,8 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/user/event',
     },
 ];
+
+const reportValue = ref('spam');
 
 defineProps<{
     data: Array<{
@@ -31,10 +53,42 @@ defineProps<{
         hash_id: string;
 
         user: {
+            id: number;
             name: string;
         };
     }>;
 }>();
+
+watch(
+    () => usePage().props.flash,
+    (flash: any) => {
+        if (flash?.success) {
+            toast.success(flash.success, {
+                dismissible: true,
+                duration: 5000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
+                    },
+                },
+            });
+        }
+        if (flash?.error) {
+            toast.error(flash.error, {
+                dismissible: true,
+                duration: 5000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
+                    },
+                },
+            });
+        }
+    },
+    { deep: true, immediate: true },
+);
 
 function getEventStatus(dateEvent: string): 'Akan Datang' | 'Sedang Berjalan' | 'Selesai' {
     const today = new Date();
@@ -54,10 +108,39 @@ function getEventStatus(dateEvent: string): 'Akan Datang' | 'Sedang Berjalan' | 
 function formatTime(date: string) {
     return dayjs(date).fromNow();
 }
+
+function deleteEvent(id: number) {
+    if (confirm('Apakah Anda yakin ingin menghapus event ini?')) {
+        router.delete(route('user.delete.event', { id: id, userId: usePage().props.auth.user.id }));
+    }
+}
+
+function reportEvent(id: number) {
+    router.post(
+        route('user.event.report'),
+        {
+            post_id: id,
+            reason: reportValue.value,
+        },
+        {
+            preserveScroll: true,
+        },
+    );
+}
 </script>
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
+        <Toaster />
+
+        <!-- Nuxt, vue-sonner v1 because inserting inline CSS with JS to the head tag -->
+        <ClientOnly>
+            <Toaster />
+        </ClientOnly>
+
+        <!-- Nuxt, vue-sonner v2 no need to ClientOnly -->
+        <Toaster />
+
         <div class="space-y-6 p-4">
             <div>
                 <Button @click="$inertia.visit(route('user.create-event'))"> Buat Event </Button>
@@ -69,16 +152,69 @@ function formatTime(date: string) {
                     :key="event.id"
                     class="flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-lg dark:bg-black"
                 >
-                    <div v-if="event.image">
-                        <img :src="`/storage/${event.image}`" alt="Event" class="mt-2 h-58 w-full object-cover shadow" />
-                    </div>
-
                     <div class="flex flex-1 flex-col justify-between p-4">
                         <div>
-                            <h2 class="mb-2 text-lg font-semibold">{{ event.title }}</h2>
+                            <div class="flex flex-row justify-between">
+                                <h2 class="mb-2 text-lg font-semibold">{{ event.title }}</h2>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger><EllipsisVertical></EllipsisVertical></DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem v-if="event.user.id === usePage().props.auth.user.id" @click="deleteEvent(event.id)"
+                                            >Hapus</DropdownMenuItem
+                                        >
+                                        <AlertDialog>
+                                            <AlertDialogTrigger as-child>
+                                                <DropdownMenuItem @select.prevent>Laporkan</DropdownMenuItem>
+                                            </AlertDialogTrigger>
+
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Pilih alasan laporan</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Laporan ini akan dikirim ke moderator untuk ditinjau lebih lanjut.
+                                                    </AlertDialogDescription>
+                                                    <RadioGroup v-model="reportValue" default-value="spam">
+                                                        <div class="flex items-center space-x-2">
+                                                            <RadioGroupItem id="r1" value="spam" />
+                                                            <Label for="r1">Spam</Label>
+                                                        </div>
+                                                        <div class="flex items-center space-x-2">
+                                                            <RadioGroupItem id="r2" value="inappropriate" />
+                                                            <Label for="r2">Tidak Pantas</Label>
+                                                        </div>
+                                                        <div class="flex items-center space-x-2">
+                                                            <RadioGroupItem id="r3" value="harassment" />
+                                                            <Label for="r3">Pelecehan</Label>
+                                                        </div>
+                                                        <div class="flex items-center space-x-2">
+                                                            <RadioGroupItem id="r3" value="abusive" />
+                                                            <Label for="r3">Kekerasan</Label>
+                                                        </div>
+                                                        <div class="flex items-center space-x-2">
+                                                            <RadioGroupItem id="r3" value="porn" />
+                                                            <Label for="r3">Pornografi</Label>
+                                                        </div>
+                                                        <div class="flex items-center space-x-2">
+                                                            <RadioGroupItem id="r3" value="pretend to be other people" />
+                                                            <Label for="r3">Berpura-pura menjadi orang lain</Label>
+                                                        </div>
+                                                    </RadioGroup>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                    <AlertDialogAction @click="reportEvent(event.id)">Kirim</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                             <p class="line-clamp-3 text-gray-400">
                                 {{ event.content }}
                             </p>
+                        </div>
+                        <div v-if="event.image">
+                            <img :src="`/storage/${event.image}`" alt="Event" class="mt-2 h-58 w-full object-cover shadow" />
                         </div>
 
                         <div class="mt-4 space-y-2 text-sm text-gray-600">

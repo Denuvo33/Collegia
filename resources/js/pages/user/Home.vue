@@ -55,6 +55,7 @@ const props = defineProps<{
             name: string;
             email: string;
             role: string;
+            hash_id: string;
         };
     }>;
 }>();
@@ -81,17 +82,6 @@ function deletePost(id: number) {
         // preserveState: false,
     });
 }
-
-watch(
-    () => page.props.flash,
-    (flash: any) => {
-        if (flash?.success) {
-            toast.success(flash.success, {
-                dismissible: true,
-            });
-        }
-    },
-);
 
 watch(
     () => page.props.flash,

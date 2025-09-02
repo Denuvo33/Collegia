@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Calendar, MapPin, User, Wallet } from 'lucide-vue-next';
+import { Calendar, EllipsisVertical, MapPin, User, Wallet } from 'lucide-vue-next';
 
 dayjs.locale('id');
 dayjs.extend(relativeTime);
@@ -39,6 +40,9 @@ defineProps<{
         };
     };
 }>();
+function goBack() {
+    window.history.back();
+}
 
 function getEventStatus(dateEvent: string): 'Akan Datang' | 'Sedang Berjalan' | 'Selesai' {
     const today = new Date();
@@ -79,9 +83,18 @@ function formatTime(date: string) {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="mx-auto max-w-4xl p-6">
             <div class="mb-6 space-y-2">
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                    {{ event.title }}
-                </h1>
+                <div class="flex flex-row justify-between">
+                    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
+                        {{ event.title }}
+                    </h1>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger><EllipsisVertical></EllipsisVertical></DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem>Laporkan</DropdownMenuItem>
+                            <DropdownMenuItem>Hapus</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
                 <p class="text-gray-600 dark:text-gray-400">
                     Diselenggarakan oleh
                     <span class="font-semibold">{{ event.organizer }}</span>
@@ -126,7 +139,7 @@ function formatTime(date: string) {
             </div>
 
             <div class="mt-10 flex justify-end">
-                <Button @click="$inertia.visit(route('user.home'))"> Kembali </Button>
+                <Button @click="goBack"> Kembali </Button>
             </div>
         </div>
     </AppLayout>

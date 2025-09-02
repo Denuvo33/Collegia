@@ -39,7 +39,7 @@ class ReportController extends Controller
             ReportModel::create($data);
 
             return back()->with([
-                'success' => 'Laporan berhasil dikirim.'
+                'success' => 'Laporan berhasil dikirim,Terima kasih karna telah berkontribusi menjaga komunitas lebih baik.'
             ]);
         } catch (\Throwable $e) {
             return back()->withErrors([
