@@ -119,11 +119,25 @@ const sortList = <T extends { created_at: string }>(list: Array<T>) => {
         <hr />
         <!-- Selection -->
         <div class="flex flex-row justify-center gap-8">
-            <button class="text-xl" @click="activatedTabs = 'post'" :class="activatedTabs == 'post' ? 'border-b-2 border-white' : ''">Post</button>
-            <button class="text-xl" :class="activatedTabs == 'comment' ? 'border-b-2 border-white' : ''" @click="activatedTabs = 'comment'">
+            <button
+                class="text-xl"
+                @click="activatedTabs = 'post'"
+                :class="activatedTabs == 'post' ? 'border-b-2 border-black dark:border-white' : ''"
+            >
+                Post
+            </button>
+            <button
+                class="text-xl"
+                :class="activatedTabs == 'comment' ? 'border-b-2 border-black dark:border-white' : ''"
+                @click="activatedTabs = 'comment'"
+            >
                 Komentar
             </button>
-            <button class="text-xl" :class="activatedTabs == 'inkrip' ? 'border-b-2 border-white' : ''" @click="activatedTabs = 'inkrip'">
+            <button
+                class="text-xl"
+                :class="activatedTabs == 'inkrip' ? 'border-b-2 border-black dark:border-white' : ''"
+                @click="activatedTabs = 'inkrip'"
+            >
                 Inkrip
             </button>
         </div>

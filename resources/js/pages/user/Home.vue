@@ -17,11 +17,12 @@ import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { EllipsisVertical, Heart, MessageCircle } from 'lucide-vue-next';
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 
 import 'vue-sonner/style.css';
@@ -41,27 +42,79 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/user/home',
     },
 ];
+type User = {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+    hash_id: string;
+};
+
+type Post = {
+    id: number;
+    user_id: number;
+    content: string;
+    hash_id: string;
+    image?: string;
+    created_at: string;
+    user: User;
+};
 
 const props = defineProps<{
-    data: Array<{
-        id: number;
-        user_id: number;
-        content: string;
-        hash_id: string;
-        image?: string;
-        created_at: string;
-        user: {
-            id: number;
-            name: string;
-            email: string;
-            role: string;
-            hash_id: string;
-        };
-    }>;
+    data: {
+        current_page: number;
+        last_page: number;
+        data: Post[];
+        next_page_url?: string | null;
+    };
 }>();
 
+const posts = ref<Post[]>([...props.data.data]);
+const currentPage = ref(props.data.current_page);
+const lastPage = ref(props.data.last_page);
+const loading = ref(false);
+
+const loadMore = async () => {
+    if (loading.value || currentPage.value >= lastPage.value) return;
+    loading.value = true;
+
+    try {
+        const res = await axios.get(`/user/home?page=${currentPage.value + 1}`, {
+            headers: { Accept: 'application/json' },
+        });
+
+        const newData = res.data;
+        posts.value.push(...newData.data);
+
+        currentPage.value = newData.current_page;
+        lastPage.value = newData.last_page;
+    } finally {
+        loading.value = false;
+    }
+};
+const sentinel = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver | null = null;
+
+onMounted(() => {
+    observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    loadMore();
+                }
+            });
+        },
+        { rootMargin: '200px' },
+    );
+    if (sentinel.value) observer.observe(sentinel.value);
+});
+
+onBeforeUnmount(() => {
+    if (observer && sentinel.value) observer.disconnect();
+});
+
 const sortedPosts = computed(() => {
-    return props.data.slice().sort((a, b) => {
+    return posts.value.slice().sort((a, b) => {
         const dateA = new Date(a.created_at);
         const dateB = new Date(b.created_at);
         return dateB.getTime() - dateA.getTime();
@@ -153,7 +206,7 @@ function reportPost(postId: number) {
             <div class="fixed right-8 bottom-8 z-50">
                 <Button class="text-lg font-bold" @click="$inertia.visit(route('user.create-post'))">+</Button>
             </div>
-            <div class="space-y-4 rounded bg-white p-4 shadow dark:bg-black" v-for="posts in sortedPosts" :key="posts.id">
+            <div class="space-y-4 rounded bg-white p-4 shadow dark:bg-black" v-for="(posts, index) in sortedPosts" :key="posts.id">
                 <div class="flex flex-wrap gap-2">
                     <h1 class="cursor-pointer text-2xl font-bold" @click="$inertia.visit(`/user/post/${posts.hash_id}`)">{{ posts.user.name }}</h1>
                     <p v-if="posts.user.role === 'moderator'" class="rounded bg-blue-600 px-1 py-1 text-white dark:text-black">Moderator</p>
@@ -238,6 +291,8 @@ function reportPost(postId: number) {
                 </div>
                 <p class="text-gray-400">Dibuat {{ formatDate(posts.created_at) }}</p>
             </div>
+            <div ref="sentinel"></div>
+            <div v-if="loading" class="py-4 text-center">Loading...</div>
         </div>
     </AppLayout>
 </template>

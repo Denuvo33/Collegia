@@ -16,30 +16,38 @@ class HomeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $data = Post::with('user')->get();
-        return Inertia::render('user/Home',[
-            'data'=> $data
+        $data = Post::with('user')->latest()->paginate(10);
+
+        // kalau request via ajax/axios, return JSON
+        if ($request->wantsJson()) {
+            return response()->json($data);
+        }
+
+        // default inertia
+        return Inertia::render('user/Home', [
+            'data' => $data->toArray()
         ]);
     }
 
+
     public function details($hashId)
-{
-    $decoded = \Vinkla\Hashids\Facades\Hashids::decode($hashId);
+    {
+        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($hashId);
 
-    if (empty($decoded)) {
-        abort(404, 'Invalid Post');
+        if (empty($decoded)) {
+            abort(404, 'Invalid Post');
+        }
+
+        $id = $decoded[0];
+
+        $data = Post::with(['user', 'comments.user'])->findOrFail($id);
+
+        return Inertia::render('user/DetailPost', [
+            'data' => $data,
+        ]);
     }
-
-    $id = $decoded[0]; 
-
-    $data = Post::with(['user', 'comments.user'])->findOrFail($id);
-
-    return Inertia::render('user/DetailPost', [
-        'data' => $data,
-    ]);
-}
 
 
     public function user($hashId)
@@ -62,26 +70,22 @@ class HomeController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
-    {
-        
-    }
+    public function create() {}
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(HomeRequest $request)
     {
-        try{
-        $validated = $request->validated();
-        Post::create($validated);
+        try {
+            $validated = $request->validated();
+            Post::create($validated);
 
-        return redirect()->route('user.home')
-            ->with('success', 'Post Berhasil dibuat!');
-        }catch(\Exception $e){
+            return redirect()->route('user.home')
+                ->with('success', 'Post Berhasil dibuat!');
+        } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal membuat post: ' . $e->getMessage());
         }
-       
     }
 
     /**

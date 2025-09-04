@@ -18,6 +18,7 @@ Route::get('/', function () {
 
 // User Routes Get
 Route::get('/user/home', [HomeController::class, 'index'])->middleware(['auth', 'verified'])->name('user.home');
+Route::get('/user/home/feed', [HomeController::class, 'feed'])->name('user.home.feed');
 
 Route::get('/user/explore', [ExploreController::class, 'index'])->middleware(['auth', 'verified'])->name('user.explore');
 
@@ -54,9 +55,9 @@ Route::delete('/user/post/delete/{id}', [ProfileController::class, 'destroy'])->
 
 Route::delete('/user/event/delete/{id}', [EventController::class, 'destroy'])->middleware('auth')->name('user.delete.event');
 
-Route::get('dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+// Route::get('dashboard', function () {
+//     return Inertia::render('Dashboard');
+// })->middleware(['auth', 'verified'])->name('dashboard');
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

@@ -13,6 +13,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 Route::get('/auth/google', function () {
     return Socialite::driver('google')->redirect();
@@ -22,9 +23,9 @@ Route::get('/auth/google/callback', function () {
     $googleUser = Socialite::driver('google')->user();
 
 
-    // if (!str_ends_with($googleUser->getEmail(), '@student.unri.ac.id')) {
-    //     abort(403, 'Login hanya untuk email @student.unri.ac.id');
-    // }
+    if (!str_ends_with($googleUser->getEmail(), '@student.unri.ac.id')) {
+        abort(403, 'Login hanya untuk email @student.unri.ac.id');
+    }
 
 
     $user = User::updateOrCreate(
@@ -46,7 +47,9 @@ Route::middleware('guest')->group(function () {
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])
+    Route::get('login', function () {
+        return Inertia::render('auth/Google');
+    })
         ->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
