@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
+
 import { CircleUser } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -13,20 +15,23 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const searchUser = ref('');
-
 const props = defineProps<{
-    users: Array<{
-        id: number;
-        name: string;
-        hash_id: string;
-    }>;
+    users: {
+        data: Array<{ id: number; name: string; hash_id: string }>;
+        current_page: number;
+        last_page: number;
+    };
+    filters: { search?: string };
 }>();
 
-const filteredUsers = computed(() => {
-    if (!searchUser.value) return [];
-    return props.users.filter((user) => user.name.toLowerCase().includes(searchUser.value.toLowerCase()));
-});
+const searchUser = ref(props.filters.search ?? '');
+const doSearch = () => {
+    router.get('/user/explore', { search: searchUser.value }, { preserveState: true, replace: true });
+};
+
+const clearSearch = () => {
+    return (searchUser.value = '');
+};
 </script>
 
 <template>
@@ -34,12 +39,17 @@ const filteredUsers = computed(() => {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex justify-center p-4">
-            <Input v-model="searchUser" class="w-8/12" placeholder="🔎 Cari Pengguna" />
+            <form @submit.prevent="doSearch" class="flex w-full max-w-3xl items-center gap-2">
+                <Input v-model="searchUser" class="flex-1" placeholder="🔎 Cari Pengguna" aria-label="Cari pengguna" />
+                <Button type="submit" :disabled="!searchUser.trim()">Cari</Button>
+
+                <Button v-if="searchUser" type="button" @click="clearSearch">Clear</Button>
+            </form>
         </div>
         <div class="flex flex-col items-center">
-            <div v-if="searchUser && filteredUsers.length == 0">User Tidak ditemukan</div>
+            <div v-if="searchUser && props.users.data.length == 0">User Tidak ditemukan</div>
             <div
-                v-for="user in filteredUsers"
+                v-for="user in props.users.data"
                 :key="user.id"
                 class="w-full max-w-md p-1"
                 @click="

@@ -12,12 +12,31 @@ class ExploreController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Inertia::render('user/Explore',[
-            'users'=> User::all()
+        $search = $request->input('search');
+
+        $query = User::query();
+
+        if ($search) {
+            $query->where('name', 'like', '%' . $search . '%');
+        } else {
+
+            $query->whereRaw('1 = 0');
+        }
+
+        $users = $query->select('id', 'name',)
+            ->orderBy('name')
+            ->paginate(10)
+            ->withQueryString();
+
+        return Inertia::render('user/Explore', [
+            'users'   => $users,
+            'filters' => $request->only('search'),
         ]);
     }
+
+
 
     /**
      * Show the form for creating a new resource.
