@@ -29,7 +29,7 @@ class ProfileController extends Controller
             'data' => [
                 'id' => $user->id,
                 'name' => $user->name,
-                'created_at' => $user->created_at,
+                'private_post' => $user->private_post,
                 'posts' => $posts->toArray(),
                 'comments' => $comments->toArray(),
             ],
@@ -48,6 +48,26 @@ class ProfileController extends Controller
         $comments = CommentModel::where('user_id', Auth::id())->latest()->paginate(10);
         return response()->json($comments);
     }
+
+    public function updatePrivacy(Request $request, $id)
+    {
+        try {
+            $user = User::findOrFail($id);
+
+
+            $request->validate([
+                'private_post' => 'nullable|in:0,1',
+                'private_comment' => 'nullable|in:0,1',
+            ]);
+
+            $user->update($request->only(['private_post', 'private_comment']));
+
+            return back()->with('success', 'Privacy settings updated.');
+        } catch (Exception $e) {
+            return back()->with('error', 'An error occurred while updating privacy settings.');
+        }
+    }
+
 
     /**
      * Show the form for creating a new resource.

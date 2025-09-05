@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\ProfileController as ControllersProfileController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -19,6 +21,9 @@ Route::middleware('auth')->group(function () {
         ->name('password.update');
 
     Route::get('settings/appearance', function () {
-        return Inertia::render('settings/Appearance');
+        return Inertia::render('settings/Appearance', [
+            'user' => Auth::user(),
+        ]);
     })->name('appearance');
+    Route::put('/user/{id}/privacy', [ControllersProfileController::class, 'updatePrivacy'])->name('user.privacy.update');
 });

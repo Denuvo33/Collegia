@@ -196,7 +196,7 @@ function deletePost(id: number) {
     return router.delete(route('user.post.delete', id), {
         onError: (errors) => {
             console.error('error: ', errors);
-            toast.error('Terjadi kesalahan saat menghapus.');
+            // toast.error('Terjadi kesalahan saat menghapus.');
         },
         onSuccess: () => {
             // Remove the deleted post from the local state

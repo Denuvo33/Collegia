@@ -6,7 +6,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { MessageCircle } from 'lucide-vue-next';
+import { Lock, MessageCircle } from 'lucide-vue-next';
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 dayjs.locale('id');
@@ -36,6 +36,8 @@ const props = defineProps<{
         created_at: string;
         posts_count: number;
         comments_count: number;
+        private_post: boolean;
+        private_comment: boolean;
     };
     posts: {
         data: post[];
@@ -200,8 +202,8 @@ onBeforeUnmount(() => {
                     <p>Postingaan</p>
                 </div>
                 <div class="flex flex-col rounded border p-2">
-                    <p>{{ user.comments_count }}</p>
-                    <p>Komentar</p>
+                    <p>0</p>
+                    <p>Inkrip</p>
                 </div>
             </div>
             <p>Bergabung {{ formatTime(user.created_at) }}</p>
@@ -228,9 +230,14 @@ onBeforeUnmount(() => {
         <div class="p-1">
             <!-- POSTS -->
             <div v-if="activeTabs == 'posts'">
-                <div v-for="(post, index) in posts" :key="post.id" @click="$inertia.visit(route('user.post.details', post.hash_id))" class="p-4">
+                <div
+                    v-if="user.private_post == false"
+                    v-for="(post, index) in posts"
+                    :key="post.id"
+                    @click="$inertia.visit(route('user.post.details', post.hash_id))"
+                    class="p-4"
+                >
                     <div class="flex flex-col gap-4 rounded bg-white p-4 shadow dark:bg-black">
-                        <div>{{ index + 1 }}.</div>
                         <p class="font-bold">{{ user.name }}</p>
                         <hr />
                         <p>{{ post.content }}</p>
@@ -239,6 +246,10 @@ onBeforeUnmount(() => {
                         <MessageCircle class="cursor-pointer" />
                     </div>
                 </div>
+                <div class="flex flex-row justify-center p-4" v-else-if="user.private_post == true">
+                    <Lock></Lock>
+                    <p>Private</p>
+                </div>
                 <div v-if="postPage < postLastPage" ref="postSentinel" class="h-1"></div>
                 <div v-if="postLoading" class="p-4 text-center">Loading posts...</div>
                 <div v-else-if="postPage >= postLastPage && posts.length > 0" class="p-4 text-center text-gray-500">No more posts to load</div>
@@ -246,13 +257,23 @@ onBeforeUnmount(() => {
 
             <!-- COMMENTS -->
             <div v-else-if="activeTabs == 'comments'">
-                <div v-for="comment in comments" :key="comment.id" @click="$inertia.visit(route('user.post.details', comment.hash_id))" class="p-4">
+                <div
+                    v-if="user.private_comment == false"
+                    v-for="comment in comments"
+                    :key="comment.id"
+                    @click="$inertia.visit(route('user.post.details', comment.hash_id))"
+                    class="p-4"
+                >
                     <div class="flex flex-col rounded bg-white p-4 shadow dark:bg-black">
                         <p class="font-bold">{{ user.name }}</p>
                         <hr />
                         <p>{{ comment.content }}</p>
                         <p class="text-gray-400">dibuat {{ formatTime(comment.created_at) }}</p>
                     </div>
+                </div>
+                <div class="flex flex-row justify-center p-4" v-else-if="user.private_comment == true">
+                    <Lock></Lock>
+                    <p>Private</p>
                 </div>
                 <div v-if="commentPage < commentLastPage" ref="commentSentinel" class="h-1"></div>
                 <div v-if="commentLoading" class="p-4 text-center">Loading comments...</div>

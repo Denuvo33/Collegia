@@ -23,6 +23,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'private_post',
+        'private_comment',
     ];
 
     /**
@@ -34,6 +36,12 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    protected $casts = [
+        'private_post' => 'boolean',
+        'private_comment' => 'boolean',
+    ];
+
 
     protected $appends = ['hash_id'];
 
@@ -55,12 +63,13 @@ class User extends Authenticatable
         return $this->hasMany(Post::class, 'user_id');
     }
 
-    public function comments(){
-        return $this->hasMany(CommentModel::class,'user_id');
+    public function comments()
+    {
+        return $this->hasMany(CommentModel::class, 'user_id');
     }
 
-    public function getHashIdAttribute(){
+    public function getHashIdAttribute()
+    {
         return Hashids::encode($this->id);
     }
-    
 }
