@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Vinkla\Hashids\Facades\Hashids;
+use App\Models\CommentModel;
 
 class HomeController extends Controller
 {
@@ -20,12 +21,11 @@ class HomeController extends Controller
     {
         $data = Post::with('user')->latest()->paginate(10);
 
-        // kalau request via ajax/axios, return JSON
+
         if ($request->wantsJson()) {
             return response()->json($data);
         }
 
-        // default inertia
         return Inertia::render('user/Home', [
             'data' => $data->toArray()
         ]);
@@ -50,22 +50,42 @@ class HomeController extends Controller
     }
 
 
-    public function user($hashId)
+    public function user(Request $request, $hashId)
     {
-        $encoded = Hashids::decode($hashId);
+        $id = Hashids::decode($hashId)[0] ?? null;
+        if (!$id) abort(404);
 
-        $id = $encoded[0];
+        $user = User::withCount(['posts', 'comments'])->findOrFail($id);
 
-        $user = User::with([
-            'posts',
-            'comments'
-        ])->findOrFail($id);
+        $posts = Post::where('user_id', $id)->latest()->paginate(10);
+        $comments = CommentModel::where('user_id', $id)->latest()->paginate(10);
+
         return Inertia::render('user/UserProfile', [
             'user' => $user,
-            'posts' => $user->posts,
-            'comments' => $user->comments
+            'posts' => $posts->toArray(),
+            'comments' => $comments->toArray(),
         ]);
     }
+
+    public function userPosts(Request $request, $hashId)
+    {
+        $id = Hashids::decode($hashId)[0] ?? null;
+        if (!$id) abort(404);
+
+        $posts = Post::where('user_id', $id)->latest()->paginate(10);
+        return response()->json($posts);
+    }
+
+    public function userComments(Request $request, $hashId)
+    {
+        $id = Hashids::decode($hashId)[0] ?? null;
+        if (!$id) abort(404);
+
+        $comments = CommentModel::where('user_id', $id)->latest()->paginate(10);
+        return response()->json($comments);
+    }
+
+
 
     /**
      * Show the form for creating a new resource.

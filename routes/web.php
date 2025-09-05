@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\EventController;
 
+
 Route::get('/', function () {
     return Inertia::render('auth/Google');
 })->name('home');
@@ -18,7 +19,6 @@ Route::get('/', function () {
 
 // User Routes Get
 Route::get('/user/home', [HomeController::class, 'index'])->middleware(['auth', 'verified'])->name('user.home');
-Route::get('/user/home/feed', [HomeController::class, 'feed'])->name('user.home.feed');
 
 Route::get('/user/explore', [ExploreController::class, 'index'])->middleware(['auth', 'verified'])->name('user.explore');
 
@@ -31,6 +31,15 @@ Route::get('/user/create-post', [CreatePostController::class, 'index'])->middlew
 Route::get('/user/post/{hashId}', [HomeController::class, 'details'])->middleware(['auth', 'verified'])->name('user.post.details');
 
 Route::get('/user/{hashId}/{name}', [HomeController::class, 'user'])->middleware(['auth'])->name('user.details');
+// API khusus load posts
+Route::get('/user/{hashId}/{name}/posts', [HomeController::class, 'userPosts'])
+    ->middleware(['auth'])
+    ->name('user.posts');
+// API khusus load comments
+Route::get('/user/{hashId}/{name}/comments', [HomeController::class, 'userComments'])
+    ->middleware(['auth'])
+    ->name('user.comments');
+
 
 Route::get('/user/event', [EventController::class, 'index'])->middleware(['auth', 'verified'])->name('user.event');
 
