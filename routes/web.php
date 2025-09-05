@@ -24,7 +24,10 @@ Route::get('/user/explore', [ExploreController::class, 'index'])->middleware(['a
 
 Route::get('/user/notifications', [NotificationController::class, 'index'])->middleware(['auth', 'verified'])->name('user.notifications');
 
-Route::get('/user/profile', [ProfileController::class, 'index'])->middleware(['auth', 'verified'])->name('user.profile');
+Route::get('/user/profile', [ProfileController::class, 'index'])->name('user.profile');
+// API endpoints for infinite scroll
+Route::get('/user/profile/posts', [ProfileController::class, 'posts'])->name('user.profile.posts');
+Route::get('/user/profile/comments', [ProfileController::class, 'comments'])->name('user.profile.comments');
 
 Route::get('/user/create-post', [CreatePostController::class, 'index'])->middleware(['auth', 'verified'])->name('user.create-post');
 

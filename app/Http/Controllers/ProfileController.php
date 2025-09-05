@@ -10,6 +10,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Models\CommentModel;
 
 class ProfileController extends Controller
 {
@@ -18,12 +19,34 @@ class ProfileController extends Controller
      */
     public function index()
     {
-        return Inertia::render(
-            'user/Profile',
-            [
-                'data' => User::with(['posts', 'comments'])->findOrFail(Auth::id())
-            ]
-        );
+        $user = User::withCount(['posts', 'comments'])->findOrFail(Auth::id());
+
+
+        $posts = Post::where('user_id', Auth::id())->latest()->paginate(10);
+        $comments = CommentModel::where('user_id', Auth::id())->latest()->paginate(10);
+
+        return Inertia::render('user/Profile', [
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'created_at' => $user->created_at,
+                'posts' => $posts->toArray(),
+                'comments' => $comments->toArray(),
+            ],
+            'posts_count' => $user->posts_count,
+        ]);
+    }
+
+    public function posts(Request $request)
+    {
+        $posts = Post::where('user_id', Auth::id())->latest()->paginate(10);
+        return response()->json($posts);
+    }
+
+    public function comments(Request $request)
+    {
+        $comments = CommentModel::where('user_id', Auth::id())->latest()->paginate(10);
+        return response()->json($comments);
     }
 
     /**
