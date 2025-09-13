@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useRemember } from '@inertiajs/vue3';
@@ -8,6 +9,8 @@ import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { Clock, Lock, MessageCircle, Share2 } from 'lucide-vue-next';
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { toast } from 'vue-sonner';
+import 'vue-sonner/style.css';
 
 dayjs.locale('id');
 dayjs.extend(relativeTime);
@@ -188,12 +191,32 @@ onBeforeUnmount(() => {
     if (postObserver) postObserver.disconnect();
     if (commentObserver) commentObserver.disconnect();
 });
+function copyPostUrl(hashId: string) {
+    const postUrl = `${window.location.origin}/user/post/${hashId}`;
+    navigator.clipboard.writeText(postUrl).then(
+        () => {
+            toast.success('Link postingan disalin ke clipboard!', {
+                duration: 3000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
+                    },
+                },
+            });
+        },
+        (err) => {
+            console.error('Could not copy text: ', err);
+        },
+    );
+}
 </script>
 
 <template>
     <Head :title="`${user.name} - Profile`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
+        <Toaster />
         <!-- Profile Header -->
         <div class="relative mb-8 overflow-hidden rounded-b-2xl bg-gradient-to-br from-slate-800 via-indigo-900 to-slate-900 p-8 shadow-2xl">
             <div class="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent"></div>
@@ -314,11 +337,7 @@ onBeforeUnmount(() => {
                                     ><MessageCircle /> Komentar</Button
                                 >
 
-                                <Button
-                                    @click="$inertia.visit(route('user.post.details', post.hash_id))"
-                                    class="flex cursor-pointer hover:text-blue-600"
-                                    ><Share2 /> Bagikan</Button
-                                >
+                                <Button @click="copyPostUrl(post.hash_id)" class="flex cursor-pointer hover:text-blue-600"><Share2 /> Bagikan</Button>
                             </div>
                         </div>
                     </div>

@@ -184,6 +184,26 @@ function reportPost(postId: number) {
         },
     );
 }
+
+function copyPostUrl(hashId: string) {
+    const postUrl = `${window.location.origin}/user/post/${hashId}`;
+    navigator.clipboard.writeText(postUrl).then(
+        () => {
+            toast.success('Link postingan disalin ke clipboard!', {
+                duration: 3000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
+                    },
+                },
+            });
+        },
+        (err) => {
+            console.error('Could not copy text: ', err);
+        },
+    );
+}
 </script>
 
 <template>
@@ -313,7 +333,7 @@ function reportPost(postId: number) {
                         <MessageCircle />
                         Komentar
                     </Label>
-                    <Label class="cursor-pointer">
+                    <Label class="cursor-pointer" @click="copyPostUrl(posts.hash_id)">
                         <Share2 />
                         Bagikan
                     </Label>

@@ -239,6 +239,26 @@ onBeforeUnmount(() => {
     if (postObserver) postObserver.disconnect();
     if (commentObserver) commentObserver.disconnect();
 });
+
+function copyPostUrl(hashId: string) {
+    const postUrl = `${window.location.origin}/user/post/${hashId}`;
+    navigator.clipboard.writeText(postUrl).then(
+        () => {
+            toast.success('Link postingan disalin ke clipboard!', {
+                duration: 3000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
+                    },
+                },
+            });
+        },
+        (err) => {
+            console.error('Could not copy text: ', err);
+        },
+    );
+}
 </script>
 
 <template>
@@ -427,7 +447,10 @@ onBeforeUnmount(() => {
                                 <MessageCircle class="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
                                 <span class="text-sm font-medium">Komentar</span>
                             </button>
-                            <button class="group flex items-center gap-2 text-gray-500 transition-colors duration-300 hover:text-green-500">
+                            <button
+                                class="group flex items-center gap-2 text-gray-500 transition-colors duration-300 hover:text-green-500"
+                                @click="copyPostUrl(post.hash_id)"
+                            >
                                 <Share2 class="h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
                                 <span class="text-sm font-medium">Bagikan</span>
                             </button>
