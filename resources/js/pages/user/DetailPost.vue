@@ -51,6 +51,7 @@ const props = defineProps<{
             user: {
                 id: number;
                 name: string;
+                hash_id: string;
             };
         }>;
     };
@@ -238,7 +239,17 @@ function getInitials(name: string) {
                                     <div class="min-w-0 flex-1">
                                         <div class="flex flex-wrap items-start justify-between gap-4">
                                             <div class="min-w-0 flex-1">
-                                                <h4 class="mb-1 truncate font-semibold text-gray-900 dark:text-white">
+                                                <h4
+                                                    class="mb-1 cursor-pointer truncate font-semibold text-gray-900 hover:underline dark:text-white"
+                                                    @click="
+                                                        $inertia.visit(
+                                                            route('user.details', {
+                                                                hashId: comment.user.hash_id,
+                                                                name: comment.user.name.split(' ').join('-').toLowerCase(),
+                                                            }),
+                                                        )
+                                                    "
+                                                >
                                                     {{ comment.user.name }}
                                                 </h4>
                                                 <p class="mb-2 leading-relaxed break-words text-gray-700 dark:text-gray-300">
