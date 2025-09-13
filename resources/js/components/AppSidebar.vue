@@ -23,14 +23,14 @@ const mainNavItems: NavItem[] = [
         icon: Bell,
     },
     {
-        title: 'Profile',
-        href: '/user/profile',
-        icon: User,
-    },
-    {
         title: 'Event',
         href: '/user/event',
         icon: CalendarClock,
+    },
+    {
+        title: 'Profile',
+        href: '/user/profile',
+        icon: User,
     },
 ];
 

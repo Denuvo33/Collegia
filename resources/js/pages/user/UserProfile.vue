@@ -294,7 +294,7 @@ onBeforeUnmount(() => {
                     class="group transform p-4 transition-all hover:-translate-y-1 hover:scale-[1.02]"
                 >
                     <div
-                        class="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow hover:shadow-lg hover:shadow-gray-700 dark:border-gray-700 dark:bg-gray-800"
+                        class="dakr:hover:shadow-gray-700 flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
                     >
                         <div>
                             <p class="font-bold">{{ user.name }}</p>
@@ -306,7 +306,7 @@ onBeforeUnmount(() => {
 
                         <p>{{ post.content }}</p>
                         <img v-if="post.image" :src="`/storage/${post.image}`" class="h-80 w-80 rounded object-contain" alt="post image" />
-                        <div class="-mx-6 mt-4 -mb-6 flex items-center justify-start border-t border-gray-700 px-6 py-3">
+                        <div class="-mx-6 mt-4 -mb-6 flex items-center justify-start border-t px-6 py-3 dark:border-gray-700">
                             <div class="flex gap-4">
                                 <Button
                                     @click="$inertia.visit(route('user.post.details', post.hash_id))"
@@ -341,11 +341,15 @@ onBeforeUnmount(() => {
                     @click="$inertia.visit(route('user.post.details', comment.hash_id))"
                     class="p-4"
                 >
-                    <div class="flex flex-col rounded bg-white p-4 shadow dark:bg-black">
+                    <div
+                        class="flex transform flex-col rounded-2xl bg-white p-4 shadow transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg dark:bg-gray-800 dark:hover:shadow-gray-700"
+                    >
                         <p class="font-bold">{{ user.name }}</p>
-                        <hr />
+                        <div class="flex items-center gap-1 text-sm text-gray-500">
+                            <Clock class="h-3 w-3" />
+                            <p class="text-gray-400">dibuat {{ formatTime(comment.created_at) }}</p>
+                        </div>
                         <p>{{ comment.content }}</p>
-                        <p class="text-gray-400">dibuat {{ formatTime(comment.created_at) }}</p>
                     </div>
                 </div>
                 <div class="flex flex-row justify-center p-4" v-else-if="user.private_comment == true">
