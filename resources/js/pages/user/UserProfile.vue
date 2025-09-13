@@ -6,7 +6,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Lock, MessageCircle } from 'lucide-vue-next';
+import { Clock, Lock, MessageCircle, Share2 } from 'lucide-vue-next';
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 dayjs.locale('id');
@@ -194,56 +194,133 @@ onBeforeUnmount(() => {
     <Head :title="`${user.name} - Profile`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex flex-col p-4">
-            <h1 class="text-xl font-bold">{{ user.name }}</h1>
-            <div class="flex flex-wrap gap-5">
-                <div class="flex flex-col rounded border p-2 shadow">
-                    <p>{{ user.posts_count }}</p>
-                    <p>Postingaan</p>
+        <!-- Profile Header -->
+        <div class="relative mb-8 overflow-hidden rounded-b-2xl bg-gradient-to-br from-slate-800 via-indigo-900 to-slate-900 p-8 shadow-2xl">
+            <div class="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent"></div>
+            <div class="absolute top-4 right-4 h-20 w-20 rounded-full bg-white/5"></div>
+            <div class="absolute bottom-4 left-4 h-16 w-16 rounded-full bg-white/10"></div>
+
+            <div class="relative flex flex-col items-center gap-6 text-white">
+                <!-- Avatar -->
+                <div class="relative">
+                    <div
+                        class="flex h-24 w-24 items-center justify-center rounded-full border border-white/20 bg-gradient-to-br from-slate-700 to-slate-600 text-2xl font-bold shadow-lg"
+                    >
+                        {{ user.name.charAt(0).toUpperCase() }}
+                    </div>
+                    <div
+                        class="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-900 bg-emerald-400 shadow-sm"
+                    >
+                        <div class="h-2 w-2 rounded-full bg-emerald-600"></div>
+                    </div>
                 </div>
-                <div class="flex flex-col rounded border p-2">
-                    <p>0</p>
-                    <p>Inkrip</p>
+
+                <!-- Name + Join -->
+                <div class="text-center">
+                    <h1 class="mb-2 text-3xl font-bold">{{ user.name }}</h1>
+                    <div class="flex items-center justify-center gap-2 text-slate-300">
+                        <Clock class="h-4 w-4" />
+                        <p class="text-sm font-medium">Bergabung {{ formatTime(user.created_at) }}</p>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="flex flex-wrap justify-center gap-4">
+                    <div
+                        class="min-w-[100px] rounded-xl border border-white/10 bg-white/5 p-4 text-center shadow-lg backdrop-blur-sm transition hover:bg-white/10"
+                    >
+                        <p class="mb-1 text-2xl font-bold text-white">{{ user.posts_count }}</p>
+                        <p class="text-sm font-medium text-slate-300">Postingan</p>
+                    </div>
+                    <div
+                        class="min-w-[100px] rounded-xl border border-white/10 bg-white/5 p-4 text-center shadow-lg backdrop-blur-sm transition hover:bg-white/10"
+                    >
+                        <p class="mb-1 text-2xl font-bold text-white">{{ user.comments_count }}</p>
+                        <p class="text-sm font-medium text-slate-300">Komentar</p>
+                    </div>
                 </div>
             </div>
-            <p>Bergabung {{ formatTime(user.created_at) }}</p>
         </div>
 
-        <div class="flex justify-center gap-8">
-            <button class="text-lg" @click="activeTabs = 'posts'" :class="activeTabs == 'posts' ? 'border-b-2 border-black dark:border-white' : ''">
-                Post
-            </button>
-            <button
-                @click="activeTabs = 'comments'"
-                class="text-lg"
-                :class="activeTabs == 'comments' ? 'border-b-2 border-black dark:border-white' : ''"
-            >
-                Comment
-            </button>
-            <button @click="activeTabs = 'inkrip'" class="text-lg" :class="activeTabs == 'inkrip' ? 'border-b-2 border-black dark:border-white' : ''">
-                Inkrip
-            </button>
+        <!-- Enhanced Tab Navigation -->
+        <div class="sticky top-0 z-10 mb-8 border-b border-gray-200 bg-white/80 shadow-sm backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/80">
+            <div class="flex justify-center">
+                <div class="m-4 flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
+                    <button
+                        class="relative overflow-hidden rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-300"
+                        @click="activeTabs = 'posts'"
+                        :class="
+                            activeTabs == 'posts'
+                                ? 'scale-105 transform bg-white text-blue-600 shadow-lg dark:bg-gray-700 dark:text-blue-400'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                        "
+                    >
+                        <span class="relative z-10">Postingan</span>
+                    </button>
+                    <button
+                        class="relative overflow-hidden rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-300"
+                        :class="
+                            activeTabs == 'comments'
+                                ? 'scale-105 transform bg-white text-blue-600 shadow-lg dark:bg-gray-700 dark:text-blue-400'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                        "
+                        @click="activeTabs = 'comments'"
+                    >
+                        <span class="relative z-10">Komentar</span>
+                    </button>
+
+                    <button
+                        class="relative overflow-hidden rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-300"
+                        :class="
+                            activeTabs == 'inkrip'
+                                ? 'scale-105 transform bg-white text-blue-600 shadow-lg dark:bg-gray-700 dark:text-blue-400'
+                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                        "
+                        @click="activeTabs = 'inkrip'"
+                    >
+                        <span class="relative z-10">Inkrip</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <hr />
-
-        <div class="p-1">
+        <div class="p-8">
             <!-- POSTS -->
             <div v-if="activeTabs == 'posts'">
                 <div
                     v-if="user.private_post == false"
-                    v-for="(post, index) in posts"
+                    v-for="post in posts"
                     :key="post.id"
-                    @click="$inertia.visit(route('user.post.details', post.hash_id))"
-                    class="p-4"
+                    class="group transform p-4 transition-all hover:-translate-y-1 hover:scale-[1.02]"
                 >
-                    <div class="flex flex-col gap-4 rounded bg-white p-4 shadow dark:bg-black">
-                        <p class="font-bold">{{ user.name }}</p>
-                        <hr />
+                    <div
+                        class="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow hover:shadow-lg hover:shadow-gray-700 dark:border-gray-700 dark:bg-gray-800"
+                    >
+                        <div>
+                            <p class="font-bold">{{ user.name }}</p>
+                            <div class="flex flex-row items-center gap-1 text-sm text-gray-500">
+                                <Clock class="h-3 w-3"></Clock>
+                                <p class="text-gray-400">dibuat {{ formatTime(post.created_at) }}</p>
+                            </div>
+                        </div>
+
                         <p>{{ post.content }}</p>
-                        <img v-if="post.image" :src="`/storage/${post.image}`" class="h-80 w-80 object-contain" alt="post image" />
-                        <p class="text-gray-400">dibuat {{ formatTime(post.created_at) }}</p>
-                        <MessageCircle class="cursor-pointer" />
+                        <img v-if="post.image" :src="`/storage/${post.image}`" class="h-80 w-80 rounded object-contain" alt="post image" />
+                        <div class="-mx-6 mt-4 -mb-6 flex items-center justify-start border-t border-gray-700 px-6 py-3">
+                            <div class="flex gap-4">
+                                <Button
+                                    @click="$inertia.visit(route('user.post.details', post.hash_id))"
+                                    class="flex cursor-pointer hover:text-blue-600"
+                                    ><MessageCircle /> Komentar</Button
+                                >
+
+                                <Button
+                                    @click="$inertia.visit(route('user.post.details', post.hash_id))"
+                                    class="flex cursor-pointer hover:text-blue-600"
+                                    ><Share2 /> Bagikan</Button
+                                >
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="flex flex-row justify-center p-4" v-else-if="user.private_post == true">

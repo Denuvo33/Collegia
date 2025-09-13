@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Models\CommentModel;
+use App\Models\EventModel;
 
 class ProfileController extends Controller
 {
@@ -19,9 +20,8 @@ class ProfileController extends Controller
      */
     public function index()
     {
-        $user = User::withCount(['posts', 'comments'])->findOrFail(Auth::id());
-
-
+        $user = User::withCount(['posts', 'comments', 'events'])->findOrFail(Auth::id());
+        $events = EventModel::where('user_id', Auth::id())->latest()->paginate(10);
         $posts = Post::where('user_id', Auth::id())->latest()->paginate(10);
         $comments = CommentModel::where('user_id', Auth::id())->latest()->paginate(10);
 
@@ -29,9 +29,12 @@ class ProfileController extends Controller
             'data' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'created_at' => $user->created_at,
                 'private_post' => $user->private_post,
                 'posts' => $posts->toArray(),
                 'comments' => $comments->toArray(),
+                'events' => $events->toArray(),
+
             ],
             'posts_count' => $user->posts_count,
         ]);

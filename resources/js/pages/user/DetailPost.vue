@@ -9,7 +9,7 @@ import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { EllipsisVertical } from 'lucide-vue-next';
+import { AlertTriangle, CheckCircle, Clock, EllipsisVertical, Image as ImageIcon, MessageSquare, Send, X } from 'lucide-vue-next';
 import { ref } from 'vue';
 
 dayjs.locale('id');
@@ -36,6 +36,7 @@ const props = defineProps<{
         hash_id: string;
         image?: string;
         created_at: string;
+
         user: {
             name: string;
             email: string;
@@ -54,6 +55,8 @@ const props = defineProps<{
         }>;
     };
 }>();
+
+console.log('content is ', props.data.content);
 
 const form = useForm({
     post_id: props.data.id,
@@ -94,75 +97,234 @@ function deleteComment(id: number) {
 const closeAlert = () => {
     successComment.value = null;
 };
+
+function getInitials(name: string) {
+    return name
+        .split(' ')
+        .map((word) => word.charAt(0))
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+}
 </script>
 
 <template>
     <Head title="Detail Post" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div v-if="successComment" class="p-4">
-            <Alert>
-                <Rocket class="h-4 w-4" />
-                <div class="flex flex-row justify-between">
-                    <AlertTitle :class="successComment && successComment.includes('Gagal') ? 'text-red-600' : 'text-green-600'">{{
-                        successComment && successComment.includes('Gagal') ? 'Error' : 'Berhasil'
-                    }}</AlertTitle>
-                    <h1 @click="closeAlert" class="cursor-pointer text-lg font-bold text-gray-400">X</h1>
-                </div>
-                <AlertDescription>
-                    {{ successComment }}
-                </AlertDescription>
-            </Alert>
-        </div>
-
-        <div class="">
-            <div class="space-y-4 rounded bg-white p-4 shadow dark:bg-black">
-                <h1
-                    class="cursor-pointer text-2xl font-bold"
-                    @click="
-                        $inertia.visit(route('user.details', { hashId: data.user.hash_id, name: data.user.name.split(' ').join('-').toLowerCase() }))
-                    "
-                >
-                    {{ data.user.name }}
-                </h1>
-                <hr />
-                <p>{{ data.content }}</p>
-                <img v-if="data.image" :src="`/storage/${data.image}`" alt="Post Image" class="h-80 w-80 object-contain" />
-                <p class="text-gray-400">Dibuat {{ formatTime(data.created_at) }}</p>
-            </div>
-            <div class="p-4">
-                <h2 class="mt-4 text-xl font-bold">Komentar</h2>
-                <div v-if="data.comments.length > 0" class="max-h-96 space-y-4 overflow-y-auto p-4">
-                    <div class="space-y-1 p-2" v-for="comment in data.comments" :key="comment.id">
-                        <div class="flex flex-row">
-                            <div clas="flex flex-col">
-                                <p class="font-bold">{{ comment.user.name }}</p>
-                                <p>{{ comment.content }}</p>
-                                <p class="text-gray-400">{{ formatTime(comment.created_at) }}</p>
+        <div class="min-h-screen">
+            <div class="mx-auto max-w-4xl px-4 py-6">
+                <!-- Success/Error Alert -->
+                <div v-if="successComment" class="mb-6">
+                    <div class="overflow-hidden rounded-xl border bg-white shadow-sm">
+                        <Alert
+                            :class="successComment && successComment.includes('Gagal') ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'"
+                        >
+                            <CheckCircle v-if="!successComment.includes('Gagal')" class="h-5 w-5 text-green-600" />
+                            <AlertTriangle v-else class="h-5 w-5 text-red-600" />
+                            <div class="flex flex-row items-start justify-between">
+                                <div>
+                                    <AlertTitle
+                                        :class="
+                                            successComment && successComment.includes('Gagal')
+                                                ? 'font-semibold text-red-700'
+                                                : 'font-semibold text-green-700'
+                                        "
+                                    >
+                                        {{ successComment && successComment.includes('Gagal') ? 'Error' : 'Berhasil' }}
+                                    </AlertTitle>
+                                    <AlertDescription :class="successComment && successComment.includes('Gagal') ? 'text-red-600' : 'text-green-600'">
+                                        {{ successComment }}
+                                    </AlertDescription>
+                                </div>
+                                <button @click="closeAlert" class="rounded-lg p-1 transition-colors hover:bg-gray-200">
+                                    <X class="h-4 w-4 text-gray-500" />
+                                </button>
                             </div>
-                            <div class="">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger><EllipsisVertical class="cursor-pointer"></EllipsisVertical> </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuItem>Laporkan</DropdownMenuItem>
-                                        <DropdownMenuItem @click="deleteComment(comment.id)" v-if="comment.user.id === usePage().props.auth.user.id"
-                                            >Hapus</DropdownMenuItem
-                                        >
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                        </Alert>
+                    </div>
+                </div>
+
+                <!-- Main Post Card -->
+                <div
+                    class="mb-8 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                >
+                    <!-- Post Header -->
+                    <div class="border-b border-gray-100 p-6">
+                        <div class="mb-4 flex items-center gap-4">
+                            <div class="flex-shrink-0">
+                                <div
+                                    class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-sm font-semibold text-white"
+                                >
+                                    {{ getInitials(data.user.name) }}
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <h1
+                                    class="cursor-pointer text-xl font-bold text-gray-900 transition-colors hover:text-indigo-600 dark:text-white"
+                                    @click="
+                                        $inertia.visit(
+                                            route('user.details', {
+                                                hashId: data.user.hash_id,
+                                                name: data.user.name.split(' ').join('-').toLowerCase(),
+                                            }),
+                                        )
+                                    "
+                                >
+                                    {{ data.user.name }}
+                                </h1>
+                                <div class="mt-1 flex items-center gap-2 text-sm text-gray-500">
+                                    <Clock class="h-4 w-4" />
+                                    <span>Dibuat {{ formatTime(data.created_at) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Post Content -->
+                    <div class="p-6">
+                        <div class="prose mb-6 max-w-none">
+                            <p class="text-lg leading-relaxed text-gray-800 dark:text-white">{{ data.content }}</p>
+                        </div>
+
+                        <!-- Post Image -->
+                        <div v-if="data.image" class="mb-4">
+                            <div
+                                class="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-transparent"
+                            >
+                                <img :src="`/storage/${data.image}`" alt="Post Image" class="h-auto max-h-96 w-full object-contain" />
+                                <div class="absolute top-3 right-3 rounded-lg bg-black/20 p-2 backdrop-blur-sm">
+                                    <ImageIcon class="h-4 w-4 text-white" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="flex flex-col gap-2">
-                    <form @submit.prevent="submit" class="flex flex-col gap-2">
-                        <Input class="w-8/12" v-model="form.content" placeholder="Kirim Komentar" />
-                        <Button type="submit" class="w-fit">Kirim</Button>
-                    </form>
-                    <div v-if="form.errors.content" class="text-red-500">
-                        {{ form.errors.content }}
+
+                <!-- Comments Section -->
+                <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                    <!-- Comments Header -->
+                    <div class="border-b border-gray-100 p-6">
+                        <div class="flex items-center gap-3">
+                            <div class="rounded-lg bg-blue-100 p-2">
+                                <MessageSquare class="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900 dark:text-white">Komentar</h2>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">{{ data.comments.length }} komentar</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comments List -->
+                    <div class="divide-y divide-gray-100">
+                        <div v-if="data.comments.length > 0" class="max-h-96 overflow-y-auto">
+                            <div
+                                v-for="comment in data.comments"
+                                :key="comment.id"
+                                class="bark:bg-gray-700 p-6 transition-colors hover:bg-gray-50 hover:dark:bg-gray-700"
+                            >
+                                <div class="flex gap-4">
+                                    <!-- Avatar -->
+                                    <div class="flex-shrink-0">
+                                        <div
+                                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 text-sm font-medium text-white"
+                                        >
+                                            {{ getInitials(comment.user.name) }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Comment Content -->
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex flex-wrap items-start justify-between gap-4">
+                                            <div class="min-w-0 flex-1">
+                                                <h4 class="mb-1 truncate font-semibold text-gray-900 dark:text-white">
+                                                    {{ comment.user.name }}
+                                                </h4>
+                                                <p class="mb-2 leading-relaxed break-words text-gray-700 dark:text-gray-300">
+                                                    {{ comment.content }}
+                                                </p>
+                                                <div class="flex items-center gap-2 text-xs text-gray-500">
+                                                    <Clock class="h-3 w-3" />
+                                                    <span>{{ formatTime(comment.created_at) }}</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Comment Actions -->
+                                            <div class="flex-shrink-0">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger>
+                                                        <div class="rounded-lg p-2 transition-colors hover:bg-gray-200 dark:hover:bg-gray-600">
+                                                            <EllipsisVertical class="h-4 w-4 text-gray-500" />
+                                                        </div>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" class="w-40">
+                                                        <DropdownMenuItem class="text-sm"> Laporkan </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            v-if="comment.user.id === usePage().props.auth.user.id"
+                                                            @click="deleteComment(comment.id)"
+                                                            class="text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                        >
+                                                            Hapus
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Empty Comments State -->
+                        <div v-else class="p-12 text-center">
+                            <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                                <MessageSquare class="h-8 w-8 text-gray-400" />
+                            </div>
+                            <h3 class="mb-2 text-lg font-semibold text-gray-700">Belum ada komentar</h3>
+                            <p class="text-gray-500">Jadilah yang pertama berkomentar pada postingan ini</p>
+                        </div>
+                    </div>
+
+                    <!-- Comment Form -->
+                    <div class="border-t border-gray-100 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-900">
+                        <form @submit.prevent="submit" class="space-y-4">
+                            <div class="flex gap-4">
+                                <div class="flex-shrink-0">
+                                    <div
+                                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 text-sm font-medium text-white"
+                                    >
+                                        {{ getInitials(usePage().props.auth.user.name) }}
+                                    </div>
+                                </div>
+                                <div class="flex-1 space-y-3">
+                                    <div class="relative">
+                                        <Input
+                                            v-model="form.content"
+                                            placeholder="Tulis komentar Anda..."
+                                            class="focus:ring-opacity-50 w-full rounded-xl border-gray-200 py-3 pr-12 focus:border-indigo-300 focus:ring focus:ring-indigo-200"
+                                            :disabled="form.processing"
+                                        />
+                                        <Button
+                                            type="submit"
+                                            :disabled="form.processing || !form.content.trim()"
+                                            class="absolute top-1 right-2 h-8 w-8 rounded-lg bg-indigo-600 p-0 hover:bg-indigo-700 disabled:opacity-50"
+                                        >
+                                            <Send class="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <div v-if="form.errors.content" class="flex items-center gap-2 text-sm text-red-600">
+                                        <AlertTriangle class="h-4 w-4" />
+                                        {{ form.errors.content }}
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
+
+                <!-- Bottom Spacing -->
+                <div class="h-8"></div>
             </div>
         </div>
     </AppLayout>

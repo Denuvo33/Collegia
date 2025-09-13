@@ -2,10 +2,8 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
+import { Bell, ChevronRight, Clock, MessageCircle } from 'lucide-vue-next';
 import { computed } from 'vue';
-
-
-
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -16,56 +14,141 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const props = defineProps<{
     notification: Array<{
-        id:number,
-        message:string,
-        post_id:number,
-        created_at: string,
-        hash_id: string
-    }>
-}>()
+        id: number;
+        message: string;
+        post_id: number;
+        created_at: string;
+        hash_id: string;
+    }>;
+}>();
 
 function splitName(text: string) {
-  const parts = text.split(" commented");
-
-  const name = parts[0].trim();
-
-  const rest = "commented" + (parts[1] ?? "");
-
-  return { name, rest };
+    const parts = text.split(' commented');
+    const name = parts[0].trim();
+    const rest = 'commented' + (parts[1] ?? '');
+    return { name, rest };
 }
 
+function formatTimeAgo(dateString: string) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-const sortNotif = computed(()=>{
+    if (diffInSeconds < 60) return 'Baru saja';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} menit yang lalu`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} jam yang lalu`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} hari yang lalu`;
+
+    return date.toLocaleDateString('id-ID', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+}
+
+const sortNotif = computed(() => {
     return props.notification.sort((a, b) => {
-        const dateA = new Date (a.created_at)
-        const dateB = new Date (b.created_at)
+        const dateA = new Date(a.created_at);
+        const dateB = new Date(b.created_at);
         return dateB.getTime() - dateA.getTime();
-    })
-})
-
+    });
+});
 </script>
 
 <template>
     <Head title="Notification" />
-
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="p-4 w-full">
-            <div>
-                <p class="font-bold text-xl">Notifikasi</p>
-                <hr>
-            </div>
-            <div class="flex justify-center items-center h-64" v-if="notification.length === 0">
-                <p>Kamu tidak punya Notifikasi apapun</p>
-
-            </div>
-
-            <div v-for="notif in sortNotif" class="p-2" :key="notif.id">
-                <div class="cursor-pointer" @click="$inertia.visit(route('user.post.details',notif.hash_id))">
-                    <h1 class="font-bold">{{ splitName(notif.message).name }}</h1>
-                    <p>{{ splitName(notif.message).rest }}</p>
+        <div class="min-h-screen">
+            <div class="mx-auto max-w-4xl px-4 py-8">
+                <!-- Header Section -->
+                <div class="mb-8">
+                    <div class="mb-4 flex items-center gap-3">
+                        <div class="rounded-xl bg-indigo-100 p-3">
+                            <Bell class="h-6 w-6 text-indigo-600" />
+                        </div>
+                        <div>
+                            <h1 class="text-3xl font-bold">Notifikasi</h1>
+                            <p class="mt-1 text-gray-600">Kelola semua pemberitahuan Anda</p>
+                        </div>
+                    </div>
+                    <div class="h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200"></div>
                 </div>
+
+                <!-- Empty State -->
+                <div v-if="notification.length === 0" class="flex flex-col items-center justify-center px-4 py-16">
+                    <div class="mb-6 rounded-full bg-white p-6 shadow-lg">
+                        <Bell class="h-12 w-12 text-gray-400" />
+                    </div>
+                    <h3 class="mb-2 text-xl font-semibold text-gray-700">Belum ada notifikasi</h3>
+                    <p class="max-w-md text-center text-gray-500">Anda akan menerima pemberitahuan ketika ada aktivitas baru pada postingan Anda</p>
+                </div>
+
+                <!-- Notifications List -->
+                <div v-else class="space-y-3">
+                    <div v-for="(notif, index) in sortNotif" :key="notif.id" class="group relative">
+                        <!-- Notification Card -->
+                        <div
+                            class="cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+                            @click="$inertia.visit(route('user.post.details', notif.hash_id))"
+                        >
+                            <!-- Card Content -->
+                            <div class="p-6">
+                                <div class="flex items-start gap-4">
+                                    <!-- Icon -->
+                                    <div class="mt-1 flex-shrink-0">
+                                        <div class="rounded-lg border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-2.5">
+                                            <MessageCircle class="h-5 w-5 text-indigo-600" />
+                                        </div>
+                                    </div>
+
+                                    <!-- Content -->
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-start justify-between gap-4">
+                                            <div class="flex-1">
+                                                <h3
+                                                    class="mb-1 text-lg font-semibold text-gray-900 transition-colors group-hover:text-indigo-700 dark:text-white"
+                                                >
+                                                    {{ splitName(notif.message).name }}
+                                                </h3>
+                                                <p class="mb-3 leading-relaxed text-gray-600">
+                                                    {{ splitName(notif.message).rest }}
+                                                </p>
+
+                                                <!-- Timestamp -->
+                                                <div class="flex items-center gap-2 text-sm text-gray-500">
+                                                    <Clock class="h-4 w-4" />
+                                                    <span>{{ formatTimeAgo(notif.created_at) }}</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Arrow Icon -->
+                                            <div class="mt-2 flex-shrink-0">
+                                                <ChevronRight
+                                                    class="h-5 w-5 text-gray-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-indigo-500"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Subtle border accent -->
+                            <div
+                                class="h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                            ></div>
+                        </div>
+
+                        <!-- Connecting line for multiple notifications -->
+                        <div
+                            v-if="index < sortNotif.length - 1"
+                            class="absolute top-20 left-8 h-4 w-px bg-gradient-to-b from-gray-200 to-transparent"
+                        ></div>
+                    </div>
+                </div>
+
+                <!-- Footer spacing -->
+                <div class="h-8"></div>
             </div>
         </div>
-        
     </AppLayout>
 </template>

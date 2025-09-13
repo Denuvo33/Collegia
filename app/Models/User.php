@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Post;
+use App\Models\EventModel;
 use Vinkla\Hashids\Facades\Hashids;
 
 class User extends Authenticatable
@@ -66,6 +67,11 @@ class User extends Authenticatable
     public function comments()
     {
         return $this->hasMany(CommentModel::class, 'user_id');
+    }
+
+    public function events()
+    {
+        return $this->hasMany(EventModel::class, 'user_id');
     }
 
     public function getHashIdAttribute()

@@ -19,6 +19,7 @@ class EventModel extends Model
         'price',
         'location',
         'status',
+        'promoted_till'
     ];
 
     protected $appends = ['hash_id'];

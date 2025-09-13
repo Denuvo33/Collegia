@@ -21,7 +21,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { EllipsisVertical, Heart, MessageCircle } from 'lucide-vue-next';
+import { Clock, EllipsisVertical, Eye, MessageCircle, Share2 } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 
@@ -199,17 +199,39 @@ function reportPost(postId: number) {
 
         <!-- Nuxt, vue-sonner v2 no need to ClientOnly -->
         <Toaster />
-        <div class="space-y-4 p-4">
+        <div class="space-y-4 p-8">
             <div>
                 <Button @click="$inertia.visit(route('user.create-post'))" class="text-lg">Tulis Cerita</Button>
             </div>
             <div class="fixed right-8 bottom-8 z-50">
                 <Button class="text-lg font-bold" @click="$inertia.visit(route('user.create-post'))">+</Button>
             </div>
-            <div class="space-y-4 rounded bg-white p-4 shadow dark:bg-black" v-for="(posts, index) in sortedPosts" :key="posts.id">
+            <div
+                class="group transform space-y-4 rounded-2xl border border-gray-200 bg-white p-4 shadow transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:shadow-gray-700"
+                v-for="posts in sortedPosts"
+                :key="posts.id"
+            >
                 <div class="flex flex-wrap gap-2">
-                    <h1 class="cursor-pointer text-2xl font-bold" @click="$inertia.visit(`/user/post/${posts.hash_id}`)">{{ posts.user.name }}</h1>
-                    <p v-if="posts.user.role === 'moderator'" class="rounded bg-blue-600 px-1 py-1 text-white dark:text-black">Moderator</p>
+                    <div class="flex flex-row items-center gap-1">
+                        <div class="relative">
+                            <div
+                                class="border-white/ border/20 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-2xl font-bold text-white shadow-lg"
+                            >
+                                {{ posts.user.name.charAt(0).toUpperCase() }}
+                            </div>
+                        </div>
+                        <div class="flex flex-col">
+                            <h1 class="cursor-pointer text-2xl font-bold" @click="$inertia.visit(`/user/post/${posts.hash_id}`)">
+                                {{ posts.user.name }}
+                            </h1>
+                            <div class="flex items-center gap-1 text-sm text-gray-500">
+                                <Clock class="h-3 w-3" />
+                                <span>{{ formatDate(posts.created_at) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="posts.user.role === 'moderator'" class="flex h-fit items-center rounded bg-blue-600 p-1 text-white">Moderator</div>
                     <div class="ml-auto">
                         <DropdownMenu>
                             <DropdownMenuTrigger><EllipsisVertical></EllipsisVertical></DropdownMenuTrigger>
@@ -277,22 +299,36 @@ function reportPost(postId: number) {
                         </DropdownMenu>
                     </div>
                 </div>
-                <hr />
+
                 <p>{{ posts.content }}</p>
-                <img v-if="posts.image" :src="`/storage/${posts.image}`" alt="Post Image" class="h-80 w-80 object-contain" />
-                <div class="flex flex-row gap-6">
+
+                <img v-if="posts.image" :src="`/storage/${posts.image}`" alt="Post Image" class="h-80 w-60 rounded object-cover" />
+
+                <div class="flex flex-row gap-6 border-t border-gray-100 px-6 pt-4 pb-6 dark:border-gray-700">
                     <input type="hidden" name="like" id="like" />
-                    <Label class="cursor-pointer">
+                    <!-- <Label class="cursor-pointer">
                         <Heart for="like" />
-                    </Label>
+                    </Label> -->
                     <Label class="cursor-pointer" @click="$inertia.visit(`/user/post/${posts.hash_id}`)">
                         <MessageCircle />
+                        Komentar
+                    </Label>
+                    <Label class="cursor-pointer">
+                        <Share2 />
+                        Bagikan
                     </Label>
                 </div>
-                <p class="text-gray-400">Dibuat {{ formatDate(posts.created_at) }}</p>
             </div>
             <div ref="sentinel"></div>
             <div v-if="loading" class="py-4 text-center">Loading...</div>
+            <div v-else-if="currentPage >= lastPage && posts.length > 0" class="flex justify-center p-8 text-gray-500">
+                <div class="text-center">
+                    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
+                        <Eye class="h-6 w-6" />
+                    </div>
+                    <p>Tidak ada postingan lagi</p>
+                </div>
+            </div>
         </div>
     </AppLayout>
 </template>
