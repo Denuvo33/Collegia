@@ -1,8 +1,21 @@
 <script setup lang="ts">
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
@@ -10,12 +23,14 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { AlertTriangle, CheckCircle, Clock, EllipsisVertical, Image as ImageIcon, MessageSquare, Send, X } from 'lucide-vue-next';
+
 import { ref } from 'vue';
 
 dayjs.locale('id');
 dayjs.extend(relativeTime);
 
 const successComment = ref<String | null>();
+const reportValue = ref('spam');
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -38,6 +53,7 @@ const props = defineProps<{
         created_at: string;
 
         user: {
+            id: number;
             name: string;
             email: string;
             hash_id: string;
@@ -106,6 +122,57 @@ function getInitials(name: string) {
         .join('')
         .toUpperCase()
         .slice(0, 2);
+}
+
+function reportPost(postId: number) {
+    router.post(
+        route('user.post.report'),
+        {
+            post_id: postId,
+            reason: reportValue.value,
+        },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                successComment.value = 'Laporan telah dikirim ke moderator, terima kasih atas laporannya';
+            },
+
+            onError: (errors) => {
+                successComment.value = 'Gagal mengirim laporan, periksa kembali jaringan anda';
+                console.error(errors);
+            },
+        },
+    );
+}
+function deletePost(id: number) {
+    return router.delete(route('user.post.delete', id), {
+        onError: (errors) => {
+            console.error('error: ', errors);
+            successComment.value = 'Terjadi kesalahan saat menghapus.';
+        },
+        onSuccess: (success) => {},
+    });
+}
+function reportComment(commentId: number) {
+    try {
+        router.post(
+            route('user.comment.report'),
+            {
+                comment_id: commentId,
+                reason: reportValue.value,
+            },
+            {
+                onSuccess: () => {
+                    successComment.value = 'Laporan telah dikirim ke moderator, terima kasih atas laporannya';
+                },
+                onError: (Errors: any) => {
+                    ((successComment.value = 'Gagal mengirim laporan, periksa kembali jaringan anda'), console.error(Errors));
+                },
+            },
+        );
+    } catch (e) {
+        successComment.value = 'Gagal mengirim laporan, periksa kembali jaringan anda';
+    }
 }
 </script>
 
@@ -178,6 +245,72 @@ function getInitials(name: string) {
                                     <Clock class="h-4 w-4" />
                                     <span>Dibuat {{ formatTime(data.created_at) }}</span>
                                 </div>
+                            </div>
+                            <div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger><EllipsisVertical></EllipsisVertical></DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem
+                                            @click="
+                                                $inertia.visit(
+                                                    route('user.details', {
+                                                        hashId: data.user.hash_id,
+                                                        name: data.user.name.toLowerCase().split(' ').join('-'),
+                                                    }),
+                                                )
+                                            "
+                                            >Profile</DropdownMenuItem
+                                        >
+                                        <AlertDialog>
+                                            <AlertDialogTrigger as-child>
+                                                <DropdownMenuItem @select.prevent>Laporkan</DropdownMenuItem>
+                                            </AlertDialogTrigger>
+
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Pilih alasan laporan</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                        Laporan ini akan dikirim ke moderator untuk ditinjau lebih lanjut.
+                                                    </AlertDialogDescription>
+                                                    <RadioGroup v-model="reportValue" default-value="spam">
+                                                        <div class="flex items-center space-x-2">
+                                                            <RadioGroupItem id="r1" value="spam" />
+                                                            <Label for="r1">Spam</Label>
+                                                        </div>
+                                                        <div class="flex items-center space-x-2">
+                                                            <RadioGroupItem id="r2" value="inappropriate" />
+                                                            <Label for="r2">Tidak Pantas</Label>
+                                                        </div>
+                                                        <div class="flex items-center space-x-2">
+                                                            <RadioGroupItem id="r3" value="harassment" />
+                                                            <Label for="r3">Pelecehan</Label>
+                                                        </div>
+                                                        <div class="flex items-center space-x-2">
+                                                            <RadioGroupItem id="r3" value="abusive" />
+                                                            <Label for="r3">Kekerasan</Label>
+                                                        </div>
+                                                        <div class="flex items-center space-x-2">
+                                                            <RadioGroupItem id="r3" value="porn" />
+                                                            <Label for="r3">Pornografi</Label>
+                                                        </div>
+                                                        <div class="flex items-center space-x-2">
+                                                            <RadioGroupItem id="r3" value="pretend to be other people" />
+                                                            <Label for="r3">Berpura-pura menjadi orang lain</Label>
+                                                        </div>
+                                                    </RadioGroup>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                    <AlertDialogAction @click="reportPost(data.id)">Kirim</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+
+                                        <DropdownMenuItem v-if="data.user.id === usePage().props.auth.user.id" @click="deletePost(data.id)"
+                                            >Hapus</DropdownMenuItem
+                                        >
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                         </div>
                     </div>
@@ -270,7 +403,50 @@ function getInitials(name: string) {
                                                         </div>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end" class="w-40">
-                                                        <DropdownMenuItem class="text-sm"> Laporkan </DropdownMenuItem>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger as-child>
+                                                                <DropdownMenuItem @select.prevent>Laporkan</DropdownMenuItem>
+                                                            </AlertDialogTrigger>
+
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Pilih alasan laporan</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Laporan ini akan dikirim ke moderator untuk ditinjau lebih lanjut.
+                                                                    </AlertDialogDescription>
+                                                                    <RadioGroup v-model="reportValue" default-value="spam">
+                                                                        <div class="flex items-center space-x-2">
+                                                                            <RadioGroupItem id="r1" value="spam" />
+                                                                            <Label for="r1">Spam</Label>
+                                                                        </div>
+                                                                        <div class="flex items-center space-x-2">
+                                                                            <RadioGroupItem id="r2" value="inappropriate" />
+                                                                            <Label for="r2">Tidak Pantas</Label>
+                                                                        </div>
+                                                                        <div class="flex items-center space-x-2">
+                                                                            <RadioGroupItem id="r3" value="harassment" />
+                                                                            <Label for="r3">Pelecehan</Label>
+                                                                        </div>
+                                                                        <div class="flex items-center space-x-2">
+                                                                            <RadioGroupItem id="r3" value="abusive" />
+                                                                            <Label for="r3">Kekerasan</Label>
+                                                                        </div>
+                                                                        <div class="flex items-center space-x-2">
+                                                                            <RadioGroupItem id="r3" value="porn" />
+                                                                            <Label for="r3">Pornografi</Label>
+                                                                        </div>
+                                                                        <div class="flex items-center space-x-2">
+                                                                            <RadioGroupItem id="r3" value="pretend to be other people" />
+                                                                            <Label for="r3">Berpura-pura menjadi orang lain</Label>
+                                                                        </div>
+                                                                    </RadioGroup>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                                    <AlertDialogAction @click="reportComment(comment.id)">Kirim</AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
                                                         <DropdownMenuItem
                                                             v-if="comment.user.id === usePage().props.auth.user.id"
                                                             @click="deleteComment(comment.id)"

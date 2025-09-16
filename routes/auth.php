@@ -24,7 +24,9 @@ Route::get('/auth/google/callback', function () {
 
 
     if (!str_ends_with($googleUser->getEmail(), '@student.unri.ac.id')) {
-        abort(403, 'Login hanya untuk email @student.unri.ac.id');
+        return redirect('/')->withErrors([
+            'email' => 'Hanya email dengan domain @student.unri.ac.id yang diizinkan.'
+        ]);
     }
 
 

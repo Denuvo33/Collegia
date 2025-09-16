@@ -8,7 +8,7 @@
 
             <p class="mb-6 text-sm leading-relaxed text-gray-600">Halaman yang kamu cari tidak tersedia atau sudah dipindahkan.</p>
 
-            <Button @click="$inertia.visit('/')" class="inline-flex items-center gap-2">
+            <Button @click="$inertia.visit('/user/home')" class="inline-flex items-center gap-2">
                 <Home class="h-4 w-4" />
                 Kembali ke Beranda
             </Button>

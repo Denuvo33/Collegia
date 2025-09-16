@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReportRequest;
+use App\Models\ReportComment;
 use App\Models\ReportModel;
+use Exception;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -47,6 +49,28 @@ class ReportController extends Controller
             ]);
         }
     }
+
+    public function reportComment(Request $request)
+    {
+        try {
+            $data = $request->validate([
+                'comment_id' => 'required|exists:comment,id',
+                'reason' => 'required|in:spam,abuse,harassment,other,inappropriate,porn,pretend to be other people,other',
+            ]);
+
+            ReportComment::create($data);
+
+            return back()->with([
+                'success' => 'Laporan berhasil dikirim,Terima kasih karna telah berkontribusi menjaga komunitas lebih baik.'
+            ]);
+        } catch (Exception $e) {
+            return back()->withErrors([
+                'error' => 'Terjadi kesalahan, coba lagi nanti.' . $e->getMessage()
+            ]);
+        }
+    }
+
+
 
 
     /**

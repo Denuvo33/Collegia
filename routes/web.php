@@ -38,7 +38,7 @@ Route::get('/user/{hashId}/{name}', [HomeController::class, 'user'])->middleware
 Route::get('/user/{hashId}/{name}/posts', [HomeController::class, 'userPosts'])
     ->middleware(['auth'])
     ->name('user.posts');
-// API khusus load comments
+// API khusus load comments di profile user
 Route::get('/user/{hashId}/{name}/comments', [HomeController::class, 'userComments'])
     ->middleware(['auth'])
     ->name('user.comments');
@@ -57,6 +57,7 @@ Route::post('/user/create-comment', [CommentController::class, 'store'])->middle
 
 Route::post('/user/post/report', [ReportController::class, 'store'])->middleware('auth')->name('user.post.report');
 Route::post('/user/event/report', [ReportController::class, 'store'])->middleware('auth')->name('user.event.report');
+Route::post('/user/comment/report', [ReportController::class, 'reportComment'])->middleware('auth')->name('user.comment.report');
 
 Route::post('/user/create-event', [EventController::class, 'store'])->middleware(['auth', 'verified'])->name('user.event.store');
 
