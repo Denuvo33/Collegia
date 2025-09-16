@@ -11,16 +11,18 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Separator } from '@/components/ui/separator';
 import { Toaster } from '@/components/ui/sonner';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Calendar, EllipsisVertical, MapPin, User, Wallet } from 'lucide-vue-next';
+import { ArrowLeft, Building2, Calendar, Clock, EllipsisVertical, MapPin, Share2, User } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css';
@@ -60,13 +62,13 @@ defineProps<{
         };
     };
 }>();
+
 function goBack() {
     window.history.back();
 }
 
 watch(
     () => usePage().props.flash,
-
     (flash: any) => {
         if (flash.success) {
             toast.success(flash.success, {
@@ -123,17 +125,45 @@ function reportEvent(id: number) {
 function statusClass(status: string) {
     switch (status) {
         case 'Akan Datang':
-            return 'bg-blue-100 text-blue-700';
+            return 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
         case 'Sedang Berjalan':
-            return 'bg-green-100 text-green-700';
+            return 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800';
         case 'Selesai':
-            return 'bg-gray-200 text-gray-600';
+            return 'bg-neutral-100 text-neutral-600 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700';
         default:
             return '';
     }
 }
+
 function formatTime(date: string) {
     return dayjs(date).fromNow();
+}
+
+function copyEvent() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(
+        () => {
+            toast.success('Link event disalin ke clipboard!', {
+                duration: 3000,
+                dismissible: true,
+            });
+        },
+        () => {
+            toast.error('Gagal menyalin link event.', {
+                duration: 3000,
+                dismissible: true,
+            });
+        },
+    );
+}
+
+function formatPrice(price: number) {
+    if (price === 0) return 'Gratis';
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+    }).format(price);
 }
 </script>
 
@@ -143,129 +173,252 @@ function formatTime(date: string) {
     <AppLayout :breadcrumbs="breadcrumbs">
         <Toaster />
 
-        <!-- Nuxt, vue-sonner v1 because inserting inline CSS with JS to the head tag -->
-        <ClientOnly>
-            <Toaster />
-        </ClientOnly>
+        <!-- Hero Section -->
+        <div class="bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+            <div class="mx-auto max-w-6xl px-6 py-12">
+                <!-- Navigation -->
+                <div class="mb-8 flex items-center justify-between">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        @click="goBack"
+                        class="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                    >
+                        <ArrowLeft class="mr-2 h-4 w-4" />
+                        Kembali
+                    </Button>
 
-        <!-- Nuxt, vue-sonner v2 no need to ClientOnly -->
-        <Toaster />
-        <div class="mx-auto max-w-4xl p-6">
-            <div class="mb-6 space-y-2">
-                <div class="flex flex-row justify-between">
-                    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                        {{ event.title }}
-                    </h1>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger><EllipsisVertical></EllipsisVertical></DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuItem @select.prevent v-if="event.user.id === usePage().props.auth.user.id">
+                    <div class="flex items-center gap-2">
+                        <Button
+                            variant="ghost"
+                            @click="copyEvent"
+                            size="sm"
+                            class="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                        >
+                            <Share2 class="h-4 w-4" />
+                        </Button>
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger as-child>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    class="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                                >
+                                    <EllipsisVertical class="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" class="w-48">
+                                <DropdownMenuItem
+                                    @select.prevent
+                                    v-if="event.user.id === usePage().props.auth.user.id"
+                                    class="text-red-600 focus:text-red-600"
+                                >
+                                    <AlertDialog>
+                                        <AlertDialogTrigger class="w-full text-left">Hapus Event</AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Konfirmasi Penghapusan</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Event ini akan dihapus secara permanen dan tidak dapat dikembalikan.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                <AlertDialogAction @click="deleteEvent(event.id)" class="bg-red-600 hover:bg-red-700">
+                                                    Hapus
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </DropdownMenuItem>
+
                                 <AlertDialog>
-                                    <AlertDialogTrigger>Hapus</AlertDialogTrigger>
+                                    <AlertDialogTrigger as-child>
+                                        <DropdownMenuItem @select.prevent class="text-amber-600 focus:text-amber-600">
+                                            Laporkan Event
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
                                     <AlertDialogContent>
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
-                                            <AlertDialogDescription> Anda akan menghapus event ini </AlertDialogDescription>
+                                            <AlertDialogTitle>Laporkan Event</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Pilih alasan pelaporan. Tim moderator akan meninjau laporan Anda.
+                                            </AlertDialogDescription>
+                                            <div class="mt-4">
+                                                <RadioGroup v-model="reportValue" default-value="spam" class="space-y-3">
+                                                    <div class="flex items-center space-x-3">
+                                                        <RadioGroupItem id="r1" value="spam" />
+                                                        <Label for="r1" class="font-medium">Spam</Label>
+                                                    </div>
+                                                    <div class="flex items-center space-x-3">
+                                                        <RadioGroupItem id="r2" value="inappropriate" />
+                                                        <Label for="r2" class="font-medium">Tidak Pantas</Label>
+                                                    </div>
+                                                    <div class="flex items-center space-x-3">
+                                                        <RadioGroupItem id="r3" value="harassment" />
+                                                        <Label for="r3" class="font-medium">Pelecehan</Label>
+                                                    </div>
+                                                    <div class="flex items-center space-x-3">
+                                                        <RadioGroupItem id="r4" value="abusive" />
+                                                        <Label for="r4" class="font-medium">Kekerasan</Label>
+                                                    </div>
+                                                    <div class="flex items-center space-x-3">
+                                                        <RadioGroupItem id="r5" value="porn" />
+                                                        <Label for="r5" class="font-medium">Pornografi</Label>
+                                                    </div>
+                                                    <div class="flex items-center space-x-3">
+                                                        <RadioGroupItem id="r6" value="pretend to be other people" />
+                                                        <Label for="r6" class="font-medium">Identitas Palsu</Label>
+                                                    </div>
+                                                </RadioGroup>
+                                            </div>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction @click="deleteEvent(event.id)">Continue</AlertDialogAction>
+                                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                                            <AlertDialogAction @click="reportEvent(event.id)" class="bg-amber-600 hover:bg-amber-700">
+                                                Kirim Laporan
+                                            </AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
-                                </AlertDialog></DropdownMenuItem
+                                </AlertDialog>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                </div>
+
+                <!-- Event Header -->
+                <div class="grid grid-cols-1 gap-12 lg:grid-cols-3">
+                    <!-- Event Image -->
+                    <div class="lg:col-span-2">
+                        <div class="relative mb-8">
+                            <div v-if="event.image" class="overflow-hidden rounded-2xl shadow-2xl">
+                                <img
+                                    :src="`/storage/${event.image}`"
+                                    :alt="event.title"
+                                    class="h-[400px] w-full object-cover transition-transform duration-300 hover:scale-105"
+                                />
+                            </div>
+                            <div
+                                v-else
+                                class="flex h-[400px] items-center justify-center rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900"
                             >
-                            <AlertDialog>
-                                <AlertDialogTrigger as-child>
-                                    <DropdownMenuItem @select.prevent>Laporkan</DropdownMenuItem>
-                                </AlertDialogTrigger>
+                                <Calendar class="h-24 w-24 text-slate-400" />
+                            </div>
 
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Pilih alasan laporan</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Laporan ini akan dikirim ke moderator untuk ditinjau lebih lanjut.
-                                        </AlertDialogDescription>
-                                        <RadioGroup v-model="reportValue" default-value="spam">
-                                            <div class="flex items-center space-x-2">
-                                                <RadioGroupItem id="r1" value="spam" />
-                                                <Label for="r1">Spam</Label>
+                            <!-- Status Badge -->
+                            <div class="absolute top-6 left-6">
+                                <span
+                                    :class="[
+                                        'inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold backdrop-blur-sm',
+                                        statusClass(getEventStatus(event.date_event)),
+                                    ]"
+                                >
+                                    <span class="mr-2 h-2 w-2 rounded-full bg-current"></span>
+                                    {{ getEventStatus(event.date_event) }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Event Title & Description -->
+                        <div class="space-y-6">
+                            <div>
+                                <h1 class="mb-4 text-4xl font-bold text-slate-900 lg:text-5xl dark:text-slate-100">
+                                    {{ event.title }}
+                                </h1>
+
+                                <div class="flex items-center gap-4 text-slate-600 dark:text-slate-400">
+                                    <div class="flex items-center gap-2">
+                                        <Building2 class="h-4 w-4" />
+                                        <span class="font-medium">{{ event.organizer }}</span>
+                                    </div>
+                                    <span class="text-slate-400">•</span>
+                                    <div class="flex items-center gap-2">
+                                        <Clock class="h-4 w-4" />
+                                        <span class="text-sm">{{ formatTime(event.created_at) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <Separator />
+
+                            <!-- Event Description -->
+                            <div class="prose prose-slate dark:prose-invert max-w-none">
+                                <h3 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Tentang Event</h3>
+                                <p class="leading-relaxed text-slate-700 dark:text-slate-300">
+                                    {{ event.content }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Event Details Sidebar -->
+                    <div class="lg:col-span-1">
+                        <div class="sticky top-8">
+                            <Card class="overflow-hidden border-0 bg-white/70 shadow-xl backdrop-blur-sm dark:bg-slate-900/70">
+                                <CardContent class="p-8">
+                                    <!-- Price -->
+                                    <div class="mb-8 text-center">
+                                        <div class="text-3xl font-bold text-slate-900 dark:text-slate-100">
+                                            {{ formatPrice(event.price) }}
+                                        </div>
+                                        <p class="text-sm text-slate-600 dark:text-slate-400">per tiket</p>
+                                    </div>
+
+                                    <Separator class="mb-8" />
+
+                                    <!-- Event Details -->
+                                    <div class="space-y-6">
+                                        <div
+                                            class="group flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                                        >
+                                            <div class="rounded-lg bg-slate-100 p-2 dark:bg-slate-800">
+                                                <Calendar class="h-5 w-5 text-slate-600 dark:text-slate-400" />
                                             </div>
-                                            <div class="flex items-center space-x-2">
-                                                <RadioGroupItem id="r2" value="inappropriate" />
-                                                <Label for="r2">Tidak Pantas</Label>
+                                            <div>
+                                                <h4 class="font-semibold text-slate-900 dark:text-slate-100">Tanggal</h4>
+                                                <p class="text-slate-600 dark:text-slate-400">
+                                                    {{
+                                                        new Date(event.date_event).toLocaleDateString('id-ID', {
+                                                            weekday: 'long',
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric',
+                                                        })
+                                                    }}
+                                                </p>
                                             </div>
-                                            <div class="flex items-center space-x-2">
-                                                <RadioGroupItem id="r3" value="harassment" />
-                                                <Label for="r3">Pelecehan</Label>
+                                        </div>
+
+                                        <div
+                                            class="group flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                                        >
+                                            <div class="rounded-lg bg-slate-100 p-2 dark:bg-slate-800">
+                                                <MapPin class="h-5 w-5 text-slate-600 dark:text-slate-400" />
                                             </div>
-                                            <div class="flex items-center space-x-2">
-                                                <RadioGroupItem id="r3" value="abusive" />
-                                                <Label for="r3">Kekerasan</Label>
+                                            <div>
+                                                <h4 class="font-semibold text-slate-900 dark:text-slate-100">Lokasi</h4>
+                                                <p class="text-slate-600 dark:text-slate-400">{{ event.location }}</p>
                                             </div>
-                                            <div class="flex items-center space-x-2">
-                                                <RadioGroupItem id="r3" value="porn" />
-                                                <Label for="r3">Pornografi</Label>
+                                        </div>
+
+                                        <div
+                                            class="group flex items-start gap-4 rounded-xl p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
+                                        >
+                                            <div class="rounded-lg bg-slate-100 p-2 dark:bg-slate-800">
+                                                <User class="h-5 w-5 text-slate-600 dark:text-slate-400" />
                                             </div>
-                                            <div class="flex items-center space-x-2">
-                                                <RadioGroupItem id="r3" value="pretend to be other people" />
-                                                <Label for="r3">Berpura-pura menjadi orang lain</Label>
+                                            <div>
+                                                <h4 class="font-semibold text-slate-900 dark:text-slate-100">Pembuat</h4>
+                                                <p class="text-slate-600 dark:text-slate-400">{{ event.user?.name }}</p>
                                             </div>
-                                        </RadioGroup>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                                        <AlertDialogAction @click="reportEvent(event.id)">Kirim</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-gray-600 dark:text-gray-400">
-                    Diselenggarakan oleh
-                    <span class="font-semibold">{{ event.organizer }}</span>
-                </p>
-
-                <span :class="['inline-block rounded-full px-3 py-1 text-sm font-semibold', statusClass(getEventStatus(event.date_event))]">
-                    {{ getEventStatus(event.date_event) }}
-                </span>
-            </div>
-
-            <div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div class="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                    <Calendar class="h-5 w-5" />
-                    <span>{{ new Date(event.date_event).toLocaleDateString() }}</span>
-                </div>
-
-                <div class="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                    <MapPin class="h-5 w-5" />
-                    <span>{{ event.location }}</span>
-                </div>
-
-                <div class="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                    <User class="h-5 w-5" />
-                    <span>{{ event.user?.name }}</span>
-                </div>
-
-                <div class="flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                    <Wallet class="h-5 w-5" />
-                    <span>{{ event.price == 0 ? 'Gratis' : 'Rp ' + event.price }}</span>
-                </div>
-            </div>
-
-            <div class="text-gray-500">Dibuat {{ formatTime(event.created_at) }}</div>
-
-            <div class="prose dark:prose-invert max-w-none">
-                <h2 class="mb-2 text-xl font-semibold">Tentang Event</h2>
-                <p>{{ event.content }}</p>
-            </div>
-
-            <div v-if="event.image" class="mb-6">
-                <img :src="`/storage/${event.image}`" alt="Event" class="h-120 w-fit rounded-2xl object-contain shadow-md" />
-            </div>
-
-            <div class="mt-10 flex justify-end">
-                <Button @click="goBack"> Kembali </Button>
             </div>
         </div>
     </AppLayout>
