@@ -1,6 +1,19 @@
 <script setup lang="ts">
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { BreadcrumbItem } from '@/types';
@@ -121,22 +134,36 @@ function formatTime(date: string) {
 }
 
 function deleteEvent(id: number) {
-    if (confirm('Apakah Anda yakin ingin menghapus event ini?')) {
-        router.delete(route('user.delete.event', { id: id, userId: usePage().props.auth.user.id }));
-    }
+    router.delete(route('user.delete.event', { id: id, userId: usePage().props.auth.user.id }), {
+        preserveScroll: true,
+        onError: (errors) => {
+            console.error('error delete event: ', errors);
+        },
+        preserveState: false,
+    });
 }
 
 function reportEvent(id: number) {
     router.post(
         route('user.event.report'),
         {
-            post_id: id,
+            event_id: id,
             reason: reportValue.value,
         },
         {
             preserveScroll: true,
+            onError: (errors) => {
+                console.error('error report event: ', errors);
+            },
         },
     );
+}
+
+function copyEvent(hashId: string) {
+    const postUrl = `${window.location.origin}/user/event/${hashId}`;
+    navigator.clipboard.writeText(postUrl).then(() => {
+        toast.success('Event url telah disalin');
+    });
 }
 </script>
 
@@ -242,24 +269,76 @@ function reportEvent(id: number) {
                         <div class="absolute right-4 bottom-4">
                             <DropdownMenu>
                                 <DropdownMenuTrigger
-                                    class="rounded-full border border-white/20 bg-white/10 p-2 backdrop-blur-sm transition-all hover:bg-white/20"
+                                    class="rounded-full border border-white/20 bg-gray-500 p-2 backdrop-blur-sm transition-all hover:bg-gray-700"
                                 >
                                     <EllipsisVertical class="h-5 w-5 text-white" />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
                                     <DropdownMenuItem
+                                        @select.prevent
                                         v-if="event.user && event.user.id === usePage().props.auth.user.id"
-                                        @click="deleteEvent(event.id)"
                                         class="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
                                     >
                                         <Trash2 class="mr-2 h-4 w-4" />
-                                        Hapus
+                                        <AlertDialog>
+                                            <AlertDialogTrigger>Hapus</AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Apakah anda yakin?</AlertDialogTitle>
+                                                    <AlertDialogDescription> Anda akan menghapus event ini. </AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction @click="deleteEvent(event.id)">Continue</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <Flag class="mr-2 h-4 w-4" />
-                                        Laporkan
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger as-child>
+                                            <DropdownMenuItem @select.prevent><Flag></Flag> Laporkan</DropdownMenuItem>
+                                        </AlertDialogTrigger>
+
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Pilih alasan laporan</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Laporan ini akan dikirim ke moderator untuk ditinjau lebih lanjut.
+                                                </AlertDialogDescription>
+                                                <RadioGroup v-model="reportValue" default-value="spam">
+                                                    <div class="flex items-center space-x-2">
+                                                        <RadioGroupItem id="r1" value="spam" />
+                                                        <Label for="r1">Spam</Label>
+                                                    </div>
+                                                    <div class="flex items-center space-x-2">
+                                                        <RadioGroupItem id="r2" value="inappropriate" />
+                                                        <Label for="r2">Tidak Pantas</Label>
+                                                    </div>
+                                                    <div class="flex items-center space-x-2">
+                                                        <RadioGroupItem id="r3" value="harassment" />
+                                                        <Label for="r3">Pelecehan</Label>
+                                                    </div>
+                                                    <div class="flex items-center space-x-2">
+                                                        <RadioGroupItem id="r3" value="abusive" />
+                                                        <Label for="r3">Kekerasan</Label>
+                                                    </div>
+                                                    <div class="flex items-center space-x-2">
+                                                        <RadioGroupItem id="r3" value="porn" />
+                                                        <Label for="r3">Pornografi</Label>
+                                                    </div>
+                                                    <div class="flex items-center space-x-2">
+                                                        <RadioGroupItem id="r3" value="pretend to be other people" />
+                                                        <Label for="r3">Berpura-pura menjadi orang lain</Label>
+                                                    </div>
+                                                </RadioGroup>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                                <AlertDialogAction @click="reportEvent(event.id)">Kirim</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                    <DropdownMenuItem @click="copyEvent(`${event.hash_id}/${event.title}`)">
                                         <Share2 class="mr-2 h-4 w-4" />
                                         Bagikan
                                     </DropdownMenuItem>

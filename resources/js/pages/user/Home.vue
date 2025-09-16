@@ -132,7 +132,9 @@ function deletePost(id: number) {
             toast.error('Terjadi kesalahan saat menghapus.');
         },
         onSuccess: (success) => {},
-        // preserveState: false,
+
+        preserveState: false,
+        preserveScroll: true,
     });
 }
 

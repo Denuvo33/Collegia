@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReportRequest;
 use App\Models\ReportComment;
+use App\Models\ReportEvent;
 use App\Models\ReportModel;
 use Exception;
 use Illuminate\Http\Request;
@@ -64,11 +65,34 @@ class ReportController extends Controller
                 'success' => 'Laporan berhasil dikirim,Terima kasih karna telah berkontribusi menjaga komunitas lebih baik.'
             ]);
         } catch (Exception $e) {
-            return back()->withErrors([
-                'error' => 'Terjadi kesalahan, coba lagi nanti.' . $e->getMessage()
+            return back()->with([
+                'error' => 'Terjadi kesalahan, coba lagi nanti.'
             ]);
         }
     }
+
+    public function reportEvent(Request $request)
+    {
+
+        try {
+
+            $data = $request->validate(
+                [
+                    'event_id' => 'required|exists:event,id',
+                    'reason' => 'required|in:spam,abuse,harassment,other,inappropriate,porn,pretend to be other people,other'
+                ]
+            );
+
+
+            ReportEvent::create($data);
+            return back()->with([
+                'success' => 'Laporan berhasil dikirim,Terima kasih karna telah berkontribusi menjaga komunitas lebih baik.'
+            ]);
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Terjadi kesalahan, coba lagi nanti.' . $e->getMessage()]);
+        }
+    }
+
 
 
 

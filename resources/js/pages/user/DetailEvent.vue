@@ -104,16 +104,14 @@ function getEventStatus(dateEvent: string): 'Akan Datang' | 'Sedang Berjalan' | 
 }
 
 function deleteEvent(id: number) {
-    if (confirm('Apakah Anda yakin ingin menghapus event ini?')) {
-        router.delete(route('user.delete.event', { id: id, userId: usePage().props.auth.user.id }));
-    }
+    router.delete(route('user.delete.event', { id: id, userId: usePage().props.auth.user.id }));
 }
 
 function reportEvent(id: number) {
     router.post(
         route('user.event.report'),
         {
-            post_id: id,
+            event_id: id,
             reason: reportValue.value,
         },
         {
@@ -161,8 +159,20 @@ function formatTime(date: string) {
                     <DropdownMenu>
                         <DropdownMenuTrigger><EllipsisVertical></EllipsisVertical></DropdownMenuTrigger>
                         <DropdownMenuContent>
-                            <DropdownMenuItem v-if="event.user.id === usePage().props.auth.user.id" @click="deleteEvent(event.id)"
-                                >Hapus</DropdownMenuItem
+                            <DropdownMenuItem @select.prevent v-if="event.user.id === usePage().props.auth.user.id">
+                                <AlertDialog>
+                                    <AlertDialogTrigger>Hapus</AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+                                            <AlertDialogDescription> Anda akan menghapus event ini </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction @click="deleteEvent(event.id)">Continue</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog></DropdownMenuItem
                             >
                             <AlertDialog>
                                 <AlertDialogTrigger as-child>
