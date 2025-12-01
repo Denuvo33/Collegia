@@ -201,18 +201,16 @@ function copyEvent(hashId: string) {
         <Toaster />
 
         <!-- Hero Section -->
-        <div class="relative mb-8 overflow-hidden rounded-b-2xl bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600 p-8 shadow-2xl">
+        <div class="relative mb-8 overflow-hidden rounded-b-2xl p-8 shadow-2xl">
             <div class="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent"></div>
-            <div class="absolute top-6 right-6 h-16 w-16 animate-pulse rounded-full bg-white/10"></div>
-            <div class="absolute bottom-6 left-6 h-12 w-12 animate-pulse rounded-full bg-white/5 delay-700"></div>
 
-            <div class="relative flex flex-col gap-6 text-white md:flex-row md:items-center md:justify-between">
+            <div class="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between dark:text-white">
                 <div>
                     <h1 class="mb-3 text-4xl font-bold">Jelajahi Event</h1>
-                    <p class="text-lg text-slate-200">Temukan event menarik di sekitar Anda</p>
+                    <p class="text-lg text-slate-400">Temukan event menarik di sekitar Anda</p>
                 </div>
                 <Button
-                    class="flex transform items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-8 py-4 font-semibold text-white shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:bg-white/15"
+                    class="flex transform items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-8 py-4 font-semibold text-black shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:bg-white/15 dark:text-white"
                     @click="$inertia.visit(route('user.create-event'))"
                 >
                     <Plus class="h-5 w-5" />
