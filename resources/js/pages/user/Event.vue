@@ -355,7 +355,7 @@ function copyEvent(hashId: string) {
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
-                                    <DropdownMenuItem @click="copyEvent(`${event.hash_id}/${event.title}`)">
+                                    <DropdownMenuItem @click="copyEvent(`${event.hash_id}/${event.title.split(' ').join('-').toLowerCase()}`)">
                                         <Share2 class="mr-2 h-4 w-4" />
                                         Bagikan
                                     </DropdownMenuItem>
