@@ -20,7 +20,7 @@ class EventController extends Controller
     {
 
         return Inertia::render('user/Event', [
-            'data' => EventModel::with('user')->get()
+            'data' => EventModel::with('user')->latest()->paginate(10)->toArray(),
         ]);
     }
 

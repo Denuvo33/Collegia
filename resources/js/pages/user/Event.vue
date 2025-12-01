@@ -37,32 +37,39 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+type Event = {
+    id: number;
+    title: string;
+    content: string;
+    created_at: string;
+    image: string;
+    price: number | null;
+    organizer: string;
+    date_event: string;
+    location: string;
+    hash_id: string;
+
+    user: {
+        id: number;
+        name: string;
+    };
+};
+
 const reportValue = ref('spam');
 
 const props = defineProps<{
-    data: Array<{
-        id: number;
-        title: string;
-        content: string;
-        created_at: string;
-        image: string;
-        price: number | null;
-        organizer: string;
-        date_event: string;
-        location: string;
-        hash_id: string;
-
-        user: {
-            id: number;
-            name: string;
-        };
-    }>;
+    data: {
+        data: Event[];
+        current_page: number;
+        last_page: number;
+        next_page_url?: string | null;
+    };
 }>();
 
-const searchList = [...props.data];
+const searchList = [...props.data.data];
 const searchQuery = ref('');
 
-function searchEvent(list: typeof props.data, query: string) {
+function searchEvent(list: typeof props.data.data, query: string) {
     if (!query) return list;
     return list.filter(
         (event) => event.title.toLowerCase().includes(query.toLowerCase()) || event.organizer.toLowerCase().includes(query.toLowerCase()),
@@ -73,6 +80,18 @@ const filteredList = computed(() => {
     const result = searchEvent(searchList, searchQuery.value);
     return sortList(result);
 });
+
+const nextPage = () => {
+    if (props.data.next_page_url) {
+        router.get(props.data.next_page_url);
+    }
+};
+
+const backPage = () => {
+    if (props.data.current_page > 1) {
+        router.get(route('user.event', { page: props.data.current_page - 1 }));
+    }
+};
 
 watch(
     () => usePage().props.flash,
@@ -207,7 +226,7 @@ function copyEvent(hashId: string) {
             <div class="flex flex-col items-center justify-between gap-4 md:flex-row">
                 <div class="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                     <Calendar class="h-5 w-5" />
-                    <span class="font-medium">{{ data.length }} Event Tersedia</span>
+                    <span class="font-medium">{{ data.data.length }} Event Tersedia</span>
                 </div>
 
                 <!-- Search and Filter Controls -->
@@ -437,9 +456,14 @@ function copyEvent(hashId: string) {
                 </div>
             </div>
         </div>
-
+        <div>
+            <div class="mt-8 flex flex-row justify-center gap-4">
+                <Button class="" @click="backPage" :disabled="data.current_page == 1">Previous</Button>
+                <Button @click="nextPage" :disabled="props.data.next_page_url == null">Next</Button>
+            </div>
+        </div>
         <!-- Empty State -->
-        <div v-if="data.length === 0" class="flex items-center justify-center py-20">
+        <div v-if="data.data.length === 0" class="flex items-center justify-center py-20">
             <div class="max-w-md text-center">
                 <div class="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
                     <Calendar class="h-12 w-12 text-slate-400" />
