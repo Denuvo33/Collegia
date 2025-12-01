@@ -13,6 +13,11 @@ const mainNavItems: NavItem[] = [
         icon: Home,
     },
     {
+        title: 'Event',
+        href: '/user/event',
+        icon: CalendarClock,
+    },
+    {
         title: 'Jelajah',
         href: '/user/explore',
         icon: Telescope,
@@ -21,11 +26,6 @@ const mainNavItems: NavItem[] = [
         title: 'Notifikasi',
         href: '/user/notifications',
         icon: Bell,
-    },
-    {
-        title: 'Event',
-        href: '/user/event',
-        icon: CalendarClock,
     },
     {
         title: 'Profile',

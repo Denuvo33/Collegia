@@ -290,7 +290,7 @@ function copyPostUrl(hashId: string) {
                     <h1 class="mb-2 text-3xl font-bold text-black dark:text-white">{{ data.name }}</h1>
                     <div class="flex items-center justify-center gap-2 text-slate-300">
                         <Clock class="h-4 w-4" />
-                        <p class="text-sm font-medium">Bergabung {{ formatTime(data.created_at) }}</p>
+                        <p class="text-sm font-medium text-gray-500">Bergabung {{ formatTime(data.created_at) }}</p>
                     </div>
                 </div>
 
@@ -300,14 +300,14 @@ function copyPostUrl(hashId: string) {
                         class="min-w-[100px] rounded-xl border border-white/10 bg-white/5 p-4 text-center shadow-lg backdrop-blur-sm transition hover:bg-white/10"
                     >
                         <p class="mb-1 text-2xl font-bold text-black dark:text-white">{{ posts_count }}</p>
-                        <p class="text-sm font-medium text-slate-300">Postingan</p>
+                        <p class="text-sm font-medium text-slate-500">Postingan</p>
                     </div>
 
                     <div
                         class="min-w-[100px] rounded-xl border border-white/10 bg-white/5 p-4 text-center shadow-lg backdrop-blur-sm transition hover:bg-white/10"
                     >
                         <p class="mb-1 text-2xl font-bold text-black dark:text-white">{{ data.events.data.length }}</p>
-                        <p class="text-sm font-medium text-slate-300">Event</p>
+                        <p class="text-sm font-medium text-slate-500">Event</p>
                     </div>
                 </div>
             </div>
@@ -546,7 +546,7 @@ function copyPostUrl(hashId: string) {
                     class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-lg transition-all duration-300 hover:shadow-2xl dark:border-gray-700 dark:bg-gray-800"
                 >
                     <!-- Event Image -->
-                    <div class="relative h-48 bg-gradient-to-br from-slate-800 via-indigo-900 to-slate-900">
+                    <div class="relative h-48 bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600">
                         <img v-if="event.image" :src="`/storage/${event.image}`" alt="Event" class="h-full w-full object-cover" />
                         <div v-else class="flex h-full items-center justify-center">
                             <Calendar class="h-16 w-16 text-white/80" />
@@ -588,7 +588,7 @@ function copyPostUrl(hashId: string) {
 
                         <!-- Action Button -->
                         <Button
-                            class="w-full transform rounded-xl bg-gradient-to-br from-slate-800 via-indigo-900 to-slate-900 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:from-slate-700 hover:to-slate-700 hover:shadow-xl"
+                            class="w-full transform rounded-xl bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:from-slate-700 hover:to-slate-700 hover:shadow-xl"
                             @click="$inertia.visit(route('user.details.event', { hashId: event.hash_id, title: event.title }))"
                         >
                             Lihat Detail Event

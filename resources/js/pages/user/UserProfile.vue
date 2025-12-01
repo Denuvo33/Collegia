@@ -236,10 +236,10 @@ function copyPostUrl(hashId: string) {
 
                 <!-- Name + Join -->
                 <div class="text-center">
-                    <h1 class="mb-2 text-3xl font-bold">{{ user.name }}</h1>
+                    <h1 class="mb-2 text-3xl font-bold text-black dark:text-white">{{ user.name }}</h1>
                     <div class="flex items-center justify-center gap-2 text-slate-300">
                         <Clock class="h-4 w-4" />
-                        <p class="text-sm font-medium">Bergabung {{ formatTime(user.created_at) }}</p>
+                        <p class="text-sm font-medium text-gray-500">Bergabung {{ formatTime(user.created_at) }}</p>
                     </div>
                 </div>
 
@@ -248,14 +248,14 @@ function copyPostUrl(hashId: string) {
                     <div
                         class="min-w-[100px] rounded-xl border border-white/10 bg-white/5 p-4 text-center shadow-lg backdrop-blur-sm transition hover:bg-white/10"
                     >
-                        <p class="mb-1 text-2xl font-bold text-white">{{ user.posts_count }}</p>
-                        <p class="text-sm font-medium text-slate-300">Postingan</p>
+                        <p class="mb-1 text-2xl font-bold text-black dark:text-white">{{ user.posts_count }}</p>
+                        <p class="text-sm font-medium text-slate-500">Postingan</p>
                     </div>
                     <div
                         class="min-w-[100px] rounded-xl border border-white/10 bg-white/5 p-4 text-center shadow-lg backdrop-blur-sm transition hover:bg-white/10"
                     >
-                        <p class="mb-1 text-2xl font-bold text-white">{{ user.comments_count }}</p>
-                        <p class="text-sm font-medium text-slate-300">Komentar</p>
+                        <p class="mb-1 text-2xl font-bold text-black dark:text-white">{{ user.comments_count }}</p>
+                        <p class="text-sm font-medium text-slate-500">Komentar</p>
                     </div>
                 </div>
             </div>

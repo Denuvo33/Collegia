@@ -95,7 +95,7 @@ function navigateToProfile(user: any) {
                             <Button
                                 type="submit"
                                 :disabled="!searchUser.trim()"
-                                class="rounded-xl px-6 py-3 font-medium text-black shadow-sm transition-all hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                class="rounded-xl bg-white px-6 py-3 font-medium text-black shadow-sm transition-all hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <Search class="mr-2 h-4 w-4" />
                                 Cari
@@ -136,7 +136,7 @@ function navigateToProfile(user: any) {
                         <div
                             class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-indigo-100"
                         >
-                            <Compass class="h-10 w-10 text-indigo-600" />
+                            <Compass class="h-10 w-10" />
                         </div>
                         <h3 class="mb-2 text-xl font-semibold text-gray-500">Mulai Jelajahi</h3>
                         <p class="mx-auto max-w-md text-gray-500">Gunakan kolom pencarian di atas untuk menemukan pengguna yang ingin Anda ikuti</p>
