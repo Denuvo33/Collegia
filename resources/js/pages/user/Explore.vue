@@ -61,8 +61,8 @@ function navigateToProfile(user: any) {
                 <!-- Header Section -->
                 <div class="mb-8 text-center">
                     <div class="mb-4 flex justify-center">
-                        <div class="rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-4 shadow-lg">
-                            <Compass class="h-8 w-8 text-white" />
+                        <div class="rounded-2xl bg-white p-4 shadow-lg">
+                            <Compass class="h-8 w-8 text-black" />
                         </div>
                     </div>
                     <h1 class="mb-2 text-3xl font-bold">Jelajahi Pengguna</h1>
@@ -95,7 +95,7 @@ function navigateToProfile(user: any) {
                             <Button
                                 type="submit"
                                 :disabled="!searchUser.trim()"
-                                class="rounded-xl bg-indigo-600 px-6 py-3 font-medium text-white shadow-sm transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                class="rounded-xl px-6 py-3 font-medium text-black shadow-sm transition-all hover:bg-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <Search class="mr-2 h-4 w-4" />
                                 Cari
@@ -156,7 +156,7 @@ function navigateToProfile(user: any) {
                                     <!-- Avatar -->
                                     <div class="flex-shrink-0">
                                         <div
-                                            class="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-slate-800 to-slate-500 text-lg font-semibold text-white shadow-lg"
+                                            class="flex h-14 w-14 items-center justify-center rounded-xl bg-black text-lg font-semibold text-white shadow-lg"
                                         >
                                             {{ getInitials(user.name) }}
                                         </div>

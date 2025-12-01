@@ -237,7 +237,7 @@ function copyPostUrl(hashId: string) {
                     <div class="flex flex-row items-center gap-1">
                         <div class="relative">
                             <div
-                                class="border-white/ border/20 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-2xl font-bold text-white shadow-lg"
+                                class="border-white/ border/20 flex h-10 w-10 items-center justify-center rounded-full bg-white text-2xl font-bold text-black shadow-lg"
                             >
                                 {{ posts.user.name.charAt(0).toUpperCase() }}
                             </div>

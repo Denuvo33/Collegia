@@ -218,11 +218,7 @@ function copyPostUrl(hashId: string) {
     <AppLayout :breadcrumbs="breadcrumbs">
         <Toaster />
         <!-- Profile Header -->
-        <div class="relative mb-8 overflow-hidden rounded-b-2xl bg-gradient-to-br from-slate-800 via-indigo-900 to-slate-900 p-8 shadow-2xl">
-            <div class="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent"></div>
-            <div class="absolute top-4 right-4 h-20 w-20 rounded-full bg-white/5"></div>
-            <div class="absolute bottom-4 left-4 h-16 w-16 rounded-full bg-white/10"></div>
-
+        <div class="relative mb-8 overflow-hidden rounded-b-2xl p-8 shadow-2xl">
             <div class="relative flex flex-col items-center gap-6 text-white">
                 <!-- Avatar -->
                 <div class="relative">

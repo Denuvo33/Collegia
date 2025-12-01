@@ -36,6 +36,7 @@ type Comment = {
 
 type Event = {
     id: number;
+    hash_id: string;
     title: string;
     content: string;
     date_event: string;
@@ -268,11 +269,7 @@ function copyPostUrl(hashId: string) {
         <Toaster />
 
         <!-- Profile Header -->
-        <div class="relative mb-8 overflow-hidden rounded-b-2xl bg-gradient-to-br from-slate-800 via-indigo-900 to-slate-900 p-8 shadow-2xl">
-            <div class="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent"></div>
-            <div class="absolute top-4 right-4 h-20 w-20 rounded-full bg-white/5"></div>
-            <div class="absolute bottom-4 left-4 h-16 w-16 rounded-full bg-white/10"></div>
-
+        <div class="relative mb-8 overflow-hidden rounded-b-2xl p-8 shadow-2xl">
             <div class="relative flex flex-col items-center gap-6 text-white">
                 <!-- Avatar -->
                 <div class="relative">
@@ -290,7 +287,7 @@ function copyPostUrl(hashId: string) {
 
                 <!-- Name + Join -->
                 <div class="text-center">
-                    <h1 class="mb-2 text-3xl font-bold">{{ data.name }}</h1>
+                    <h1 class="mb-2 text-3xl font-bold text-black dark:text-white">{{ data.name }}</h1>
                     <div class="flex items-center justify-center gap-2 text-slate-300">
                         <Clock class="h-4 w-4" />
                         <p class="text-sm font-medium">Bergabung {{ formatTime(data.created_at) }}</p>
@@ -302,19 +299,14 @@ function copyPostUrl(hashId: string) {
                     <div
                         class="min-w-[100px] rounded-xl border border-white/10 bg-white/5 p-4 text-center shadow-lg backdrop-blur-sm transition hover:bg-white/10"
                     >
-                        <p class="mb-1 text-2xl font-bold text-white">{{ posts_count }}</p>
+                        <p class="mb-1 text-2xl font-bold text-black dark:text-white">{{ posts_count }}</p>
                         <p class="text-sm font-medium text-slate-300">Postingan</p>
                     </div>
+
                     <div
                         class="min-w-[100px] rounded-xl border border-white/10 bg-white/5 p-4 text-center shadow-lg backdrop-blur-sm transition hover:bg-white/10"
                     >
-                        <p class="mb-1 text-2xl font-bold text-white">{{ data.comments.data.length }}</p>
-                        <p class="text-sm font-medium text-slate-300">Komentar</p>
-                    </div>
-                    <div
-                        class="min-w-[100px] rounded-xl border border-white/10 bg-white/5 p-4 text-center shadow-lg backdrop-blur-sm transition hover:bg-white/10"
-                    >
-                        <p class="mb-1 text-2xl font-bold text-white">{{ data.events.data.length }}</p>
+                        <p class="mb-1 text-2xl font-bold text-black dark:text-white">{{ data.events.data.length }}</p>
                         <p class="text-sm font-medium text-slate-300">Event</p>
                     </div>
                 </div>
@@ -387,9 +379,7 @@ function copyPostUrl(hashId: string) {
                     <div class="p-6 pb-4">
                         <div class="mb-4 flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div
-                                    class="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 font-bold text-white shadow-lg"
-                                >
+                                <div class="flex h-12 w-12 items-center justify-center rounded-full bg-white text-black shadow-lg">
                                     {{ data.name.charAt(0).toUpperCase() }}
                                 </div>
                                 <div>
@@ -501,9 +491,7 @@ function copyPostUrl(hashId: string) {
                     class="rounded-xl border border-gray-100 bg-white p-6 shadow-md transition-all duration-300 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
                 >
                     <div class="mb-3 flex items-center gap-3">
-                        <div
-                            class="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-green-400 to-blue-500 font-bold text-white shadow-md"
-                        >
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black shadow-md">
                             {{ data.name.charAt(0).toUpperCase() }}
                         </div>
                         <div>
@@ -601,6 +589,7 @@ function copyPostUrl(hashId: string) {
                         <!-- Action Button -->
                         <Button
                             class="w-full transform rounded-xl bg-gradient-to-br from-slate-800 via-indigo-900 to-slate-900 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:from-slate-700 hover:to-slate-700 hover:shadow-xl"
+                            @click="$inertia.visit(route('user.details.event', { hashId: event.hash_id, title: event.title }))"
                         >
                             Lihat Detail Event
                         </Button>

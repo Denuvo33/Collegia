@@ -114,6 +114,15 @@ function sortList<T extends { created_at: string }>(list: Array<T>) {
     });
 }
 
+function oldListSort<T extends { created_at: string }>(list: Array<T>) {
+    return list.slice().sort((a, b) => {
+        const dateA = new Date(a.created_at);
+        const dateB = new Date(b.created_at);
+
+        return dateA.getTime() - dateB.getTime();
+    });
+}
+
 function getEventStatus(dateEvent: string): 'Akan Datang' | 'Sedang Berjalan' | 'Selesai' {
     const today = new Date();
     const eventDate = new Date(dateEvent);
@@ -212,10 +221,18 @@ function copyEvent(hashId: string) {
                             class="rounded-lg border border-gray-200 bg-gray-50 py-2 pr-4 pl-10 text-sm transition-all focus:border-transparent focus:ring-2 focus:ring-slate-500 dark:border-gray-600 dark:bg-gray-700"
                         />
                     </div>
-                    <Button variant="outline" size="sm" class="flex items-center gap-2">
-                        <Filter class="h-4 w-4" />
-                        Filter
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger class="flex items-center justify-center gap-2">
+                            <Filter class="h-4 w-4" />
+                            Filter
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem>Terbaru</DropdownMenuItem>
+                            <DropdownMenuItem>Terlama</DropdownMenuItem>
+                            <DropdownMenuItem>Dalam waktu dekat</DropdownMenuItem>
+                            <DropdownMenuItem>Berlangsung</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
         </div>

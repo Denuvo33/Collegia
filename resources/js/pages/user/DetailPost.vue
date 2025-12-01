@@ -221,9 +221,7 @@ function reportComment(commentId: number) {
                     <div class="border-b border-gray-100 p-6">
                         <div class="mb-4 flex items-center gap-4">
                             <div class="flex-shrink-0">
-                                <div
-                                    class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-sm font-semibold text-white"
-                                >
+                                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-sm font-semibold text-black">
                                     {{ getInitials(data.user.name) }}
                                 </div>
                             </div>
@@ -361,9 +359,7 @@ function reportComment(commentId: number) {
                                 <div class="flex gap-4">
                                     <!-- Avatar -->
                                     <div class="flex-shrink-0">
-                                        <div
-                                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 text-sm font-medium text-white"
-                                        >
+                                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-black">
                                             {{ getInitials(comment.user.name) }}
                                         </div>
                                     </div>
@@ -478,9 +474,7 @@ function reportComment(commentId: number) {
                         <form @submit.prevent="submit" class="space-y-4">
                             <div class="flex gap-4">
                                 <div class="flex-shrink-0">
-                                    <div
-                                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-400 to-purple-500 text-sm font-medium text-white"
-                                    >
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-sm font-medium text-black">
                                         {{ getInitials(usePage().props.auth.user.name) }}
                                     </div>
                                 </div>
