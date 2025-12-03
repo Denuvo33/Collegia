@@ -81,6 +81,12 @@ const form = useForm({
     content: '',
 });
 
+const sortedComment = () => {
+    return props.data.comments.sort((a, b) => {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+};
+
 function submit() {
     form.post(route('post.store.comment'), {
         onError: (Errors) => {
@@ -352,7 +358,7 @@ function reportComment(commentId: number) {
                     <div class="divide-y divide-gray-100">
                         <div v-if="data.comments.length > 0" class="max-h-96 overflow-y-auto">
                             <div
-                                v-for="comment in data.comments"
+                                v-for="comment in sortedComment()"
                                 :key="comment.id"
                                 class="bark:bg-gray-700 p-6 transition-colors hover:bg-gray-50 hover:dark:bg-gray-700"
                             >

@@ -24,6 +24,22 @@ class EventController extends Controller
         ]);
     }
 
+    public function promote(Request $request, $eventId)
+    {
+        try {
+
+            $request->validate([
+                'promote_event' => 'required|date',
+            ]);
+            $event = EventModel::findOrFail($eventId);
+            $event->promoted_till = $request->promote_event;
+            $event->save();
+            return redirect()->back()->with('success', 'Event telah dipromosikan');
+        } catch (Exception $e) {
+            return redirect()->back()->with('failed', 'Promosi event gagal');
+        }
+    }
+
     /**
      * Show the form for creating a new resource.
      */

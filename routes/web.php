@@ -50,6 +50,8 @@ Route::get('/user/create-event', [EventController::class, 'create'])->middleware
 
 Route::get('/user/event/{hashId}/{title}', [EventController::class, 'show'])->middleware(['auth'])->name('user.details.event');
 
+Route::post('/user/event/promote/{eventId}', [EventController::class, 'promote'])->middleware(['auth', 'verified'])->name('user.event.promote');
+
 // User Routes Post
 Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified'])->name('user.post.store');
 

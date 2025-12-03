@@ -30,6 +30,9 @@ import { Podcast, ShieldCheck } from 'lucide-vue-next';
                 <ShieldCheck class="h-4 w-4" />
                 <span>Komunitas aman dan eksklusif untuk mahasiswa</span>
             </div>
+            <div>
+                <p class="mt-4 text-xs text-gray-400">© 2025 Dev Rat. Dikembangkan oleh Neutral Teams</p>
+            </div>
         </div>
     </div>
 </template>

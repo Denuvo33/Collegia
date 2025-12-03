@@ -11,13 +11,14 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { BreadcrumbItem } from '@/types';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -66,6 +67,10 @@ const props = defineProps<{
     };
 }>();
 
+const form = useForm({
+    promote_event: null,
+});
+
 const searchList = [...props.data.data];
 const searchQuery = ref('');
 
@@ -80,6 +85,17 @@ const filteredList = computed(() => {
     const result = searchEvent(searchList, searchQuery.value);
     return sortList(result);
 });
+
+const promote_event = (event_id: number) => {
+    console.log('Tanggal event:', form.promote_event);
+
+    form.post(route('user.event.promote', event_id), {
+        preserveScroll: true,
+        onError: (errors) => {
+            console.error('Failed to promote event', errors);
+        },
+    });
+};
 
 const nextPage = () => {
     if (props.data.next_page_url) {
@@ -450,6 +466,19 @@ function copyEvent(hashId: string) {
                             <Eye class="h-4 w-4" />
                             Lihat Detail Event
                         </Button>
+                        <div>
+                            <Dialog>
+                                <DialogTrigger>Promosikan</DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Pilih Tanggal</DialogTitle>
+
+                                        <input type="date" v-model="form.promote_event" class="border p-2" />
+                                        <Button class="mt-4" @click="promote_event(event.id)">Promosikan Event</Button>
+                                    </DialogHeader>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </div>
                 </div>
             </div>
