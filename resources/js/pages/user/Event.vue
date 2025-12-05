@@ -22,7 +22,7 @@ import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Calendar, Clock, EllipsisVertical, Eye, Filter, Flag, MapPin, Plus, Search, Share2, Trash2, User } from 'lucide-vue-next';
+import { Calendar, Clock, EllipsisVertical, Eye, Filter, Flag, Gem, MapPin, Plus, Search, Share2, Trash2, User } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 
@@ -49,6 +49,7 @@ type Event = {
     date_event: string;
     location: string;
     hash_id: string;
+    promoted_till: string | null;
 
     user: {
         id: number;
@@ -82,19 +83,21 @@ function searchEvent(list: typeof props.data.data, query: string) {
 }
 
 const filteredList = computed(() => {
-    const result = searchEvent(searchList, searchQuery.value);
-    return sortList(result);
+    return searchEvent(searchList, searchQuery.value);
+    // return sortList(result);
 });
 
 const promote_event = (event_id: number) => {
-    console.log('Tanggal event:', form.promote_event);
-
     form.post(route('user.event.promote', event_id), {
         preserveScroll: true,
         onError: (errors) => {
             console.error('Failed to promote event', errors);
         },
     });
+};
+const isPromotedActive = (promotedTill: string | null) => {
+    if (!promotedTill) return false;
+    return new Date(promotedTill) >= new Date();
 };
 
 const nextPage = () => {
@@ -306,6 +309,13 @@ function copyEvent(hashId: string) {
                             >
                                 {{ getEventStatus(event.date_event) }}
                             </span>
+                            <div
+                                v-if="isPromotedActive(event.promoted_till)"
+                                class="mt-2 flex flex-row items-center space-x-1 rounded-full bg-yellow-100/90 px-3 py-1 shadow-lg backdrop-blur-sm"
+                            >
+                                <Gem class="top-4 left-4 h-5 w-5 text-yellow-400" />
+                                <p class="font-bold">Dipromosikan</p>
+                            </div>
                         </div>
 
                         <!-- Price Badge -->
@@ -466,9 +476,11 @@ function copyEvent(hashId: string) {
                             <Eye class="h-4 w-4" />
                             Lihat Detail Event
                         </Button>
-                        <div>
+                        <div v-if="!isPromotedActive(event.promoted_till)" class="mt-2">
                             <Dialog>
-                                <DialogTrigger>Promosikan</DialogTrigger>
+                                <DialogTrigger class="flex items-center gap-2 rounded bg-green-500 px-4 py-2 font-bold text-white">
+                                    {{ event.id }}</DialogTrigger
+                                >
                                 <DialogContent>
                                     <DialogHeader>
                                         <DialogTitle>Pilih Tanggal</DialogTitle>

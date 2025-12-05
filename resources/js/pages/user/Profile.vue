@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, usePage, useRemember } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage, useRemember } from '@inertiajs/vue3';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Calendar, Clock, EllipsisVertical, Eye, MapPin, MessageCircle, Share2, Sparkles, Star, Tag } from 'lucide-vue-next';
+import { Calendar, Clock, EllipsisVertical, Eye, Gem, MapPin, MessageCircle, Share2, Sparkles, Tag } from 'lucide-vue-next';
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
+
 import 'vue-sonner/style.css';
 
 const page = usePage();
@@ -70,6 +72,19 @@ const props = defineProps<{
         };
     };
 }>();
+
+const form = useForm({
+    promote_event: null,
+});
+
+const promote_event = (event_id: number) => {
+    form.post(route('user.event.promote', event_id), {
+        preserveScroll: true,
+        onError: (errors) => {
+            console.error('Failed to promote event', errors);
+        },
+    });
+};
 
 const activatedTabs = useRemember(ref<'post' | 'comment' | 'inkrip' | 'event'>('post'), 'activeTabs');
 
@@ -558,9 +573,9 @@ function copyPostUrl(hashId: string) {
                         </div>
                         <div
                             v-if="event.promoted_till"
-                            class="absolute top-4 left-4 flex items-center gap-1 rounded-full bg-yellow-400 px-3 py-1 text-xs font-bold text-yellow-900"
+                            class="absolute top-4 left-4 flex items-center gap-1 space-x-1 rounded-full bg-yellow-100/90 px-3 py-1 shadow-lg backdrop-blur-sm"
                         >
-                            <Star class="h-3 w-3" />
+                            <Gem class="text-yellow-400" />
                             PROMOSI
                         </div>
                     </div>
@@ -593,6 +608,21 @@ function copyPostUrl(hashId: string) {
                         >
                             Lihat Detail Event
                         </Button>
+                        <div v-if="event.promoted_till == null" class="mt-2">
+                            <Dialog>
+                                <DialogTrigger class="flex items-center gap-2 rounded bg-green-500 px-4 py-2 font-bold text-white"
+                                    >Promosikan</DialogTrigger
+                                >
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Pilih Tanggal</DialogTitle>
+
+                                        <input type="date" v-model="form.promote_event" class="border p-2" />
+                                        <Button class="mt-4" @click="promote_event(event.id)">Promosikan Event</Button>
+                                    </DialogHeader>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
                     </div>
                 </div>
             </div>

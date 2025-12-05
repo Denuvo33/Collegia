@@ -18,20 +18,51 @@ class EventController extends Controller
      */
     public function index()
     {
+        $today = now();
+
+        $events = EventModel::with('user')
+            ->select('*')
+            ->selectRaw("
+            CASE 
+                WHEN promoted_till IS NOT NULL 
+                     AND promoted_till >= ? 
+                THEN 1 
+                ELSE 0 
+            END AS is_promoted
+        ", [$today])
+            ->selectRaw("
+            CASE 
+                WHEN promoted_till IS NOT NULL 
+                     AND promoted_till >= ? 
+                THEN promoted_till
+                ELSE NULL
+            END AS sort_promoted_till
+        ", [$today])
+            ->orderByDesc('is_promoted')
+            ->orderByDesc('sort_promoted_till')
+            ->orderByDesc('created_at')
+            ->paginate(10)
+            ->toArray();
 
         return Inertia::render('user/Event', [
-            'data' => EventModel::with('user')->latest()->paginate(10)->toArray(),
+            'data' => $events,
         ]);
     }
+
+
 
     public function promote(Request $request, $eventId)
     {
         try {
+            $event = EventModel::findOrFail($eventId);
+            if (Auth::id() != $event->user_id && $event->promoted_till != null) {
+                return redirect()->back()->with('failed', 'Anda tidak memiliki izin untuk mempromosikan event ini');
+            }
 
             $request->validate([
                 'promote_event' => 'required|date',
             ]);
-            $event = EventModel::findOrFail($eventId);
+
             $event->promoted_till = $request->promote_event;
             $event->save();
             return redirect()->back()->with('success', 'Event telah dipromosikan');
