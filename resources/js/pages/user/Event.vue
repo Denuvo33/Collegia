@@ -498,6 +498,9 @@ function copyEvent(hashId: string) {
         <div>
             <div class="mt-8 flex flex-row justify-center gap-4">
                 <Button class="" @click="backPage" :disabled="data.current_page == 1">Previous</Button>
+                <div v-for="(page, index) in data.last_page" :key="page">
+                    <Button @click="nextPage" :disabled="data.current_page == index + 1">{{ index + 1 }} </Button>
+                </div>
                 <Button @click="nextPage" :disabled="props.data.next_page_url == null">Next</Button>
             </div>
         </div>

@@ -16,6 +16,11 @@ Route::get('/', function () {
     return Inertia::render('auth/Google');
 })->name('home');
 
+// Route For Community
+Route::get('/community/login', function () {
+    return Inertia::render('auth/CommunityLogin');
+})->name('community.login');
+
 
 // User Routes Get
 Route::get('/user/home', [HomeController::class, 'index'])->middleware(['auth', 'verified'])->name('user.home');

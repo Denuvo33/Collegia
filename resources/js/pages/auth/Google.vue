@@ -25,6 +25,11 @@ import { Podcast, ShieldCheck } from 'lucide-vue-next';
                 <img src="https://www.svgrepo.com/show/355037/google.svg" alt="Google" class="h-5 w-5" />
                 Masuk dengan Google
             </button>
+            <div class="mt-2">
+                <p>
+                    Atau masuk sebagai Komunitas? <span><a href="/community/login" class="text-blue-500">Masuk</a></span>
+                </p>
+            </div>
 
             <div class="mt-8 flex items-center justify-center gap-2 text-xs text-gray-500">
                 <ShieldCheck class="h-4 w-4" />
