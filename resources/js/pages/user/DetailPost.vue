@@ -58,6 +58,7 @@ const props = defineProps<{
             email: string;
             hash_id: string;
             role: string;
+            clean_name: string;
         };
         comments: Array<{
             id: number;
@@ -68,6 +69,7 @@ const props = defineProps<{
             user: {
                 id: number;
                 name: string;
+                clean_name: string;
                 hash_id: string;
                 role: string;
             };
@@ -230,7 +232,7 @@ function reportComment(commentId: number) {
                         <div class="mb-4 flex items-center gap-4">
                             <div class="flex-shrink-0">
                                 <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-sm font-semibold text-black shadow">
-                                    {{ getInitials(data.user.name) }}
+                                    {{ getInitials(data.user.clean_name) }}
                                 </div>
                             </div>
                             <div class="flex-1">
@@ -246,7 +248,7 @@ function reportComment(commentId: number) {
                                             )
                                         "
                                     >
-                                        {{ data.user.name }}
+                                        {{ data.user.clean_name }}
                                     </h1>
                                     <div
                                         v-if="data.user.role === 'moderator'"
@@ -383,7 +385,7 @@ function reportComment(commentId: number) {
                                     <!-- Avatar -->
                                     <div class="flex-shrink-0">
                                         <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-black">
-                                            {{ getInitials(comment.user.name) }}
+                                            {{ getInitials(comment.user.clean_name) }}
                                         </div>
                                     </div>
 
@@ -403,7 +405,7 @@ function reportComment(commentId: number) {
                                                             )
                                                         "
                                                     >
-                                                        {{ comment.user.name }}
+                                                        {{ comment.user.clean_name }}
                                                     </h4>
                                                     <div
                                                         v-if="comment.user.role === 'moderator'"

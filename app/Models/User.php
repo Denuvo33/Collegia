@@ -45,7 +45,7 @@ class User extends Authenticatable
     ];
 
 
-    protected $appends = ['hash_id'];
+    protected $appends = ['hash_id', 'clean_name'];
 
     /**
      * Get the attributes that should be cast.
@@ -78,5 +78,11 @@ class User extends Authenticatable
     public function getHashIdAttribute()
     {
         return Hashids::encode($this->id);
+    }
+
+    public function getCleanNameAttribute()
+    {
+
+        return trim(preg_replace('/\d+$/', '', $this->name));
     }
 }

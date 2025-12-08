@@ -54,6 +54,7 @@ const props = defineProps<{
     data: {
         id: number;
         name: string;
+        clean_name: string;
         created_at: string;
         role: string;
         posts: {
@@ -304,7 +305,7 @@ function copyPostUrl(hashId: string) {
                 <!-- Name + Join -->
                 <div class="text-center">
                     <div class="flex flex-wrap gap-2">
-                        <h1 class="mb-2 text-3xl font-bold text-black dark:text-white">{{ data.name }}</h1>
+                        <h1 class="mb-2 text-3xl font-bold text-black dark:text-white">{{ data.clean_name }}</h1>
                         <div v-if="data.role === 'moderator'" class="flex h-fit items-center rounded bg-blue-600 p-1 font-bold text-white">
                             Moderator
                         </div>
@@ -411,7 +412,7 @@ function copyPostUrl(hashId: string) {
                                         class="cursor-pointer font-bold text-gray-900 transition-colors duration-300 hover:text-blue-600 dark:text-white"
                                         @click="$inertia.visit(`/user/post/${post.hash_id}`)"
                                     >
-                                        {{ data.name }}
+                                        {{ data.clean_name }}
                                     </h3>
                                     <div class="flex items-center gap-1 text-sm text-gray-500">
                                         <Clock class="h-3 w-3" />
@@ -519,7 +520,7 @@ function copyPostUrl(hashId: string) {
                             {{ data.name.charAt(0).toUpperCase() }}
                         </div>
                         <div>
-                            <h3 class="font-bold text-gray-900 dark:text-white">{{ data.name }}</h3>
+                            <h3 class="font-bold text-gray-900 dark:text-white">{{ data.clean_name }}</h3>
                             <div class="flex items-center gap-1 text-sm text-gray-500">
                                 <Clock class="h-3 w-3" />
                                 <span>{{ formatTime(comment.created_at) }}</span>

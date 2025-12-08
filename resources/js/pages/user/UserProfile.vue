@@ -36,6 +36,7 @@ const props = defineProps<{
         id: number;
         hash_id: string;
         name: string;
+        clean_name: string;
         role: string;
         created_at: string;
         posts_count: number;
@@ -214,7 +215,7 @@ function copyPostUrl(hashId: string) {
 </script>
 
 <template>
-    <Head :title="`${user.name} - Profile`" />
+    <Head :title="`${user.clean_name} - Profile`" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <Toaster />
@@ -238,7 +239,7 @@ function copyPostUrl(hashId: string) {
                 <!-- Name + Join -->
                 <div class="text-center">
                     <div class="flex flex-wrap gap-2">
-                        <h1 class="mb-2 text-3xl font-bold text-black dark:text-white">{{ user.name }}</h1>
+                        <h1 class="mb-2 text-3xl font-bold text-black dark:text-white">{{ user.clean_name }}</h1>
                         <div v-if="user.role === 'moderator'" class="flex h-fit items-center rounded bg-blue-600 p-1 font-bold text-white">
                             Moderator
                         </div>
@@ -325,7 +326,7 @@ function copyPostUrl(hashId: string) {
                         class="dakr:hover:shadow-gray-700 flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
                     >
                         <div>
-                            <p class="font-bold">{{ user.name }}</p>
+                            <p class="font-bold">{{ user.clean_name }}</p>
                             <div class="flex flex-row items-center gap-1 text-sm text-gray-500">
                                 <Clock class="h-3 w-3"></Clock>
                                 <p class="text-gray-400">dibuat {{ formatTime(post.created_at) }}</p>
@@ -368,7 +369,7 @@ function copyPostUrl(hashId: string) {
                     <div
                         class="flex transform flex-col rounded-2xl bg-white p-4 shadow transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg dark:bg-gray-800 dark:hover:shadow-gray-700"
                     >
-                        <p class="font-bold">{{ user.name }}</p>
+                        <p class="font-bold">{{ user.clean_name }}</p>
                         <div class="flex items-center gap-1 text-sm text-gray-500">
                             <Clock class="h-3 w-3" />
                             <p class="text-gray-400">dibuat {{ formatTime(comment.created_at) }}</p>

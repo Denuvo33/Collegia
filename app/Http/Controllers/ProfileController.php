@@ -29,6 +29,7 @@ class ProfileController extends Controller
             'data' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'clean_name' => $user->clean_name,
                 'role' => $user->role,
                 'created_at' => $user->created_at,
                 'private_post' => $user->private_post,

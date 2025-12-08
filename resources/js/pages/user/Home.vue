@@ -48,6 +48,7 @@ type User = {
     email: string;
     role: string;
     hash_id: string;
+    clean_name: string;
 };
 
 type Post = {
@@ -244,7 +245,7 @@ function copyPostUrl(hashId: string) {
                         </div>
                         <div class="flex flex-col">
                             <h1 class="cursor-pointer text-2xl font-bold" @click="$inertia.visit(`/user/post/${posts.hash_id}`)">
-                                {{ posts.user.name }}
+                                {{ posts.user.clean_name }}
                             </h1>
                             <div class="flex items-center gap-1 text-sm text-gray-500">
                                 <Clock class="h-3 w-3" />
