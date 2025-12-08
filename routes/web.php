@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\CreatePostController;
 use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\HomeController;
@@ -20,6 +21,7 @@ Route::get('/', function () {
 Route::get('/community/login', function () {
     return Inertia::render('auth/CommunityLogin');
 })->name('community.login');
+Route::post('/community/login', [CommunityController::class, 'login'])->name('community.login');
 
 
 // User Routes Get

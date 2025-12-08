@@ -2,7 +2,24 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useForm } from '@inertiajs/vue3';
 import { Users } from 'lucide-vue-next';
+
+const form = useForm({
+    email: '',
+    password: '',
+});
+
+const login = () => {
+    form.post(route('community.login'), {
+        onSuccess: () => {
+            console.log('Login successful');
+        },
+        onError: (errors) => {
+            console.error('Login failed', errors);
+        },
+    });
+};
 </script>
 
 <template>
@@ -23,16 +40,26 @@ import { Users } from 'lucide-vue-next';
                         type="email"
                         placeholder="email@example"
                         autocomplete="email"
+                        v-model="form.email"
                         class="h-12 rounded-xl border-neutral-300 focus:border-neutral-700 focus:ring-0"
                     />
+                    <p v-if="form.errors.email" class="text-sm text-red-500">{{ form.errors.email }}</p>
                 </div>
 
                 <div class="space-y-2">
                     <label class="text-sm font-medium text-neutral-700">Password</label>
-                    <Input type="password" placeholder="••••••••" class="h-12 rounded-xl border-neutral-300 focus:border-neutral-700 focus:ring-0" />
+                    <Input
+                        type="password"
+                        v-model="form.password"
+                        placeholder="••••••••"
+                        class="h-12 rounded-xl border-neutral-300 focus:border-neutral-700 focus:ring-0"
+                    />
+                    <p v-if="form.errors.password" class="text-sm text-red-500">{{ form.errors.password }}</p>
                 </div>
 
-                <Button class="h-12 w-full rounded-xl bg-neutral-900 text-white transition hover:bg-neutral-800"> Masuk sebagai Komunitas </Button>
+                <Button class="h-12 w-full rounded-xl bg-neutral-900 text-white transition hover:bg-neutral-800" @click="login">
+                    Masuk sebagai Komunitas
+                </Button>
 
                 <p class="pt-2 text-center text-xs text-neutral-500">
                     Jika tidak punya akun komunitas,
