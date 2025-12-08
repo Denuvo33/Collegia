@@ -57,6 +57,7 @@ const props = defineProps<{
             name: string;
             email: string;
             hash_id: string;
+            role: string;
         };
         comments: Array<{
             id: number;
@@ -68,6 +69,7 @@ const props = defineProps<{
                 id: number;
                 name: string;
                 hash_id: string;
+                role: string;
             };
         }>;
     };
@@ -227,24 +229,39 @@ function reportComment(commentId: number) {
                     <div class="border-b border-gray-100 p-6">
                         <div class="mb-4 flex items-center gap-4">
                             <div class="flex-shrink-0">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-sm font-semibold text-black">
+                                <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-sm font-semibold text-black shadow">
                                     {{ getInitials(data.user.name) }}
                                 </div>
                             </div>
                             <div class="flex-1">
-                                <h1
-                                    class="cursor-pointer text-xl font-bold text-gray-900 transition-colors hover:text-indigo-600 dark:text-white"
-                                    @click="
-                                        $inertia.visit(
-                                            route('user.details', {
-                                                hashId: data.user.hash_id,
-                                                name: data.user.name.split(' ').join('-').toLowerCase(),
-                                            }),
-                                        )
-                                    "
-                                >
-                                    {{ data.user.name }}
-                                </h1>
+                                <div class="flex flex-wrap gap-2">
+                                    <h1
+                                        class="cursor-pointer text-xl font-bold text-gray-900 transition-colors hover:text-indigo-600 dark:text-white"
+                                        @click="
+                                            $inertia.visit(
+                                                route('user.details', {
+                                                    hashId: data.user.hash_id,
+                                                    name: data.user.name.split(' ').join('-').toLowerCase(),
+                                                }),
+                                            )
+                                        "
+                                    >
+                                        {{ data.user.name }}
+                                    </h1>
+                                    <div
+                                        v-if="data.user.role === 'moderator'"
+                                        class="flex h-fit items-center rounded bg-blue-600 p-1 font-bold text-white"
+                                    >
+                                        Moderator
+                                    </div>
+                                    <div
+                                        v-if="data.user.role === 'community'"
+                                        class="flex h-fit items-center rounded bg-yellow-500 p-1 font-bold text-white shadow"
+                                    >
+                                        Komunitas
+                                    </div>
+                                </div>
+
                                 <div class="mt-1 flex items-center gap-2 text-sm text-gray-500">
                                     <Clock class="h-4 w-4" />
                                     <span>Dibuat {{ formatTime(data.created_at) }}</span>
@@ -374,19 +391,34 @@ function reportComment(commentId: number) {
                                     <div class="min-w-0 flex-1">
                                         <div class="flex flex-wrap items-start justify-between gap-4">
                                             <div class="min-w-0 flex-1">
-                                                <h4
-                                                    class="mb-1 cursor-pointer truncate font-semibold text-gray-900 hover:underline dark:text-white"
-                                                    @click="
-                                                        $inertia.visit(
-                                                            route('user.details', {
-                                                                hashId: comment.user.hash_id,
-                                                                name: comment.user.name.split(' ').join('-').toLowerCase(),
-                                                            }),
-                                                        )
-                                                    "
-                                                >
-                                                    {{ comment.user.name }}
-                                                </h4>
+                                                <div class="flex flex-wrap gap-2">
+                                                    <h4
+                                                        class="mb-1 cursor-pointer truncate font-semibold text-gray-900 hover:underline dark:text-white"
+                                                        @click="
+                                                            $inertia.visit(
+                                                                route('user.details', {
+                                                                    hashId: comment.user.hash_id,
+                                                                    name: comment.user.name.split(' ').join('-').toLowerCase(),
+                                                                }),
+                                                            )
+                                                        "
+                                                    >
+                                                        {{ comment.user.name }}
+                                                    </h4>
+                                                    <div
+                                                        v-if="comment.user.role === 'moderator'"
+                                                        class="flex h-fit items-center rounded bg-blue-600 p-1 font-bold text-white"
+                                                    >
+                                                        Moderator
+                                                    </div>
+                                                    <div
+                                                        v-if="comment.user.role === 'community'"
+                                                        class="flex h-fit items-center rounded bg-yellow-500 p-1 font-bold text-white shadow"
+                                                    >
+                                                        Komunitas
+                                                    </div>
+                                                </div>
+
                                                 <p class="mb-2 leading-relaxed break-words text-gray-700 dark:text-gray-300">
                                                     {{ comment.content }}
                                                 </p>
@@ -489,9 +521,12 @@ function reportComment(commentId: number) {
                                         <Input
                                             v-model="form.content"
                                             placeholder="Tulis komentar Anda..."
+                                            type="text"
+                                            maxlength="500"
                                             class="focus:ring-opacity-50 w-full rounded-xl border-gray-200 py-3 pr-12 focus:border-indigo-300 focus:ring focus:ring-indigo-200"
                                             :disabled="form.processing"
                                         />
+                                        <div class="mt-1 text-right text-xs text-gray-500">{{ form.content.length }}/500</div>
                                         <Button
                                             type="submit"
                                             :disabled="form.processing || !form.content.trim()"

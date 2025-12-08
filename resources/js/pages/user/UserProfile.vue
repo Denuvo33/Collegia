@@ -36,6 +36,7 @@ const props = defineProps<{
         id: number;
         hash_id: string;
         name: string;
+        role: string;
         created_at: string;
         posts_count: number;
         comments_count: number;
@@ -236,7 +237,15 @@ function copyPostUrl(hashId: string) {
 
                 <!-- Name + Join -->
                 <div class="text-center">
-                    <h1 class="mb-2 text-3xl font-bold text-black dark:text-white">{{ user.name }}</h1>
+                    <div class="flex flex-wrap gap-2">
+                        <h1 class="mb-2 text-3xl font-bold text-black dark:text-white">{{ user.name }}</h1>
+                        <div v-if="user.role === 'moderator'" class="flex h-fit items-center rounded bg-blue-600 p-1 font-bold text-white">
+                            Moderator
+                        </div>
+                        <div v-if="user.role === 'community'" class="flex h-fit items-center rounded bg-yellow-500 p-1 font-bold text-white shadow">
+                            Komunitas
+                        </div>
+                    </div>
                     <div class="flex items-center justify-center gap-2 text-slate-300">
                         <Clock class="h-4 w-4" />
                         <p class="text-sm font-medium text-gray-500">Bergabung {{ formatTime(user.created_at) }}</p>

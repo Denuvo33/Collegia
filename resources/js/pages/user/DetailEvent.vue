@@ -59,6 +59,7 @@ defineProps<{
         user: {
             id: number;
             name: string;
+            role: string;
         };
     };
 }>();
@@ -410,7 +411,21 @@ function formatPrice(price: number) {
                                             </div>
                                             <div>
                                                 <h4 class="font-semibold text-slate-900 dark:text-slate-100">Pembuat</h4>
-                                                <p class="text-slate-600 dark:text-slate-400">{{ event.user?.name }}</p>
+                                                <div class="flex flex-wrap gap-2">
+                                                    <p class="text-slate-600 dark:text-slate-400">{{ event.user?.name }}</p>
+                                                    <div
+                                                        v-if="event.user?.role === 'moderator'"
+                                                        class="flex h-fit items-center rounded bg-blue-600 p-1 font-bold text-white"
+                                                    >
+                                                        Moderator
+                                                    </div>
+                                                    <div
+                                                        v-if="event.user?.role === 'community'"
+                                                        class="flex h-fit items-center rounded bg-yellow-500 p-1 font-bold text-white shadow"
+                                                    >
+                                                        Komunitas
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

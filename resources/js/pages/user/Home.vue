@@ -253,7 +253,12 @@ function copyPostUrl(hashId: string) {
                         </div>
                     </div>
 
-                    <div v-if="posts.user.role === 'moderator'" class="flex h-fit items-center rounded bg-blue-600 p-1 text-white">Moderator</div>
+                    <div v-if="posts.user.role === 'moderator'" class="flex h-fit items-center rounded bg-blue-600 p-1 font-bold text-white">
+                        Moderator
+                    </div>
+                    <div v-if="posts.user.role === 'community'" class="flex h-fit items-center rounded bg-yellow-500 p-1 font-bold text-white shadow">
+                        Komunitas
+                    </div>
                     <div class="ml-auto">
                         <DropdownMenu>
                             <DropdownMenuTrigger><EllipsisVertical></EllipsisVertical></DropdownMenuTrigger>
