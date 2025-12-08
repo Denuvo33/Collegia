@@ -16,7 +16,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const props = defineProps<{
     users: {
-        data: Array<{ id: number; name: string; hash_id: string }>;
+        data: Array<{ id: number; name: string; clean_name: string; hash_id: string }>;
         current_page: number;
         last_page: number;
     };
@@ -47,7 +47,7 @@ function navigateToProfile(user: any) {
     router.visit(
         route('user.details', {
             hashId: user.hash_id,
-            name: user.name.toLowerCase().split(' ').join('-'),
+            name: user.clean_name.toLowerCase().split(' ').join('-'),
         }),
     );
 }
@@ -165,7 +165,7 @@ function navigateToProfile(user: any) {
                                     <!-- User Info -->
                                     <div class="min-w-0 flex-1">
                                         <h3 class="mb-1 truncate text-lg font-semibold text-gray-500 transition-colors group-hover:text-indigo-600">
-                                            {{ user.name }}
+                                            {{ user.clean_name }}
                                         </h3>
                                         <div class="flex items-center gap-2 text-sm text-gray-500">
                                             <UserCheck class="h-4 w-4" />

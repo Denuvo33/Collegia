@@ -243,7 +243,7 @@ function reportComment(commentId: number) {
                                             $inertia.visit(
                                                 route('user.details', {
                                                     hashId: data.user.hash_id,
-                                                    name: data.user.name.split(' ').join('-').toLowerCase(),
+                                                    name: data.user.clean_name.split(' ').join('-').toLowerCase(),
                                                 }),
                                             )
                                         "
@@ -278,7 +278,7 @@ function reportComment(commentId: number) {
                                                 $inertia.visit(
                                                     route('user.details', {
                                                         hashId: data.user.hash_id,
-                                                        name: data.user.name.toLowerCase().split(' ').join('-'),
+                                                        name: data.user.clean_name.toLowerCase().split(' ').join('-'),
                                                     }),
                                                 )
                                             "
@@ -400,7 +400,7 @@ function reportComment(commentId: number) {
                                                             $inertia.visit(
                                                                 route('user.details', {
                                                                     hashId: comment.user.hash_id,
-                                                                    name: comment.user.name.split(' ').join('-').toLowerCase(),
+                                                                    name: comment.user.clean_name.split(' ').join('-').toLowerCase(),
                                                                 }),
                                                             )
                                                         "
