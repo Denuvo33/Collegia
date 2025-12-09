@@ -26,7 +26,7 @@ class User extends Authenticatable
         'password',
         'private_post',
         'private_comment',
-        'role'
+        'role',
     ];
 
     /**

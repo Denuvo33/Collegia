@@ -77,9 +77,18 @@ Route::delete('/user/post/delete/{id}', [ProfileController::class, 'destroy'])->
 
 Route::delete('/user/event/delete/{id}', [EventController::class, 'destroy'])->middleware('auth')->name('user.delete.event');
 
-// Route::get('dashboard', function () {
-//     return Inertia::render('Dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
+Route::middleware('auth', 'admin')->group(function () {
+    Route::get('/admin/dashboard', function () {
+        return Inertia::render('admin/Dashboard');
+    })->name('admin.dashboard');
+    Route::get('/admin/user-dashboard', [CommunityController::class, 'fetchUsers'])->name('admin.users');
+
+    Route::post('/admin/user/create', [CommunityController::class, 'storeUsers'])->name('admin.users.store');
+
+    Route::put('/admin/user/update/{id}', [CommunityController::class, 'updateUsers'])->name('admin.users.update');
+
+    Route::delete('/admin/user/delete/{id}', [CommunityController::class, 'deleteUsers'])->name('admin.users.destroy');
+});
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

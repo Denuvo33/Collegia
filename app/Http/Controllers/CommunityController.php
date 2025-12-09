@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class CommunityController extends Controller
 {
@@ -41,11 +42,81 @@ class CommunityController extends Controller
                 case 'community':
                     return redirect()->route('user.home');
                 case 'moderator':
-                    return redirect()->route('moderator.dashboard');
+                    return redirect()->route('user.home');
             }
         }
         return back()->withErrors([
             'email' => 'Akses ditolak. Akun ini bukan akun komunitas.',
         ]);
+    }
+
+    public function fetchUsers(Request $request)
+    {
+        try {
+            $users = User::latest()->paginate(10);
+            // dd($users->toArray());
+            return Inertia::render('admin/users/UsersPage', [
+                'users' => $users->toArray()
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function storeUsers(Request $request)
+    {
+
+        try {
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users',
+                'password' => 'required|string|min:6|confirmed',
+                'role' => 'required|in:admin,community,moderator,user',
+            ]);
+            User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => $request->role,
+            ]);
+            return redirect()->back()->with('success', 'User berhasil dibuat.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal membuat user: ' . $e->getMessage());
+        }
+    }
+
+    public function updateUsers(Request $request, $id)
+    {
+
+        try {
+            $role =  $request->validate([
+                'role' => 'required|in:admin,community,moderator,user',
+            ]);
+            $user = User::findOrFail($id);
+            $user->role = $role['role'];
+            $user->save();
+
+            return redirect()->back()->with('success', 'Role user berhasil diperbarui.');
+        } catch (\Exception $e) {
+            \Log::error('Update role error: ' . $e->getMessage());
+
+            return redirect()->back()->with(
+                'error',
+                'Gagal memperbarui role user: ' . $e->getMessage()
+            );
+        }
+    }
+
+
+    public function deleteUsers($id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            $user->delete();
+
+            return redirect()->back()->with('success', 'User berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus user');
+        }
     }
 }

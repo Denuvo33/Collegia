@@ -34,7 +34,8 @@ Route::get('/auth/google/callback', function () {
         ['email' => $googleUser->getEmail()],
         [
             'name' => $googleUser->getName(),
-            'password' => bcrypt(Str::random(16)), // Generate a random password
+            'password' => bcrypt(Str::random(16)),
+            'role' => 'user',
         ]
     );
 
