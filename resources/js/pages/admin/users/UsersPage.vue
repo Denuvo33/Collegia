@@ -92,8 +92,30 @@ const goToPage = (page: number) => {
 const deleteUser = (userId: number) => {
     return router.delete(route('admin.users.destroy', userId), {
         preserveScroll: true,
+        preserveState: false,
         onSuccess: () => {
-            router.reload({ only: ['users'] });
+            toast.success('User berhasil dihapus', {
+                dismissible: true,
+                duration: 5000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
+                    },
+                },
+            });
+        },
+        onError: (errors) => {
+            toast.error('Gagal menghapus user: ' + errors, {
+                dismissible: true,
+                duration: 5000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
+                    },
+                },
+            });
         },
     });
 };
@@ -109,8 +131,30 @@ const addUser = () => {
         };
 
         form.post(route('admin.users.store'), {
+            preserveState: false,
             onSuccess: () => {
-                users.value.unshift(user);
+                toast.success('User berhasil ditambahkan', {
+                    dismissible: true,
+                    duration: 5000,
+                    action: {
+                        label: 'Tutup',
+                        onClick: () => {
+                            toast.dismiss();
+                        },
+                    },
+                });
+            },
+            onError: (errors) => {
+                toast.error('Gagal menambahkan user: ' + errors, {
+                    dismissible: true,
+                    duration: 5000,
+                    action: {
+                        label: 'Tutup',
+                        onClick: () => {
+                            toast.dismiss();
+                        },
+                    },
+                });
             },
         });
         showAddModal.value = false;

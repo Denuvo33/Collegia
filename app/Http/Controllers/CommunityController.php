@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\EventModel;
+use App\Models\ReportEvent;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -117,6 +119,31 @@ class CommunityController extends Controller
             return redirect()->back()->with('success', 'User berhasil dihapus.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus user');
+        }
+    }
+
+    public function reportEvents(Request $request)
+    {
+        try {
+            $events = ReportEvent::with('event')->latest()->paginate(10);
+
+            return Inertia::render('admin/reports/ReportEvent', [
+                'events' => $events->toArray()
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function deleteReportEvent($id)
+    {
+        try {
+            $report = ReportEvent::findOrFail($id);
+            $report->delete();
+
+            return redirect()->back()->with('success', 'Laporan event berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus laporan event');
         }
     }
 }

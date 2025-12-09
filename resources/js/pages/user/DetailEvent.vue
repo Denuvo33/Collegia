@@ -427,6 +427,12 @@ function formatPrice(price: number) {
                                                         Komunitas
                                                     </div>
                                                 </div>
+                                                <Button
+                                                    v-if="usePage().props.auth.user.role == 'admin' || usePage().props.auth.user.id == event.user.id"
+                                                    @click="deleteEvent(event.id)"
+                                                    class="w-full bg-red-500"
+                                                    >Delete</Button
+                                                >
                                             </div>
                                         </div>
                                     </div>
