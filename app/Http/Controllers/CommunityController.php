@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\EventModel;
 use App\Models\ReportEvent;
+use App\Models\ReportModel;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -144,6 +145,33 @@ class CommunityController extends Controller
             return redirect()->back()->with('success', 'Laporan event berhasil dihapus.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus laporan event');
+        }
+    }
+
+    public function reportPosts(Request $request)
+    {
+        try {
+            $posts = ReportModel::with('post')->latest()->paginate(10);
+
+
+            return Inertia::render('admin/reports/ReportPost', [
+                'posts' => $posts->toArray()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Update role error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function deleteReportPost($id)
+    {
+        try {
+            $report = ReportModel::findOrFail($id);
+            $report->delete();
+
+            return redirect()->back()->with('success', 'Laporan post berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus laporan post');
         }
     }
 }

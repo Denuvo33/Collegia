@@ -107,7 +107,7 @@ const navigateToEvent = (event: { hash_id: string; title: string }) => {
         title: event.title.toLowerCase().split(' ').join('-'),
     });
 
-    router.visit(url);
+    window.open(url, '_blank');
 };
 
 const formatDate = (date: string) => {

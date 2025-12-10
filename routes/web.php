@@ -83,6 +83,7 @@ Route::middleware('auth', 'admin')->group(function () {
     })->name('admin.dashboard');
     Route::get('/admin/user-dashboard', [CommunityController::class, 'fetchUsers'])->name('admin.users');
     Route::get('/admin/report-event', [CommunityController::class, 'reportEvents'])->name('admin.report.events');
+    Route::get('/admin/report-post', [CommunityController::class, 'reportPosts'])->name('admin.report.posts');
 
     Route::post('/admin/user/create', [CommunityController::class, 'storeUsers'])->name('admin.users.store');
 

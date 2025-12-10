@@ -329,7 +329,10 @@ function reportComment(commentId: number) {
                                             </AlertDialogContent>
                                         </AlertDialog>
 
-                                        <DropdownMenuItem v-if="data.user.id === usePage().props.auth.user.id" @click="deletePost(data.id)"
+                                        <DropdownMenuItem
+                                            class="text-red-500 hover:bg-red-50 hover:text-red-700"
+                                            v-if="data.user.id === usePage().props.auth.user.id || usePage().props.auth.user.role === 'admin'"
+                                            @click="deletePost(data.id)"
                                             >Hapus</DropdownMenuItem
                                         >
                                     </DropdownMenuContent>

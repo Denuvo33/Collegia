@@ -11,8 +11,8 @@ class ReportModel extends Model
     protected $fillable = ['post_id', 'reason'];
 
 
-    public function posts()
+    public function post()
     {
-        return $this->hasMany(Post::class, 'post_id');
+        return $this->belongsTo(Post::class, 'post_id');
     }
 }
