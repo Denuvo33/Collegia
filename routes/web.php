@@ -96,6 +96,8 @@ Route::middleware('auth', 'admin')->group(function () {
     Route::delete('/admin/report/event/delete/{id}', [CommunityController::class, 'deleteReportEvent'])->name('admin.reports.event.destroy');
     Route::delete('/admin/delete/all-event-complete', [CommunityController::class, 'deleteAllCompletedEvents'])->name('admin.events.delete.completed');
     Route::delete('/admin/report/comment/{id}', [CommunityController::class, 'deleteReportComment'])->name('admin.reports.comment.destroy');
+    Route::delete('/admin/report/post/{id}', [CommunityController::class, 'deleteReportPost'])->name('admin.reports.post.destroy');
+    Route::delete('/admin/event/delete/{id}', [CommunityController::class, 'deleteEvents'])->name('admin.events.destroy');
 });
 
 require __DIR__ . '/settings.php';

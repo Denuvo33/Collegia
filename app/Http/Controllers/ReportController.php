@@ -79,7 +79,7 @@ class ReportController extends Controller
             $data = $request->validate(
                 [
                     'event_id' => 'required|exists:event,id',
-                    'reason' => 'required|in:spam,abuse,harassment,other,inappropriate,porn,pretend to be other people,other'
+                    'reason' => 'required|in:spam,abuse,abusive,harassment,other,inappropriate,porn,pretend to be other people,other'
                 ]
             );
 

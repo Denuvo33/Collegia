@@ -1,9 +1,21 @@
 <script setup lang="ts">
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Toaster } from '@/components/ui/sonner';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { router, usePage } from '@inertiajs/vue3';
-import { ChevronLeft, ChevronRight, ExternalLink, Trash2 } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
+
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css';
 
@@ -16,6 +28,7 @@ type ReportEvent = {
 
 type Event = {
     title: string;
+    id: number;
     hash_id: string;
 };
 
@@ -88,6 +101,37 @@ const deleteReport = (id: number) => {
         },
         onError: (errors) => {
             toast.error(errors?.message || 'Terjadi kesalahan saat menghapus report', {
+                dismissible: true,
+                duration: 5000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
+                    },
+                },
+            });
+        },
+    });
+};
+
+const deleteFalseReport = (id: number) => {
+    router.delete(route('admin.reports.event.destroy', id), {
+        preserveScroll: true,
+        preserveState: false,
+        onSuccess: () => {
+            toast.success('False report berhasil dihapus', {
+                dismissible: true,
+                duration: 5000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
+                    },
+                },
+            });
+        },
+        onError: (errors) => {
+            toast.error(errors?.message || 'Terjadi kesalahan saat menghapus false report', {
                 dismissible: true,
                 duration: 5000,
                 action: {
@@ -202,14 +246,39 @@ watch(
                             <td class="px-6 py-4 text-sm whitespace-nowrap text-gray-600">
                                 {{ formatDate(report.created_at) }}
                             </td>
-                            <td class="px-6 py-4 text-sm whitespace-nowrap">
-                                <button
-                                    @click="deleteReport(report.event_id)"
-                                    class="text-black transition-colors hover:text-gray-600 focus:outline-none"
-                                    title="Delete report"
-                                >
-                                    <Trash2 :size="18" />
-                                </button>
+                            <td class="space-x-4 px-6 py-4 text-sm whitespace-nowrap">
+                                <AlertDialog>
+                                    <AlertDialogTrigger class="rounded bg-red-500 p-2 font-bold text-white">Delete Post</AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure? ({{ report.event.id }})</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This action cannot be undone. This will permanently delete the Event along with all its reports.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction @click="deleteReport(report.event.id)">Continue</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                                <AlertDialog>
+                                    <AlertDialogTrigger class="rounded bg-yellow-500 p-2 font-bold text-white"
+                                        >Delete False Report</AlertDialogTrigger
+                                    >
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure? ({{ report.event.id }})</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This action cannot be undone. This will permanently delete the false report.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction @click="deleteFalseReport(report.id)">Continue</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </td>
                         </tr>
                         <tr v-if="reportEvents.length === 0">

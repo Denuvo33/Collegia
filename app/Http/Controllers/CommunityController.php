@@ -190,6 +190,18 @@ class CommunityController extends Controller
         }
     }
 
+    public function deleteEvents($id)
+    {
+        try {
+            $event = EventModel::findOrFail($id);
+            $event->delete();
+
+            return redirect()->back()->with('success', 'Event berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus event');
+        }
+    }
+
     public function deleteAllCompletedEvents()
     {
         try {
