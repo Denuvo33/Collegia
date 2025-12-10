@@ -1,10 +1,22 @@
 <script setup lang="ts">
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Toaster } from '@/components/ui/sonner';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { router, usePage } from '@inertiajs/vue3';
-import { ChevronLeft, ChevronRight, ShieldAlert, Trash2 } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
+
 import 'vue-sonner/style.css';
 
 type ReportComment = {
@@ -17,6 +29,11 @@ type ReportComment = {
 type Comment = {
     id: number;
     content: string;
+    user_id: number;
+    post_id: number;
+    user: {
+        name: string;
+    };
 };
 
 const props = defineProps<{
@@ -71,71 +88,67 @@ const goToPage = (page: number) => {
 };
 
 const deleteComment = (commentId: number) => {
-    if (confirm('Are you sure you want to delete this comment? This action cannot be undone.')) {
-        router.delete(route('user.comment.delete', commentId), {
-            preserveScroll: true,
-            preserveState: false,
-            onSuccess: () => {
-                reportComments.value = reportComments.value.filter((r) => r.comment_id !== commentId);
-                toast.success('Komentar berhasil dihapus', {
-                    dismissible: true,
-                    duration: 5000,
-                    action: {
-                        label: 'Tutup',
-                        onClick: () => {
-                            toast.dismiss();
-                        },
+    router.delete(route('user.comment.delete', commentId), {
+        preserveScroll: true,
+        preserveState: false,
+        onSuccess: () => {
+            reportComments.value = reportComments.value.filter((r) => r.comment_id !== commentId);
+            toast.success('Komentar berhasil dihapus', {
+                dismissible: true,
+                duration: 5000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
                     },
-                });
-            },
-            onError: (errors) => {
-                toast.error(errors?.message || 'Terjadi kesalahan saat menghapus komentar', {
-                    dismissible: true,
-                    duration: 5000,
-                    action: {
-                        label: 'Tutup',
-                        onClick: () => {
-                            toast.dismiss();
-                        },
+                },
+            });
+        },
+        onError: (errors) => {
+            toast.error(errors?.message || 'Terjadi kesalahan saat menghapus komentar', {
+                dismissible: true,
+                duration: 5000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
                     },
-                });
-            },
-        });
-    }
+                },
+            });
+        },
+    });
 };
 
 const deleteFalseReport = (reportId: number) => {
-    if (confirm('Tandai laporan ini sebagai laporan palsu dan hapus?')) {
-        router.delete(route('admin.reports.comment.destroy', reportId), {
-            preserveScroll: true,
-            preserveState: false,
-            onSuccess: () => {
-                reportComments.value = reportComments.value.filter((r) => r.id !== reportId);
-                toast.success('Laporan palsu berhasil dihapus', {
-                    dismissible: true,
-                    duration: 5000,
-                    action: {
-                        label: 'Tutup',
-                        onClick: () => {
-                            toast.dismiss();
-                        },
+    router.delete(route('admin.reports.comment.destroy', reportId), {
+        preserveScroll: true,
+        preserveState: false,
+        onSuccess: () => {
+            reportComments.value = reportComments.value.filter((r) => r.id !== reportId);
+            toast.success('Laporan palsu berhasil dihapus', {
+                dismissible: true,
+                duration: 5000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
                     },
-                });
-            },
-            onError: (errors) => {
-                toast.error(errors?.message || 'Terjadi kesalahan saat menghapus laporan', {
-                    dismissible: true,
-                    duration: 5000,
-                    action: {
-                        label: 'Tutup',
-                        onClick: () => {
-                            toast.dismiss();
-                        },
+                },
+            });
+        },
+        onError: (errors) => {
+            toast.error(errors?.message || 'Terjadi kesalahan saat menghapus laporan', {
+                dismissible: true,
+                duration: 5000,
+                action: {
+                    label: 'Tutup',
+                    onClick: () => {
+                        toast.dismiss();
                     },
-                });
-            },
-        });
-    }
+                },
+            });
+        },
+    });
 };
 
 const formatDate = (date: string) => {
@@ -204,7 +217,7 @@ watch(
             </div>
 
             <!-- Table -->
-            <div class="border border-gray-200">
+            <div class="overflow-auto border border-gray-200">
                 <table class="w-full">
                     <thead>
                         <tr class="border-b border-gray-200 bg-gray-50">
@@ -212,6 +225,7 @@ watch(
                             <th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase">Comment ID</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase">Comment</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase">Reason</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase">By</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase">Reported At</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase">Actions</th>
                         </tr>
@@ -232,25 +246,47 @@ watch(
                             <td class="px-6 py-4">
                                 <div class="max-w-md text-sm text-gray-900">{{ report.reason }}</div>
                             </td>
+                            <td class="px-6 py-4">
+                                <div class="max-w-md text-sm text-gray-900">{{ report.comment.user.name }}</div>
+                            </td>
                             <td class="px-6 py-4 text-sm whitespace-nowrap text-gray-600">
                                 {{ formatDate(report.created_at) }}
                             </td>
                             <td class="px-6 py-4 text-sm whitespace-nowrap">
                                 <div class="flex items-center gap-3">
-                                    <button
-                                        @click="deleteComment(report.comment_id)"
-                                        class="text-black transition-colors hover:text-red-600 focus:outline-none"
-                                        title="Delete comment"
-                                    >
-                                        <Trash2 :size="18" />
-                                    </button>
-                                    <button
-                                        @click="deleteFalseReport(report.id)"
-                                        class="text-gray-600 transition-colors hover:text-black focus:outline-none"
-                                        title="Mark as false report"
-                                    >
-                                        <ShieldAlert :size="18" />
-                                    </button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger class="rounded bg-red-600 p-2 font-bold text-white">Delete Comment</AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you absolutely sure?({{ report.comment_id }}) </AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This action cannot be undone. This will permanently delete the comment and remove it from the
+                                                    system.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction @click="deleteComment(report.comment_id)">Continue</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger class="rounded bg-yellow-600 p-2 font-bold text-white"
+                                            >Delete False Report</AlertDialogTrigger
+                                        >
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you absolutely sure?({{ report.comment_id }})</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This action cannot be undone. This will permanently delete the false report from the system.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction @click="deleteFalseReport(report.id)">Continue</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                             </td>
                         </tr>
@@ -302,18 +338,6 @@ watch(
                 </div>
 
                 <div class="text-sm text-gray-600">Page {{ currentPage }} of {{ lastPage }}</div>
-            </div>
-
-            <!-- Legend -->
-            <div class="mt-6 flex items-center gap-6 rounded border border-gray-200 bg-gray-50 px-4 py-3">
-                <div class="flex items-center gap-2">
-                    <Trash2 :size="16" class="text-black" />
-                    <span class="text-sm text-gray-700">Delete Comment</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <ShieldAlert :size="16" class="text-gray-600" />
-                    <span class="text-sm text-gray-700">Mark as False Report</span>
-                </div>
             </div>
         </div>
     </AdminLayout>

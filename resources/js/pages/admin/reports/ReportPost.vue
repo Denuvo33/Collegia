@@ -169,7 +169,7 @@ watch(
             </div>
 
             <!-- Table -->
-            <div class="border border-gray-200">
+            <div class="overflow-auto border border-gray-200">
                 <table class="w-full">
                     <thead>
                         <tr class="border-b border-gray-200 bg-gray-50">

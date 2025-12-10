@@ -208,7 +208,7 @@ class CommunityController extends Controller
     public function reportComments(Request $request)
     {
         try {
-            $comments = ReportComment::with('comments')->latest()->paginate(10);
+            $comments = ReportComment::with(['comment.user'])->latest()->paginate(10);
             return Inertia::render('admin/reports/ReportComment', [
                 'comments' => $comments->toArray()
             ]);

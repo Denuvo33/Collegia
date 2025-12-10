@@ -56,7 +56,7 @@ class ReportController extends Controller
         try {
             $data = $request->validate([
                 'comment_id' => 'required|exists:comment,id',
-                'reason' => 'required|in:spam,abuse,harassment,other,inappropriate,porn,pretend to be other people,other',
+                'reason' => 'required|in:spam,abuse,harassment,abusive,other,inappropriate,porn,pretend to be other people,other',
             ]);
 
             ReportComment::create($data);

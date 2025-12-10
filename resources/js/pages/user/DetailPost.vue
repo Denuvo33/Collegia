@@ -145,6 +145,7 @@ function reportPost(postId: number) {
             preserveScroll: true,
             onSuccess: () => {
                 successComment.value = 'Laporan telah dikirim ke moderator, terima kasih atas laporannya';
+                reportValue.value = 'spam';
             },
 
             onError: (errors) => {
@@ -174,6 +175,7 @@ function reportComment(commentId: number) {
             {
                 onSuccess: () => {
                     successComment.value = 'Laporan telah dikirim ke moderator, terima kasih atas laporannya';
+                    reportValue.value = 'spam';
                 },
                 onError: (Errors: any) => {
                     ((successComment.value = 'Gagal mengirim laporan, periksa kembali jaringan anda'), console.error(Errors));
