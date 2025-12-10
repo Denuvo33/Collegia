@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\EventModel;
+use App\Models\ReportComment;
 use App\Models\ReportEvent;
 use App\Models\ReportModel;
 use Illuminate\Http\Request;
@@ -172,6 +173,59 @@ class CommunityController extends Controller
             return redirect()->back()->with('success', 'Laporan post berhasil dihapus.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus laporan post');
+        }
+    }
+
+    public function fetchEvents(Request $request)
+    {
+        try {
+            $events = EventModel::latest()->paginate(10);
+            // dd($users->toArray());
+            return Inertia::render('admin/events/Event', [
+                'events' => $events->toArray()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Fetch events error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function deleteAllCompletedEvents()
+    {
+        try {
+            $today = now()->format('Y-m-d');
+
+            $deletedCount = EventModel::where('date_event', '<', $today)->delete();
+
+            return redirect()->back()->with('success', "$deletedCount event selesai berhasil dihapus.");
+        } catch (\Exception $e) {
+            \Log::error('Delete completed events error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal menghapus event selesai: ' . $e->getMessage());
+        }
+    }
+
+
+    public function reportComments(Request $request)
+    {
+        try {
+            $comments = ReportComment::with('comments')->latest()->paginate(10);
+            return Inertia::render('admin/reports/ReportComment', [
+                'comments' => $comments->toArray()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Fetch reported comments error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+    public function deleteReportComment($id)
+    {
+        try {
+            $report = ReportComment::findOrFail($id);
+            $report->delete();
+
+            return redirect()->back()->with('success', 'Laporan komentar berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus laporan komentar');
         }
     }
 }

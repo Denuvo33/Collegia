@@ -90,8 +90,13 @@ const filteredList = computed(() => {
 const promote_event = (event_id: number) => {
     form.post(route('user.event.promote', event_id), {
         preserveScroll: true,
+        preserveState: false,
+        onSuccess: () => {
+            toast.success('Event berhasil dipromosikan!');
+        },
+
         onError: (errors) => {
-            console.error('Failed to promote event', errors);
+            toast.error('Gagal mempromosikan event. Silakan coba lagi.');
         },
     });
 };
@@ -476,7 +481,7 @@ function copyEvent(hashId: string) {
                             <Eye class="h-4 w-4" />
                             Lihat Detail Event
                         </Button>
-                        <div v-if="!isPromotedActive(event.promoted_till)" class="mt-2">
+                        <div v-if="!isPromotedActive(event.promoted_till) && usePage().props.auth.user.id == event.user.id" class="mt-2">
                             <Dialog>
                                 <DialogTrigger class="flex items-center gap-2 rounded bg-green-500 px-4 py-2 font-bold text-white">
                                     {{ event.id }}</DialogTrigger

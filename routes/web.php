@@ -84,6 +84,9 @@ Route::middleware('auth', 'admin')->group(function () {
     Route::get('/admin/user-dashboard', [CommunityController::class, 'fetchUsers'])->name('admin.users');
     Route::get('/admin/report-event', [CommunityController::class, 'reportEvents'])->name('admin.report.events');
     Route::get('/admin/report-post', [CommunityController::class, 'reportPosts'])->name('admin.report.posts');
+    Route::get('/admin/report-comment', [CommunityController::class, 'reportComments'])->name('admin.report.comments');
+    Route::get('/admin/event', [CommunityController::class, 'fetchEvents'])->name('admin.event');
+
 
     Route::post('/admin/user/create', [CommunityController::class, 'storeUsers'])->name('admin.users.store');
 
@@ -91,6 +94,8 @@ Route::middleware('auth', 'admin')->group(function () {
 
     Route::delete('/admin/user/delete/{id}', [CommunityController::class, 'deleteUsers'])->name('admin.users.destroy');
     Route::delete('/admin/report/event/delete/{id}', [CommunityController::class, 'deleteReportEvent'])->name('admin.reports.event.destroy');
+    Route::delete('/admin/delete/all-event-complete', [CommunityController::class, 'deleteAllCompletedEvents'])->name('admin.events.delete.completed');
+    Route::delete('/admin/report/comment/{id}', [CommunityController::class, 'deleteReportComment'])->name('admin.reports.comment.destroy');
 });
 
 require __DIR__ . '/settings.php';

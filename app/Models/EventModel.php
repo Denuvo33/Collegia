@@ -22,7 +22,7 @@ class EventModel extends Model
         'promoted_till'
     ];
 
-    protected $appends = ['hash_id'];
+    protected $appends = ['hash_id',];
 
     public function user()
     {

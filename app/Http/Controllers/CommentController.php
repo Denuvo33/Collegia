@@ -34,22 +34,20 @@ class CommentController extends Controller
      */
     public function store(CommentRequest $request)
     {
-        try{
+        try {
             $data = $request->validated();
             CommentModel::create($data);
 
             $post = Post::findOrFail($data['post_id']);
 
             Notification::create([
-                'message'=> Auth::user()->name . ' commented on your post: '.$request->content,
-                'post_id'=> $post->id,
-                'user_id'=> $post->user_id,
-                'is_read'=> 0,
+                'message' => Auth::user()->name . ' commented on your post: ' . $request->content,
+                'post_id' => $post->id,
+                'user_id' => $post->user_id,
+                'is_read' => 0,
             ]);
-        }catch(Exception $e){
-          
+        } catch (Exception $e) {
         }
-      
     }
 
     /**
@@ -80,29 +78,27 @@ class CommentController extends Controller
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
-{
-    try {
-        $comment = CommentModel::findOrFail($id);
+    {
+        try {
+            $comment = CommentModel::findOrFail($id);
 
-        if ($comment->user_id !== Auth::id()) {
+            if ($comment->user_id == Auth::id() || Auth::user()->role == 'admin') {
+
+                $comment->delete();
+                return redirect()->back()->with('success', 'Komentar berhasil dihapus.');
+            }
             return redirect()->back()->withErrors([
                 'error' => 'Anda tidak memiliki izin untuk menghapus komentar ini.'
             ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->back()->withErrors([
+                'message' => 'Komentar tidak ditemukan.'
+            ]);
+        } catch (\Exception $e) {
+
+            return redirect()->back()->withErrors([
+                'error' => 'Terjadi kesalahan, coba lagi nanti.'
+            ]);
         }
-
-        $comment->delete();
-
-        return redirect()->back()->with('success', 'Komentar berhasil dihapus.');
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return redirect()->back()->withErrors([
-            'message' => 'Komentar tidak ditemukan.'
-        ]);
-    } catch (\Exception $e) {
-
-        return redirect()->back()->withErrors([
-            'error' => 'Terjadi kesalahan, coba lagi nanti.'
-        ]);
     }
-}
-
 }
