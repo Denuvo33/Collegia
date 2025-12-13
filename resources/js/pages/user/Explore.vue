@@ -56,7 +56,7 @@ function getRoleBadgeInfo(role: string) {
     switch (role) {
         case 'community':
             return {
-                color: 'bg-purple-100 text-purple-700 border-purple-200',
+                color: 'bg-orange-100 text-orange-700 border-orange-200',
                 icon: Users,
                 label: 'Komunitas',
             };
@@ -179,7 +179,7 @@ function getRoleBadgeInfo(role: string) {
                             v-for="user in props.users.data"
                             :key="user.id"
                             @click="navigateToProfile(user)"
-                            class="group cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-indigo-200 hover:shadow-md dark:bg-gray-800"
+                            class="group cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md dark:bg-gray-800"
                         >
                             <!-- User Card -->
                             <div class="p-6">
@@ -195,7 +195,7 @@ function getRoleBadgeInfo(role: string) {
 
                                     <!-- User Info -->
                                     <div class="min-w-0 flex-1">
-                                        <h3 class="mb-1 truncate text-lg font-semibold text-gray-500 transition-colors group-hover:text-indigo-600">
+                                        <h3 class="mb-1 text-lg font-semibold text-gray-500 transition-colors">
                                             {{ user.role == 'user' ? user.clean_name : user.name }}
                                         </h3>
                                         <div class="flex items-center gap-2">
@@ -219,7 +219,7 @@ function getRoleBadgeInfo(role: string) {
 
                                 <!-- Action Hint -->
                                 <div class="mt-4 border-t border-gray-100 pt-4">
-                                    <div class="flex items-center gap-2 text-sm text-gray-600 transition-colors group-hover:text-indigo-600">
+                                    <div class="flex items-center gap-2 text-sm text-gray-600 transition-colors">
                                         <UserPlus class="h-4 w-4" />
                                         <span>Klik untuk melihat profil</span>
                                     </div>

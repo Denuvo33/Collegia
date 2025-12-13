@@ -16,11 +16,12 @@ class EventController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $today = now();
+        $filter = $request->query('filter', 'terbaru');
 
-        $events = EventModel::with('user')
+        $query = EventModel::with('user')
             ->select('*')
             ->selectRaw("
             CASE 
@@ -37,15 +38,43 @@ class EventController extends Controller
                 THEN promoted_till
                 ELSE NULL
             END AS sort_promoted_till
-        ", [$today])
-            ->orderByDesc('is_promoted')
-            ->orderByDesc('sort_promoted_till')
-            ->orderByDesc('created_at')
-            ->paginate(10)
-            ->toArray();
+        ", [$today]);
+
+        // Apply filter-specific logic
+        switch ($filter) {
+            case 'terlama':
+                $query->orderByDesc('is_promoted')
+                    ->orderByDesc('sort_promoted_till')
+                    ->orderBy('created_at', 'asc');
+                break;
+
+            case 'dalam_waktu_dekat':
+                $query->whereDate('date_event', '>=', $today)
+                    ->orderByDesc('is_promoted')
+                    ->orderByDesc('sort_promoted_till')
+                    ->orderBy('date_event', 'asc');
+                break;
+
+            case 'berlangsung':
+                $query->whereDate('date_event', '=', $today)
+                    ->orderByDesc('is_promoted')
+                    ->orderByDesc('sort_promoted_till')
+                    ->orderByDesc('created_at');
+                break;
+
+            case 'terbaru':
+            default:
+                $query->orderByDesc('is_promoted')
+                    ->orderByDesc('sort_promoted_till')
+                    ->orderByDesc('created_at');
+                break;
+        }
+
+        $events = $query->paginate(10)->toArray();
 
         return Inertia::render('user/Event', [
             'data' => $events,
+            'currentFilter' => $filter,
         ]);
     }
 

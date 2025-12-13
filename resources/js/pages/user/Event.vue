@@ -66,13 +66,14 @@ const props = defineProps<{
         last_page: number;
         next_page_url?: string | null;
     };
+    currentFilter?: string;
 }>();
 
 const form = useForm({
     promote_event: null,
 });
 
-const searchList = [...props.data.data];
+const selectedFilter = ref(props.currentFilter || 'terbaru');
 const searchQuery = ref('');
 
 function searchEvent(list: typeof props.data.data, query: string) {
@@ -83,9 +84,20 @@ function searchEvent(list: typeof props.data.data, query: string) {
 }
 
 const filteredList = computed(() => {
-    return searchEvent(searchList, searchQuery.value);
-    // return sortList(result);
+    return searchEvent(props.data.data, searchQuery.value);
 });
+
+const changeFilter = (filter: string) => {
+    selectedFilter.value = filter;
+    router.get(
+        route('user.event'),
+        { filter },
+        {
+            preserveScroll: true,
+            preserveState: true,
+        },
+    );
+};
 
 const promote_event = (event_id: number) => {
     form.post(route('user.event.promote', event_id), {
@@ -265,13 +277,23 @@ function copyEvent(hashId: string) {
                     <DropdownMenu>
                         <DropdownMenuTrigger class="flex items-center justify-center gap-2">
                             <Filter class="h-4 w-4" />
-                            Filter
+                            <span class="capitalize">
+                                {{
+                                    selectedFilter === 'terbaru'
+                                        ? 'Terbaru'
+                                        : selectedFilter === 'terlama'
+                                          ? 'Terlama'
+                                          : selectedFilter === 'dalam_waktu_dekat'
+                                            ? 'Dalam waktu dekat'
+                                            : 'Berlangsung'
+                                }}
+                            </span>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                            <DropdownMenuItem>Terbaru</DropdownMenuItem>
-                            <DropdownMenuItem>Terlama</DropdownMenuItem>
-                            <DropdownMenuItem>Dalam waktu dekat</DropdownMenuItem>
-                            <DropdownMenuItem>Berlangsung</DropdownMenuItem>
+                            <DropdownMenuItem @click="changeFilter('terbaru')">Terbaru</DropdownMenuItem>
+                            <DropdownMenuItem @click="changeFilter('terlama')">Terlama</DropdownMenuItem>
+                            <DropdownMenuItem @click="changeFilter('dalam_waktu_dekat')">Dalam waktu dekat</DropdownMenuItem>
+                            <DropdownMenuItem @click="changeFilter('berlangsung')">Berlangsung</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
