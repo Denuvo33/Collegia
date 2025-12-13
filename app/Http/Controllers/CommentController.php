@@ -111,7 +111,7 @@ class CommentController extends Controller
             return redirect()->back()->withErrors([
                 'message' => 'Komentar tidak ditemukan.'
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
 
             return redirect()->back()->withErrors([
                 'error' => 'Terjadi kesalahan, coba lagi nanti.'

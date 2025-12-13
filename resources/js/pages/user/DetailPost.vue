@@ -40,6 +40,107 @@ const loadingComments = ref(false);
 const observer = ref<IntersectionObserver | null>(null);
 const loadMoreTrigger = ref<HTMLElement | null>(null);
 
+// Cache configuration - limits to prevent memory bloat
+const CACHE_CONFIG = {
+    MAX_CACHED_POSTS: 5, // Only cache last 5 viewed posts
+    MAX_COMMENTS_PER_POST: 50, // Max 50 comments cached per post
+    CACHE_EXPIRY_MS: 5 * 60 * 1000, // 5 minutes expiry
+};
+
+// Cache utility functions with security and memory management
+const getCacheKey = (postId: number) => `post_comments_${postId}`;
+
+const getCachedComments = (postId: number) => {
+    try {
+        const cached = sessionStorage.getItem(getCacheKey(postId));
+        if (!cached) return null;
+
+        const data = JSON.parse(cached);
+
+        // Check expiry
+        if (Date.now() - data.timestamp > CACHE_CONFIG.CACHE_EXPIRY_MS) {
+            sessionStorage.removeItem(getCacheKey(postId));
+            return null;
+        }
+
+        return data;
+    } catch (e) {
+        // Silent fail on parse errors, remove corrupted cache
+        sessionStorage.removeItem(getCacheKey(postId));
+        return null;
+    }
+};
+
+const setCachedComments = (postId: number, comments: any[], currentPage: number, total: number) => {
+    try {
+        // Limit comments to prevent memory bloat
+        const limitedComments = comments.slice(0, CACHE_CONFIG.MAX_COMMENTS_PER_POST);
+
+        const data = {
+            comments: limitedComments,
+            currentPage: Math.min(currentPage, Math.ceil(CACHE_CONFIG.MAX_COMMENTS_PER_POST / 10)),
+            total,
+            timestamp: Date.now(),
+        };
+
+        // Clean old caches if we exceed max cached posts
+        cleanOldCaches();
+
+        sessionStorage.setItem(getCacheKey(postId), JSON.stringify(data));
+    } catch (e) {
+        // If quota exceeded, clear all caches
+        console.warn('Cache quota exceeded, clearing old caches');
+        clearAllCommentCaches();
+    }
+};
+
+const invalidateCache = (postId: number) => {
+    sessionStorage.removeItem(getCacheKey(postId));
+};
+
+const cleanOldCaches = () => {
+    try {
+        const cacheKeys: { key: string; timestamp: number }[] = [];
+
+        // Find all comment caches
+        for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            if (key?.startsWith('post_comments_')) {
+                const data = sessionStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        cacheKeys.push({ key, timestamp: parsed.timestamp || 0 });
+                    } catch (e) {
+                        // Remove corrupted cache
+                        sessionStorage.removeItem(key);
+                    }
+                }
+            }
+        }
+
+        // If we have too many caches, remove oldest ones
+        if (cacheKeys.length > CACHE_CONFIG.MAX_CACHED_POSTS) {
+            cacheKeys.sort((a, b) => a.timestamp - b.timestamp);
+            const toRemove = cacheKeys.slice(0, cacheKeys.length - CACHE_CONFIG.MAX_CACHED_POSTS);
+            toRemove.forEach(({ key }) => sessionStorage.removeItem(key));
+        }
+    } catch (e) {
+        console.error('Error cleaning caches:', e);
+    }
+};
+
+const clearAllCommentCaches = () => {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith('post_comments_')) {
+            keysToRemove.push(key);
+        }
+    }
+    keysToRemove.forEach((key) => sessionStorage.removeItem(key));
+};
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Home',
@@ -91,10 +192,19 @@ const props = defineProps<{
     };
 }>();
 
-// Initialize comments from props
-comments.value = props.data.comments.data || [];
-currentPage.value = props.data.comments.current_page || 1;
-hasMoreComments.value = currentPage.value < (props.data.comments.last_page || 1);
+// Initialize comments from cache or props
+const cached = getCachedComments(props.data.id);
+if (cached && cached.comments.length > 0) {
+    // Use cached data
+    comments.value = cached.comments;
+    currentPage.value = cached.currentPage;
+    hasMoreComments.value = currentPage.value < Math.ceil(cached.total / 10);
+} else {
+    // Use server data
+    comments.value = props.data.comments.data || [];
+    currentPage.value = props.data.comments.current_page || 1;
+    hasMoreComments.value = currentPage.value < (props.data.comments.last_page || 1);
+}
 
 const form = useForm({
     post_id: props.data.id,
@@ -121,6 +231,9 @@ const loadMoreComments = async () => {
             comments.value = [...comments.value, ...data.data];
             currentPage.value = data.current_page;
             hasMoreComments.value = currentPage.value < data.last_page;
+
+            // Update cache with new comments
+            setCachedComments(props.data.id, comments.value, currentPage.value, data.total);
         } else {
             hasMoreComments.value = false;
         }
@@ -148,6 +261,11 @@ onMounted(() => {
             observer.value?.observe(loadMoreTrigger.value);
         }
     }, 100);
+
+    // Cache initial comments if not already cached
+    if (!getCachedComments(props.data.id)) {
+        setCachedComments(props.data.id, comments.value, currentPage.value, props.data.comments.total || 0);
+    }
 });
 
 // Cleanup observer on unmount
@@ -155,6 +273,9 @@ onUnmounted(() => {
     if (observer.value) {
         observer.value.disconnect();
     }
+
+    // Save current state to cache before unmounting
+    setCachedComments(props.data.id, comments.value, currentPage.value, props.data.comments.total || 0);
 });
 
 function submit() {
@@ -182,6 +303,9 @@ function submit() {
             // Add the new comment to the top of the list
             comments.value = [newComment, ...comments.value];
 
+            // Invalidate cache since we have a new comment
+            invalidateCache(props.data.id);
+
             // Update total count
             if (props.data.comments.total !== undefined) {
                 props.data.comments.total++;
@@ -202,6 +326,8 @@ function deleteComment(id: number) {
         router.delete(route('user.comment.delete', id), {
             onSuccess: () => {
                 successComment.value = 'Komentar telah di hapus';
+                // Invalidate cache since comment was deleted
+                invalidateCache(props.data.id);
             },
             onError: () => {
                 successComment.value = 'Gagal menghapus komentar, periksa kembali jaringan anda';

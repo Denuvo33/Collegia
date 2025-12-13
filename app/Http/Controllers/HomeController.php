@@ -34,7 +34,7 @@ class HomeController extends Controller
 
     public function details($hashId)
     {
-        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($hashId);
+        $decoded = Hashids::decode($hashId);
 
         if (empty($decoded)) {
             abort(404, 'Invalid Post');
