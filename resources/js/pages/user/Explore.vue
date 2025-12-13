@@ -16,7 +16,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const props = defineProps<{
     users: {
-        data: Array<{ id: number; name: string; clean_name: string; hash_id: string }>;
+        data: Array<{ id: number; name: string; clean_name: string; hash_id: string; role: string }>;
         current_page: number;
         last_page: number;
     };
@@ -50,6 +50,35 @@ function navigateToProfile(user: any) {
             name: user.clean_name.toLowerCase().split(' ').join('-'),
         }),
     );
+}
+
+function getRoleBadgeInfo(role: string) {
+    switch (role) {
+        case 'community':
+            return {
+                color: 'bg-purple-100 text-purple-700 border-purple-200',
+                icon: Users,
+                label: 'Komunitas',
+            };
+        case 'moderator':
+            return {
+                color: 'bg-blue-100 text-blue-700 border-blue-200',
+                icon: UserCheck,
+                label: 'Moderator',
+            };
+        case 'user':
+            return {
+                color: 'bg-gray-100 text-gray-700 border-gray-200',
+                icon: UserCheck,
+                label: 'Pengguna',
+            };
+        default:
+            return {
+                color: 'bg-gray-100 text-gray-700 border-gray-200',
+                icon: UserCheck,
+                label: 'Pengguna',
+            };
+    }
 }
 </script>
 
@@ -134,16 +163,18 @@ function navigateToProfile(user: any) {
                     <!-- Empty State for No Search -->
                     <div v-else-if="!searchUser && props.users.data.length === 0" class="py-16 text-center">
                         <div
-                            class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-indigo-100"
+                            class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-indigo-100"
                         >
-                            <Compass class="h-10 w-10" />
+                            <Users class="h-10 w-10 text-purple-600" />
                         </div>
-                        <h3 class="mb-2 text-xl font-semibold text-gray-500">Mulai Jelajahi</h3>
-                        <p class="mx-auto max-w-md text-gray-500">Gunakan kolom pencarian di atas untuk menemukan pengguna yang ingin Anda ikuti</p>
+                        <h3 class="mb-2 text-xl font-semibold text-gray-500">Tidak Ada Komunitas</h3>
+                        <p class="mx-auto max-w-md text-gray-500">
+                            Saat ini belum ada pengguna dengan role komunitas. Gunakan kolom pencarian untuk menemukan pengguna lain.
+                        </p>
                     </div>
 
                     <!-- Users Grid -->
-                    <div v-else class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         <div
                             v-for="user in props.users.data"
                             :key="user.id"
@@ -165,11 +196,16 @@ function navigateToProfile(user: any) {
                                     <!-- User Info -->
                                     <div class="min-w-0 flex-1">
                                         <h3 class="mb-1 truncate text-lg font-semibold text-gray-500 transition-colors group-hover:text-indigo-600">
-                                            {{ user.clean_name }}
+                                            {{ user.role == 'user' ? user.clean_name : user.name }}
                                         </h3>
-                                        <div class="flex items-center gap-2 text-sm text-gray-500">
-                                            <UserCheck class="h-4 w-4" />
-                                            <span>Pengguna Aktif</span>
+                                        <div class="flex items-center gap-2">
+                                            <div
+                                                :class="getRoleBadgeInfo(user.role).color"
+                                                class="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium"
+                                            >
+                                                <component :is="getRoleBadgeInfo(user.role).icon" class="h-3.5 w-3.5" />
+                                                <span>{{ getRoleBadgeInfo(user.role).label }}</span>
+                                            </div>
                                         </div>
                                     </div>
 

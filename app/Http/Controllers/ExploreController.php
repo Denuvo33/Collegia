@@ -18,16 +18,21 @@ class ExploreController extends Controller
 
         $query = User::query();
 
-        if ($search) {
-            $query->where('name', 'like', '%' . $search . '%');
-        } else {
+        // Always exclude admin users from explore
+        $query->where('role', '!=', 'admin');
 
-            $query->whereRaw('1 = 0');
+        if ($search) {
+            // When searching, show only user, moderator, and community roles
+            $query->where('name', 'like', '%' . $search . '%')
+                ->whereIn('role', ['user', 'moderator', 'community']);
+        } else {
+            // When not searching, show only community users
+            $query->where('role', 'community');
         }
 
-        $users = $query->select('id', 'name',)
+        $users = $query->select('id', 'name', 'role')
             ->orderBy('name')
-            ->paginate(10)
+            ->paginate(12)
             ->withQueryString();
 
         return Inertia::render('user/Explore', [

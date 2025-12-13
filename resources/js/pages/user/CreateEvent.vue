@@ -128,9 +128,7 @@ function submit() {
                     </div>
                 </div>
             </CardContent>
-            <CardFooter
-                >Event yang kamu buat akan muncul di halaman utama setelah disetujui. Semua Pengguna akan dikirim Notifikasi ketika Event disetujui
-            </CardFooter>
+            <CardFooter> </CardFooter>
         </Card>
     </AppLayout>
 </template>

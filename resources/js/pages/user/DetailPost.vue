@@ -250,7 +250,7 @@ function reportComment(commentId: number) {
                                             )
                                         "
                                     >
-                                        {{ data.user.clean_name }}
+                                        {{ data.user.role == 'user' ? data.user.clean_name : data.user.name }}
                                     </h1>
                                     <div
                                         v-if="data.user.role === 'moderator'"
