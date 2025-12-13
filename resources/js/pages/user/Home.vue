@@ -70,9 +70,96 @@ const props = defineProps<{
     };
 }>();
 
-const posts = ref<Post[]>([...props.data.data]);
-const currentPage = ref(props.data.current_page);
-const lastPage = ref(props.data.last_page);
+// Cache configuration
+const CACHE_KEY = 'home_posts_cache';
+const CACHE_EXPIRATION = 3 * 60 * 1000;
+const MAX_CACHED_POSTS = 50;
+const SCROLL_POSITION_KEY = 'home_scroll_position';
+
+type CachedData = {
+    posts: Post[];
+    currentPage: number;
+    lastPage: number;
+    timestamp: number;
+};
+
+// Cache management functions
+function saveToCache() {
+    try {
+        const cacheData: CachedData = {
+            posts: posts.value.slice(0, MAX_CACHED_POSTS), // Limit cache size
+            currentPage: currentPage.value,
+            lastPage: lastPage.value,
+            timestamp: Date.now(),
+        };
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+    } catch (error) {
+        console.error('Failed to save cache:', error);
+    }
+}
+
+function loadFromCache(): CachedData | null {
+    try {
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (!cached) return null;
+
+        const cacheData: CachedData = JSON.parse(cached);
+        const now = Date.now();
+
+        // Check if cache is expired
+        if (now - cacheData.timestamp > CACHE_EXPIRATION) {
+            sessionStorage.removeItem(CACHE_KEY);
+            return null;
+        }
+
+        return cacheData;
+    } catch (error) {
+        console.error('Failed to load cache:', error);
+        return null;
+    }
+}
+
+function clearCache() {
+    sessionStorage.removeItem(CACHE_KEY);
+    sessionStorage.removeItem(SCROLL_POSITION_KEY);
+}
+
+function saveScrollPosition() {
+    try {
+        sessionStorage.setItem(SCROLL_POSITION_KEY, window.scrollY.toString());
+    } catch (error) {
+        console.error('Failed to save scroll position:', error);
+    }
+}
+
+function restoreScrollPosition() {
+    try {
+        const savedPosition = sessionStorage.getItem(SCROLL_POSITION_KEY);
+        if (savedPosition) {
+            // Use requestAnimationFrame to ensure DOM is ready
+            requestAnimationFrame(() => {
+                window.scrollTo(0, parseInt(savedPosition, 10));
+                sessionStorage.removeItem(SCROLL_POSITION_KEY);
+            });
+        }
+    } catch (error) {
+        console.error('Failed to restore scroll position:', error);
+    }
+}
+
+// Initialize from cache or props
+// Only use cache if there's a saved scroll position (indicating navigation back from post details)
+const hasSavedScrollPosition = sessionStorage.getItem(SCROLL_POSITION_KEY) !== null;
+const cachedData = hasSavedScrollPosition ? loadFromCache() : null;
+
+// If no saved scroll position, clear cache to ensure fresh data on reload
+if (!hasSavedScrollPosition) {
+    clearCache();
+}
+
+const posts = ref<Post[]>(cachedData ? cachedData.posts : [...props.data.data]);
+const currentPage = ref(cachedData ? cachedData.currentPage : props.data.current_page);
+const lastPage = ref(cachedData ? cachedData.lastPage : props.data.last_page);
 const loading = ref(false);
 
 const loadMore = async () => {
@@ -89,6 +176,9 @@ const loadMore = async () => {
 
         currentPage.value = newData.current_page;
         lastPage.value = newData.last_page;
+
+        // Save to cache after loading more posts
+        saveToCache();
     } finally {
         loading.value = false;
     }
@@ -97,6 +187,12 @@ const sentinel = ref<HTMLElement | null>(null);
 let observer: IntersectionObserver | null = null;
 
 onMounted(() => {
+    // Restore scroll position if coming back from post details
+    restoreScrollPosition();
+
+    // Save cache on mount to refresh timestamp
+    saveToCache();
+
     observer = new IntersectionObserver(
         (entries) => {
             entries.forEach((entry) => {
@@ -153,6 +249,8 @@ watch(
                     },
                 },
             });
+            // Clear cache on successful operations (like delete)
+            clearCache();
         }
         if (flash?.error) {
             toast.error(flash.error, {
@@ -207,6 +305,13 @@ function copyPostUrl(hashId: string) {
         },
     );
 }
+
+function navigateToPost(hashId: string) {
+    // Save scroll position and cache before navigating
+    saveScrollPosition();
+    saveToCache();
+    router.visit(`/user/post/${hashId}`);
+}
 </script>
 
 <template>
@@ -244,7 +349,7 @@ function copyPostUrl(hashId: string) {
                             </div>
                         </div>
                         <div class="flex flex-col">
-                            <h1 class="cursor-pointer text-2xl font-bold" @click="$inertia.visit(`/user/post/${posts.hash_id}`)">
+                            <h1 class="cursor-pointer text-2xl font-bold" @click="navigateToPost(posts.hash_id)">
                                 {{ posts.user.role == 'user' ? posts.user.clean_name : posts.user.name }}
                             </h1>
                             <div class="flex items-center gap-1 text-sm text-gray-500">
@@ -339,7 +444,7 @@ function copyPostUrl(hashId: string) {
                     <!-- <Label class="cursor-pointer">
                         <Heart for="like" />
                     </Label> -->
-                    <Label class="cursor-pointer" @click="$inertia.visit(`/user/post/${posts.hash_id}`)">
+                    <Label class="cursor-pointer" @click="navigateToPost(posts.hash_id)">
                         <MessageCircle />
                         Komentar
                     </Label>
