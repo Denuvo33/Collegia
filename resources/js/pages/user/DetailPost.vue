@@ -24,13 +24,21 @@ import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { AlertTriangle, CheckCircle, Clock, EllipsisVertical, Image as ImageIcon, MessageSquare, Send, X } from 'lucide-vue-next';
 
-import { ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 dayjs.locale('id');
 dayjs.extend(relativeTime);
 
 const successComment = ref<String | null>();
 const reportValue = ref('spam');
+
+// Pagination state for infinite scroll
+const comments = ref<Array<any>>([]);
+const currentPage = ref(1);
+const hasMoreComments = ref(true);
+const loadingComments = ref(false);
+const observer = ref<IntersectionObserver | null>(null);
+const loadMoreTrigger = ref<HTMLElement | null>(null);
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -60,24 +68,33 @@ const props = defineProps<{
             role: string;
             clean_name: string;
         };
-        comments: Array<{
-            id: number;
-            content: string;
-            user_id: number;
-            post_id: number;
-            created_at: string;
-            user: {
+        comments: {
+            data: Array<{
                 id: number;
-                name: string;
-                clean_name: string;
-                hash_id: string;
-                role: string;
-            };
-        }>;
+                content: string;
+                user_id: number;
+                post_id: number;
+                created_at: string;
+                user: {
+                    id: number;
+                    name: string;
+                    clean_name: string;
+                    hash_id: string;
+                    role: string;
+                };
+            }>;
+            current_page: number;
+            last_page: number;
+            per_page: number;
+            total: number;
+        };
     };
 }>();
 
-console.log('content is ', props.data.content);
+// Initialize comments from props
+comments.value = props.data.comments.data || [];
+currentPage.value = props.data.comments.current_page || 1;
+hasMoreComments.value = currentPage.value < (props.data.comments.last_page || 1);
 
 const form = useForm({
     post_id: props.data.id,
@@ -85,18 +102,92 @@ const form = useForm({
     content: '',
 });
 
-const sortedComment = () => {
-    return props.data.comments.sort((a, b) => {
+const sortedComment = computed(() => {
+    return comments.value.sort((a, b) => {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
+});
+
+// Load more comments function
+const loadMoreComments = async () => {
+    if (loadingComments.value || !hasMoreComments.value) return;
+
+    loadingComments.value = true;
+    try {
+        const response = await fetch(`/user/post/${props.data.id}/comments?page=${currentPage.value + 1}`);
+        const data = await response.json();
+
+        if (data.data && data.data.length > 0) {
+            comments.value = [...comments.value, ...data.data];
+            currentPage.value = data.current_page;
+            hasMoreComments.value = currentPage.value < data.last_page;
+        } else {
+            hasMoreComments.value = false;
+        }
+    } catch (error) {
+        console.error('Error loading comments:', error);
+    } finally {
+        loadingComments.value = false;
+    }
 };
+
+// Setup intersection observer for infinite scroll
+onMounted(() => {
+    observer.value = new IntersectionObserver(
+        (entries) => {
+            if (entries[0].isIntersecting && hasMoreComments.value && !loadingComments.value) {
+                loadMoreComments();
+            }
+        },
+        { threshold: 0.1 },
+    );
+
+    // Start observing when component is mounted
+    setTimeout(() => {
+        if (loadMoreTrigger.value) {
+            observer.value?.observe(loadMoreTrigger.value);
+        }
+    }, 100);
+});
+
+// Cleanup observer on unmount
+onUnmounted(() => {
+    if (observer.value) {
+        observer.value.disconnect();
+    }
+});
 
 function submit() {
     form.post(route('post.store.comment'), {
         onError: (Errors) => {
             console.log('erros', Errors);
         },
-        onSuccess: (Success) => {
+        onSuccess: () => {
+            // Create the new comment object with current data
+            const newComment = {
+                id: Date.now(), // Temporary ID until page is reloaded
+                content: form.content,
+                user_id: usePage().props.auth.user.id,
+                post_id: props.data.id,
+                created_at: new Date().toISOString(),
+                user: {
+                    id: usePage().props.auth.user.id,
+                    name: usePage().props.auth.user.name,
+                    clean_name: usePage().props.auth.user.name,
+                    hash_id: (usePage().props.auth.user as any).hash_id || '',
+                    role: (usePage().props.auth.user as any).role || 'user',
+                },
+            };
+
+            // Add the new comment to the top of the list
+            comments.value = [newComment, ...comments.value];
+
+            // Update total count
+            if (props.data.comments.total !== undefined) {
+                props.data.comments.total++;
+            }
+
+            // Clear the form
             form.content = '';
         },
     });
@@ -373,16 +464,16 @@ function reportComment(commentId: number) {
                             </div>
                             <div>
                                 <h2 class="text-xl font-bold text-gray-900 dark:text-white">Komentar</h2>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">{{ data.comments.length }} komentar</p>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">{{ props.data.comments.total }} komentar</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Comments List -->
                     <div class="divide-y divide-gray-100">
-                        <div v-if="data.comments.length > 0" class="max-h-96 overflow-y-auto">
+                        <div v-if="comments.length > 0" class="max-h-96 overflow-y-auto">
                             <div
-                                v-for="comment in sortedComment()"
+                                v-for="comment in sortedComment"
                                 :key="comment.id"
                                 class="bark:bg-gray-700 p-6 transition-colors hover:bg-gray-50 hover:dark:bg-gray-700"
                             >
@@ -500,6 +591,14 @@ function reportComment(commentId: number) {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Load more trigger for intersection observer -->
+                            <div v-if="hasMoreComments" ref="loadMoreTrigger" class="p-4 text-center">
+                                <div v-if="loadingComments" class="flex items-center justify-center gap-2 text-gray-500">
+                                    <div class="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
+                                    <span>Memuat komentar...</span>
                                 </div>
                             </div>
                         </div>

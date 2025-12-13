@@ -40,6 +40,10 @@ Route::get('/user/create-post', [CreatePostController::class, 'index'])->middlew
 
 Route::get('/user/post/{hashId}', [HomeController::class, 'details'])->middleware(['auth', 'verified'])->name('user.post.details');
 
+// API endpoint for fetching paginated comments
+Route::get('/user/post/{postId}/comments', [CommentController::class, 'getComments'])->middleware(['auth', 'verified'])->name('post.comments.paginate');
+
+
 Route::get('/user/{hashId}/{name}', [HomeController::class, 'user'])->middleware(['auth'])->name('user.details');
 // API khusus load posts
 Route::get('/user/{hashId}/{name}/posts', [HomeController::class, 'userPosts'])

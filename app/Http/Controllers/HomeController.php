@@ -42,7 +42,17 @@ class HomeController extends Controller
 
         $id = $decoded[0];
 
-        $data = Post::with(['user', 'comments.user'])->findOrFail($id);
+        $post = Post::with('user')->findOrFail($id);
+
+        // Get paginated comments for the post
+        $comments = CommentModel::with('user')
+            ->where('post_id', $id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        // Merge post data with paginated comments
+        $data = $post->toArray();
+        $data['comments'] = $comments->toArray();
 
         return Inertia::render('user/DetailPost', [
             'data' => $data,

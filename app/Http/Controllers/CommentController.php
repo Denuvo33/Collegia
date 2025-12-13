@@ -22,6 +22,19 @@ class CommentController extends Controller
     }
 
     /**
+     * Get paginated comments for a specific post
+     */
+    public function getComments(Request $request, $postId)
+    {
+        $comments = CommentModel::with('user')
+            ->where('post_id', $postId)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return response()->json($comments);
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()
@@ -36,7 +49,7 @@ class CommentController extends Controller
     {
         try {
             $data = $request->validated();
-            CommentModel::create($data);
+            $comment = CommentModel::create($data);
 
             $post = Post::findOrFail($data['post_id']);
 
@@ -46,7 +59,11 @@ class CommentController extends Controller
                 'user_id' => $post->user_id,
                 'is_read' => 0,
             ]);
+
+            // Return the comment with user data
+            return back()->with('newComment', $comment->load('user'));
         } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Failed to create comment']);
         }
     }
 
