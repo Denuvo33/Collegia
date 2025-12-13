@@ -57,10 +57,30 @@ class CommunityController extends Controller
     public function fetchUsers(Request $request)
     {
         try {
-            $users = User::latest()->paginate(10);
-            // dd($users->toArray());
+            $query = User::query();
+
+            // Search by name or email
+            if ($request->has('search') && !empty($request->search)) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', '%' . $search . '%')
+                      ->orWhere('email', 'like', '%' . $search . '%');
+                });
+            }
+
+            // Filter by role
+            if ($request->has('role') && !empty($request->role)) {
+                $query->where('role', $request->role);
+            }
+
+            $users = $query->latest()->paginate(10);
+            
             return Inertia::render('admin/users/UsersPage', [
-                'users' => $users->toArray()
+                'users' => $users->toArray(),
+                'filters' => [
+                    'search' => $request->search ?? '',
+                    'role' => $request->role ?? '',
+                ]
             ]);
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());

@@ -13,7 +13,7 @@ import {
 import { Toaster } from '@/components/ui/sonner';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { router, useForm, usePage } from '@inertiajs/vue3';
-import { ChevronLeft, ChevronRight, Trash, UserPlus } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight, Search, Trash, UserPlus, X } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css';
@@ -33,6 +33,10 @@ const props = defineProps<{
         current_page: number;
         next_page_url: string | null;
     };
+    filters: {
+        search: string;
+        role: string;
+    };
 }>();
 
 const form = useForm({
@@ -45,6 +49,11 @@ const form = useForm({
 
 const users = ref<User[]>([...props.users.data]);
 const showAddModal = ref(false);
+
+// Filter state
+const searchQuery = ref(props.filters.search);
+const roleFilter = ref(props.filters.role);
+let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Pagination logic
 const currentPage = ref(props.users.current_page);
@@ -79,15 +88,49 @@ const paginationNumbers = computed(() => {
 
 const goToPage = (page: number) => {
     if (page >= 1 && page <= lastPage) {
-        // currentPage.value = page;
-        // Di sini nanti kirim request ke backend
-        // router.get(route('users.index', { page }))
-        router.get(route('admin.users', { page }), {
+        router.get(route('admin.users', { 
+            page,
+            search: searchQuery.value,
+            role: roleFilter.value 
+        }), {
             preserveState: true,
             preserveScroll: true,
         });
     }
 };
+
+const applyFilters = () => {
+    router.get(route('admin.users', { 
+        search: searchQuery.value,
+        role: roleFilter.value 
+    }), {
+        preserveState: true,
+        preserveScroll: true,
+    });
+};
+
+const handleSearchInput = () => {
+    if (searchTimeout) {
+        clearTimeout(searchTimeout);
+    }
+    searchTimeout = setTimeout(() => {
+        applyFilters();
+    }, 300);
+};
+
+const handleRoleChange = () => {
+    applyFilters();
+};
+
+const clearFilters = () => {
+    searchQuery.value = '';
+    roleFilter.value = '';
+    applyFilters();
+};
+
+const hasActiveFilters = computed(() => {
+    return searchQuery.value !== '' || roleFilter.value !== '';
+});
 
 const deleteUser = (userId: number) => {
     return router.delete(route('admin.users.destroy', userId), {
@@ -234,18 +277,60 @@ watch(
 
         <div class="min-h-screen bg-white p-8">
             <!-- Header -->
-            <div class="mb-8 flex items-center justify-between">
-                <div>
-                    <h1 class="text-4xl font-bold tracking-tight text-black">User Management</h1>
-                    <p class="mt-2 text-sm text-gray-600">Manage your team members and their roles</p>
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 class="text-4xl font-bold tracking-tight text-black">User Management</h1>
+                        <p class="mt-2 text-sm text-gray-600">Manage your team members and their roles</p>
+                    </div>
+                    <button
+                        @click="showAddModal = true"
+                        class="flex items-center gap-2 bg-black px-6 py-3 text-sm font-medium text-white transition-all hover:bg-gray-800 focus:ring-2 focus:ring-black focus:ring-offset-2 focus:outline-none"
+                    >
+                        <UserPlus :size="18" />
+                        Add User
+                    </button>
                 </div>
-                <button
-                    @click="showAddModal = true"
-                    class="flex items-center gap-2 bg-black px-6 py-3 text-sm font-medium text-white transition-all hover:bg-gray-800 focus:ring-2 focus:ring-black focus:ring-offset-2 focus:outline-none"
-                >
-                    <UserPlus :size="18" />
-                    Add User
-                </button>
+
+                <!-- Search and Filters -->
+                <div class="flex items-center gap-4">
+                    <!-- Search Input -->
+                    <div class="relative flex-1 max-w-md">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <Search :size="18" class="text-gray-400" />
+                        </div>
+                        <input
+                            v-model="searchQuery"
+                            @input="handleSearchInput"
+                            type="text"
+                            placeholder="Search by name or email..."
+                            class="w-full border border-gray-300 bg-white pl-10 pr-4 py-2.5 text-sm text-black transition-colors focus:border-black focus:ring-1 focus:ring-black focus:outline-none"
+                        />
+                    </div>
+
+                    <!-- Role Filter -->
+                    <select
+                        v-model="roleFilter"
+                        @change="handleRoleChange"
+                        class="border border-gray-300 bg-white px-4 py-2.5 text-sm text-black transition-colors focus:border-black focus:ring-1 focus:ring-black focus:outline-none"
+                    >
+                        <option value="">All Roles</option>
+                        <option value="user">User</option>
+                        <option value="community">Community</option>
+                        <option value="moderator">Moderator</option>
+                        <option value="admin">Admin</option>
+                    </select>
+
+                    <!-- Clear Filters Button -->
+                    <button
+                        v-if="hasActiveFilters"
+                        @click="clearFilters"
+                        class="flex items-center gap-2 border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-black transition-colors hover:bg-gray-50 focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 focus:outline-none"
+                    >
+                        <X :size="16" />
+                        Clear
+                    </button>
+                </div>
             </div>
 
             <!-- Table -->
