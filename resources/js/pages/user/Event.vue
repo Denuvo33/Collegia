@@ -363,7 +363,11 @@ function copyEvent(hashId: string) {
                                 <DropdownMenuContent>
                                     <DropdownMenuItem
                                         @select.prevent
-                                        v-if="event.user && event.user.id === usePage().props.auth.user.id"
+                                        v-if="
+                                            (event.user && event.user.id === usePage().props.auth.user.id) ||
+                                            usePage().props.auth.user.role === 'admin' ||
+                                            usePage().props.auth.user.role === 'moderator'
+                                        "
                                         class="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
                                     >
                                         <Trash2 class="mr-2 h-4 w-4" />

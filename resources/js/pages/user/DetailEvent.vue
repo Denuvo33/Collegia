@@ -430,7 +430,11 @@ function formatPrice(price: number) {
                                                     </div>
                                                 </div>
                                                 <Button
-                                                    v-if="usePage().props.auth.user.role == 'admin' || usePage().props.auth.user.id == event.user.id"
+                                                    v-if="
+                                                        usePage().props.auth.user.role == 'admin' ||
+                                                        usePage().props.auth.user.id == event.user.id ||
+                                                        usePage().props.auth.user.role == 'moderator'
+                                                    "
                                                     @click="deleteEvent(event.id)"
                                                     class="w-full bg-red-500"
                                                     >Delete</Button

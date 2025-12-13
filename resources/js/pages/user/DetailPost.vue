@@ -324,12 +324,14 @@ function formatTime(date: string) {
 function deleteComment(id: number) {
     try {
         router.delete(route('user.comment.delete', id), {
+            preserveState: true,
             onSuccess: () => {
                 successComment.value = 'Komentar telah di hapus';
                 // Invalidate cache since comment was deleted
                 invalidateCache(props.data.id);
             },
-            onError: () => {
+            onError: (Errors) => {
+                console.log(Errors);
                 successComment.value = 'Gagal menghapus komentar, periksa kembali jaringan anda';
             },
         });
@@ -550,7 +552,11 @@ function reportComment(commentId: number) {
 
                                         <DropdownMenuItem
                                             class="text-red-500 hover:bg-red-50 hover:text-red-700"
-                                            v-if="data.user.id === usePage().props.auth.user.id || usePage().props.auth.user.role === 'admin'"
+                                            v-if="
+                                                data.user.id === usePage().props.auth.user.id ||
+                                                usePage().props.auth.user.role === 'admin' ||
+                                                usePage().props.auth.user.role === 'moderator'
+                                            "
                                             @click="deletePost(data.id)"
                                             >Hapus</DropdownMenuItem
                                         >
@@ -706,7 +712,10 @@ function reportComment(commentId: number) {
                                                             </AlertDialogContent>
                                                         </AlertDialog>
                                                         <DropdownMenuItem
-                                                            v-if="comment.user.id === usePage().props.auth.user.id"
+                                                            v-if="
+                                                                comment.user.id === usePage().props.auth.user.id ||
+                                                                usePage().props.auth.user.role === 'moderator'
+                                                            "
                                                             @click="deleteComment(comment.id)"
                                                             class="text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
                                                         >

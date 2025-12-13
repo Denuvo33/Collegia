@@ -31,6 +31,10 @@ Route::get('/user/explore', [ExploreController::class, 'index'])->middleware(['a
 
 Route::get('/user/notifications', [NotificationController::class, 'index'])->middleware(['auth', 'verified'])->name('user.notifications');
 
+// API endpoint for fetching paginated notifications
+Route::get('/user/notifications/paginate', [NotificationController::class, 'getNotifications'])->middleware(['auth', 'verified'])->name('user.notifications.paginate');
+
+
 Route::get('/user/profile', [ProfileController::class, 'index'])->name('user.profile');
 // API endpoints for infinite scroll
 Route::get('/user/profile/posts', [ProfileController::class, 'posts'])->name('user.profile.posts');
@@ -88,7 +92,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/report-post', [CommunityController::class, 'reportPosts'])->name('admin.report.posts');
     Route::get('/admin/report-comment', [CommunityController::class, 'reportComments'])->name('admin.report.comments');
     Route::get('/admin/event', [CommunityController::class, 'fetchEvents'])->name('admin.event');
-
 
     Route::post('/admin/user/create', [CommunityController::class, 'storeUsers'])->name('admin.users.store');
 

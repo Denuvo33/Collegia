@@ -16,9 +16,25 @@ class NotificationController extends Controller
      */
     public function index()
     {
-        return Inertia::render('user/Notification',[
-            'notification'=> Notification::where('user_id',Auth::id())->get()
+        $notifications = Notification::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->paginate(5);
+
+        return Inertia::render('user/Notification', [
+            'notification' => $notifications->toArray()
         ]);
+    }
+
+    /**
+     * Get paginated notifications for infinite scroll
+     */
+    public function getNotifications(Request $request)
+    {
+        $notifications = Notification::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->paginate(5);
+
+        return response()->json($notifications);
     }
 
     /**
@@ -32,10 +48,7 @@ class NotificationController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(NotificationRequest $request)
-    {
-        
-    }
+    public function store(NotificationRequest $request) {}
 
     /**
      * Display the specified resource.

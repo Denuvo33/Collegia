@@ -320,7 +320,9 @@ function copyPostUrl(hashId: string) {
                                     </AlertDialogContent>
                                 </AlertDialog>
 
-                                <DropdownMenuItem v-if="posts.user.id === usePage().props.auth.user.id" @click="deletePost(posts.id)"
+                                <DropdownMenuItem
+                                    v-if="posts.user.id === usePage().props.auth.user.id || usePage().props.auth.user.role === 'moderator'"
+                                    @click="deletePost(posts.id)"
                                     >Hapus</DropdownMenuItem
                                 >
                             </DropdownMenuContent>

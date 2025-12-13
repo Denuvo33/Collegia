@@ -121,7 +121,7 @@ class ProfileController extends Controller
     {
         try {
             $data = Post::findOrFail($id);
-            if ($data->user_id == Auth::id() || Auth::user()->role == 'admin') {
+            if ($data->user_id == Auth::id() || Auth::user()->role == 'admin' || Auth::user()->role == 'moderator') {
                 $data->delete();
 
                 return redirect()->back()->with('success', 'Postingan telah di hapus');

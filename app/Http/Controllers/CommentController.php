@@ -101,8 +101,7 @@ class CommentController extends Controller
         try {
             $comment = CommentModel::findOrFail($id);
 
-            if ($comment->user_id == Auth::id() || Auth::user()->role == 'admin') {
-
+            if ($comment->user_id == Auth::id() || Auth::user()->role == 'admin' || Auth::user()->role == 'moderator') {
                 $comment->delete();
                 return redirect()->back()->with('success', 'Komentar berhasil dihapus.');
             }
@@ -116,7 +115,7 @@ class CommentController extends Controller
         } catch (Exception $e) {
 
             return redirect()->back()->withErrors([
-                'error' => 'Terjadi kesalahan, coba lagi nanti.'
+                'error' => 'Terjadi kesalahan, coba lagi nanti.' . $e->getMessage()
             ]);
         }
     }

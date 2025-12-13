@@ -3,7 +3,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import { Bell, ChevronRight, Clock, MessageCircle } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -13,14 +13,151 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const props = defineProps<{
-    notification: Array<{
-        id: number;
-        message: string;
-        post_id: number;
-        created_at: string;
-        hash_id: string;
-    }>;
+    notification: {
+        data: Array<{
+            id: number;
+            message: string;
+            post_id: number;
+            created_at: string;
+            hash_id: string;
+        }>;
+        current_page: number;
+        last_page: number;
+        per_page: number;
+        total: number;
+    };
 }>();
+
+// Pagination state
+const notifications = ref<Array<any>>([]);
+const currentPage = ref(1);
+const hasMoreNotifications = ref(true);
+const loadingNotifications = ref(false);
+const observer = ref<IntersectionObserver | null>(null);
+const loadMoreTrigger = ref<HTMLElement | null>(null);
+
+// Cache configuration - smaller for notifications
+const CACHE_CONFIG = {
+    MAX_NOTIFICATIONS: 20,
+    CACHE_EXPIRY_MS: 3 * 60 * 1000, // 3 minutes
+};
+
+// Cache functions
+const CACHE_KEY = 'user_notifications';
+
+const getCachedNotifications = () => {
+    try {
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (!cached) return null;
+
+        const data = JSON.parse(cached);
+
+        // Check expiry
+        if (Date.now() - data.timestamp > CACHE_CONFIG.CACHE_EXPIRY_MS) {
+            sessionStorage.removeItem(CACHE_KEY);
+            return null;
+        }
+
+        return data;
+    } catch (e) {
+        sessionStorage.removeItem(CACHE_KEY);
+        return null;
+    }
+};
+
+const setCachedNotifications = (notifs: any[], currentPage: number, total: number) => {
+    try {
+        // Limit to prevent memory bloat
+        const limitedNotifications = notifs.slice(0, CACHE_CONFIG.MAX_NOTIFICATIONS);
+
+        const data = {
+            notifications: limitedNotifications,
+            currentPage: Math.min(currentPage, Math.ceil(CACHE_CONFIG.MAX_NOTIFICATIONS / 5)),
+            total,
+            timestamp: Date.now(),
+        };
+
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    } catch (e) {
+        console.warn('Cache quota exceeded, clearing notification cache');
+        sessionStorage.removeItem(CACHE_KEY);
+    }
+};
+
+const invalidateCache = () => {
+    sessionStorage.removeItem(CACHE_KEY);
+};
+
+// Initialize from cache or props
+const cached = getCachedNotifications();
+if (cached && cached.notifications.length > 0) {
+    notifications.value = cached.notifications;
+    currentPage.value = cached.currentPage;
+    hasMoreNotifications.value = currentPage.value < Math.ceil(cached.total / 5);
+} else {
+    notifications.value = props.notification.data || [];
+    currentPage.value = props.notification.current_page || 1;
+    hasMoreNotifications.value = currentPage.value < (props.notification.last_page || 1);
+}
+
+// Load more notifications
+const loadMoreNotifications = async () => {
+    if (loadingNotifications.value || !hasMoreNotifications.value) return;
+
+    loadingNotifications.value = true;
+    try {
+        const response = await fetch(`/user/notifications/paginate?page=${currentPage.value + 1}`);
+        const data = await response.json();
+
+        if (data.data && data.data.length > 0) {
+            notifications.value = [...notifications.value, ...data.data];
+            currentPage.value = data.current_page;
+            hasMoreNotifications.value = currentPage.value < data.last_page;
+
+            // Update cache
+            setCachedNotifications(notifications.value, currentPage.value, data.total);
+        } else {
+            hasMoreNotifications.value = false;
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+    } finally {
+        loadingNotifications.value = false;
+    }
+};
+
+// Setup intersection observer
+onMounted(() => {
+    observer.value = new IntersectionObserver(
+        (entries) => {
+            if (entries[0].isIntersecting && hasMoreNotifications.value && !loadingNotifications.value) {
+                loadMoreNotifications();
+            }
+        },
+        { threshold: 0.1 },
+    );
+
+    setTimeout(() => {
+        if (loadMoreTrigger.value) {
+            observer.value?.observe(loadMoreTrigger.value);
+        }
+    }, 100);
+
+    // Cache initial data if not already cached
+    if (!getCachedNotifications()) {
+        setCachedNotifications(notifications.value, currentPage.value, props.notification.total || 0);
+    }
+});
+
+// Cleanup
+onUnmounted(() => {
+    if (observer.value) {
+        observer.value.disconnect();
+    }
+
+    // Save current state
+    setCachedNotifications(notifications.value, currentPage.value, props.notification.total || 0);
+});
 
 function splitName(text: string) {
     const parts = text.split(' commented');
@@ -47,7 +184,7 @@ function formatTimeAgo(dateString: string) {
 }
 
 const sortNotif = computed(() => {
-    return props.notification.sort((a, b) => {
+    return notifications.value.sort((a, b) => {
         const dateA = new Date(a.created_at);
         const dateB = new Date(b.created_at);
         return dateB.getTime() - dateA.getTime();
@@ -75,7 +212,7 @@ const sortNotif = computed(() => {
                 </div>
 
                 <!-- Empty State -->
-                <div v-if="notification.length === 0" class="flex flex-col items-center justify-center px-4 py-16">
+                <div v-if="notifications.length === 0" class="flex flex-col items-center justify-center px-4 py-16">
                     <div class="mb-6 rounded-full bg-white p-6 shadow-lg">
                         <Bell class="h-12 w-12 text-gray-400" />
                     </div>
@@ -143,6 +280,14 @@ const sortNotif = computed(() => {
                             v-if="index < sortNotif.length - 1"
                             class="absolute top-20 left-8 h-4 w-px bg-gradient-to-b from-gray-200 to-transparent"
                         ></div>
+                    </div>
+
+                    <!-- Load more trigger -->
+                    <div v-if="hasMoreNotifications" ref="loadMoreTrigger" class="mt-6 text-center">
+                        <div v-if="loadingNotifications" class="flex items-center justify-center gap-2 text-gray-500">
+                            <div class="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-indigo-600"></div>
+                            <span>Memuat notifikasi...</span>
+                        </div>
                     </div>
                 </div>
 
