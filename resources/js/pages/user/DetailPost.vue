@@ -42,9 +42,9 @@ const loadMoreTrigger = ref<HTMLElement | null>(null);
 
 // Cache configuration - limits to prevent memory bloat
 const CACHE_CONFIG = {
-    MAX_CACHED_POSTS: 5, // Only cache last 5 viewed posts
-    MAX_COMMENTS_PER_POST: 50, // Max 50 comments cached per post
-    CACHE_EXPIRY_MS: 5 * 60 * 1000, // 5 minutes expiry
+    MAX_CACHED_POSTS: 5,
+    MAX_COMMENTS_PER_POST: 50,
+    CACHE_EXPIRY_MS: 5 * 60 * 1000,
 };
 
 // Cache utility functions with security and memory management
@@ -293,8 +293,8 @@ function submit() {
                 created_at: new Date().toISOString(),
                 user: {
                     id: usePage().props.auth.user.id,
-                    name: usePage().props.auth.user.name,
-                    clean_name: usePage().props.auth.user.name,
+                    name: usePage().props.auth.user.role == 'user' ? usePage().props.auth.user.clean_name : usePage().props.auth.user.name,
+                    clean_name: usePage().props.auth.user.clean_name,
                     hash_id: (usePage().props.auth.user as any).hash_id || '',
                     role: (usePage().props.auth.user as any).role || 'user',
                 },
@@ -627,7 +627,7 @@ function reportComment(commentId: number) {
                                                             )
                                                         "
                                                     >
-                                                        {{ comment.user.clean_name }}
+                                                        {{ comment.user.role == 'user' ? comment.user.clean_name : comment.user.name }}
                                                     </h4>
                                                     <div
                                                         v-if="comment.user.role === 'moderator'"

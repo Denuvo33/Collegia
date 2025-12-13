@@ -53,15 +53,17 @@ class CommentController extends Controller
 
             $post = Post::findOrFail($data['post_id']);
 
+            if (Auth::user()->id == $post->user_id) {
+                // Return the comment with user data
+                return back()->with('newComment', $comment->load('user'));
+            }
+
             Notification::create([
-                'message' => Auth::user()->name . ' commented on your post: ' . $request->content,
+                'message' => Auth::user()->role == 'community' ? Auth::user()->name . ' commented on your post: ' . $request->content : Auth::user()->clean_name . ' commented on your post: ' . $request->content,
                 'post_id' => $post->id,
                 'user_id' => $post->user_id,
                 'is_read' => 0,
             ]);
-
-            // Return the comment with user data
-            return back()->with('newComment', $comment->load('user'));
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Failed to create comment']);
         }
