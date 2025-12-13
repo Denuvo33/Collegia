@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\CommentModel;
 use App\Models\EventModel;
 use App\Models\ReportComment;
 use App\Models\ReportEvent;
 use App\Models\ReportModel;
+use App\Models\Post;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +17,76 @@ use Inertia\Inertia;
 
 class CommunityController extends Controller
 {
+
+    public function adminDashboard(Request $request)
+    {
+        $totalUsers = User::count();
+        $adminUsers = User::where('role', 'admin')->count();
+        $moderatorUsers = User::where('role', 'moderator')->count();
+        $communityUsers = User::where('role', 'community')->count();
+        $userUsers = User::where('role', 'user')->count();
+
+        $totalPosts = Post::count();
+        $totalComments = CommentModel::count();
+
+        $totalEvents = EventModel::count();
+        $pendingEvents = EventModel::where('status', 'pending')->count();
+        $approvedEvents = EventModel::where('status', 'approved')->count();
+        $completedEvents = EventModel::where('status', 'completed')->count();
+
+        $totalReportPosts = ReportModel::count();
+        $totalReportComments = ReportComment::count();
+        $totalReportEvents = ReportEvent::count();
+        $totalReports = $totalReportPosts + $totalReportComments + $totalReportEvents;
+
+        // Recent users (last 5)
+        $recentUsers = User::orderBy('created_at', 'desc')->take(5)->get();
+
+        // Recent events (last 5) with calculated status based on date
+        $recentEvents = EventModel::with('user')->orderBy('created_at', 'desc')->take(5)->get()->map(function ($event) {
+            $today = now()->format('Y-m-d');
+            $eventDate = date('Y-m-d', strtotime($event->date_event));
+
+            // Calculate status based on date comparison
+            if ($eventDate > $today) {
+                $event->status = 'Upcoming';
+            } elseif ($eventDate === $today) {
+                $event->status = 'Today';
+            } else {
+                $event->status = 'Complete';
+            }
+
+            return $event;
+        });
+
+        return Inertia::render('admin/Dashboard', [
+            'stats' => [
+                'users' => [
+                    'total' => $totalUsers,
+                    'admin' => $adminUsers,
+                    'moderator' => $moderatorUsers,
+                    'community' => $communityUsers,
+                    'user' => $userUsers,
+                ],
+                'posts' => $totalPosts,
+                'comments' => $totalComments,
+                'events' => [
+                    'total' => $totalEvents,
+                    'pending' => $pendingEvents,
+                    'approved' => $approvedEvents,
+                    'completed' => $completedEvents,
+                ],
+                'reports' => [
+                    'total' => $totalReports,
+                    'posts' => $totalReportPosts,
+                    'comments' => $totalReportComments,
+                    'events' => $totalReportEvents,
+                ],
+            ],
+            'recentUsers' => $recentUsers,
+            'recentEvents' => $recentEvents,
+        ]);
+    }
 
 
     public function login(Request $request)
@@ -64,7 +136,7 @@ class CommunityController extends Controller
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', '%' . $search . '%')
-                      ->orWhere('email', 'like', '%' . $search . '%');
+                        ->orWhere('email', 'like', '%' . $search . '%');
                 });
             }
 
@@ -74,7 +146,7 @@ class CommunityController extends Controller
             }
 
             $users = $query->latest()->paginate(10);
-            
+
             return Inertia::render('admin/users/UsersPage', [
                 'users' => $users->toArray(),
                 'filters' => [
@@ -199,10 +271,74 @@ class CommunityController extends Controller
     public function fetchEvents(Request $request)
     {
         try {
-            $events = EventModel::latest()->paginate(10);
-            // dd($users->toArray());
+            $query = EventModel::query();
+
+
+            // Get today's date for status filtering
+            $today = now()->format('Y-m-d');
+
+            // Debug: Check all events in database
+            // dd([
+            //     'today' => $today,
+            //     'all_events' => EventModel::select('id', 'title', 'date_event')->get()->toArray(),
+            //     'request_status' => $request->status,
+            // ]);
+
+            // Filter by status
+            if ($request->has('status') && !empty($request->status) && $request->status !== 'all') {
+                $status = $request->status;
+
+                if ($status === 'akan datang') {
+                    // Events in the future
+                    $query->whereDate('date_event', '>', $today);
+                } elseif ($status === 'berjalan') {
+                    // Events happening today
+                    $query->whereDate('date_event', '=', $today);
+                } elseif ($status === 'selesai') {
+                    // Events in the past
+                    $query->whereDate('date_event', '<', $today);
+                }
+            }
+
+            // Search by title or organizer
+            if ($request->has('search') && $request->search && $request->search !== 'null') {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', '%' . $search . '%')
+                        ->orWhere('organizer', 'like', '%' . $search . '%');
+                });
+            }
+
+
+            // Debug: Log the query to see what's happening
+            \Log::info('Query SQL: ' . $query->toSql());
+            \Log::info('Query Bindings: ', $query->getBindings());
+            \Log::info('Today date: ' . $today);
+
+            $events = $query->latest()->paginate(10);
+
+            // Debug: Show what we got from the query
+            // dd([
+            //     'today' => $today,
+            //     'request_status' => $request->status,
+            //     'query_result_count' => $events->total(),
+            //     'query_results' => $events->items(),
+            //     'all_events_raw' => EventModel::select('id', 'title', 'date_event')->get()->map(function ($e) {
+            //         return [
+            //             'id' => $e->id,
+            //             'title' => $e->title,
+            //             'date_event' => $e->date_event,
+            //             'date_event_formatted' => $e->date_event ? date('Y-m-d', strtotime($e->date_event)) : null,
+            //         ];
+            //     })->toArray(),
+            // ]);
+
             return Inertia::render('admin/events/Event', [
-                'events' => $events->toArray()
+                'events' => $events->toArray(),
+                'filters' => [
+                    'status' => $request->status ?? '',
+                    'search' => $request->search ?? '',
+                ]
             ]);
         } catch (\Exception $e) {
             \Log::error('Fetch events error: ' . $e->getMessage());

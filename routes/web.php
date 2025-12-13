@@ -77,10 +77,8 @@ Route::delete('/user/post/delete/{id}', [ProfileController::class, 'destroy'])->
 
 Route::delete('/user/event/delete/{id}', [EventController::class, 'destroy'])->middleware('auth')->name('user.delete.event');
 
-Route::middleware('auth', 'admin')->group(function () {
-    Route::get('/admin/dashboard', function () {
-        return Inertia::render('admin/Dashboard');
-    })->name('admin.dashboard');
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin/dashboard', [CommunityController::class, 'adminDashboard'])->name('admin.dashboard');
     Route::get('/admin/user-dashboard', [CommunityController::class, 'fetchUsers'])->name('admin.users');
     Route::get('/admin/report-event', [CommunityController::class, 'reportEvents'])->name('admin.report.events');
     Route::get('/admin/report-post', [CommunityController::class, 'reportPosts'])->name('admin.report.posts');
