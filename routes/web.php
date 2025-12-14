@@ -11,6 +11,7 @@ use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\TransactionController;
 
 
 Route::get('/', function () {
@@ -31,6 +32,7 @@ Route::get('/user/explore', [ExploreController::class, 'index'])->middleware(['a
 
 Route::get('/user/notifications', [NotificationController::class, 'index'])->middleware(['auth', 'verified'])->name('user.notifications');
 
+Route::get('/user/transaction', [TransactionController::class, 'index'])->middleware(['auth', 'verified'])->name('user.transaction');
 // API endpoint for fetching paginated notifications
 Route::get('/user/notifications/paginate', [NotificationController::class, 'getNotifications'])->middleware(['auth', 'verified'])->name('user.notifications.paginate');
 
@@ -77,6 +79,22 @@ Route::post('/user/event/report', [ReportController::class, 'reportEvent'])->mid
 Route::post('/user/comment/report', [ReportController::class, 'reportComment'])->middleware('auth')->name('user.comment.report');
 
 Route::post('/user/create-event', [EventController::class, 'store'])->middleware(['auth', 'verified'])->name('user.event.store');
+
+// Payment routes
+Route::post('/user/event/initiate-payment', [TransactionController::class, 'initiatePayment'])
+    ->middleware(['auth', 'verified'])
+    ->name('user.event.payment.initiate');
+
+Route::post('/midtrans/webhook', [TransactionController::class, 'handleWebhook'])
+    ->name('midtrans.webhook');
+
+Route::get('/user/transaction/status/{orderId}', [TransactionController::class, 'checkStatus'])
+    ->middleware(['auth', 'verified'])
+    ->name('transaction.status');
+
+Route::post('/user/transaction/refresh/{orderId}', [TransactionController::class, 'refreshSnapToken'])
+    ->middleware(['auth', 'verified'])
+    ->name('user.transaction.refresh');
 
 //user Routes Destroy
 Route::delete('/user/post/comment/${id}', [CommentController::class, 'destroy'])->middleware('auth')->name('user.comment.delete');

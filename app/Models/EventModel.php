@@ -19,7 +19,9 @@ class EventModel extends Model
         'price',
         'location',
         'status',
-        'promoted_till'
+        'promoted_till',
+        'is_visible',
+        'user_pay_transaction_id',
     ];
 
     protected $appends = ['hash_id',];
@@ -27,6 +29,16 @@ class EventModel extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function transaction()
+    {
+        return $this->belongsTo(Transaction::class, 'user_pay_transaction_id');
+    }
+
+    public function scopeVisible($query)
+    {
+        return $query->where('is_visible', true);
     }
 
     public function getHashIdAttribute()

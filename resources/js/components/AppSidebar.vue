@@ -4,7 +4,7 @@ import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Bell, CalendarClock, Home, Telescope, User } from 'lucide-vue-next';
+import { Bell, CalendarClock, Home, Telescope, User, Wallet } from 'lucide-vue-next';
 
 const mainNavItems: NavItem[] = [
     {
@@ -26,6 +26,11 @@ const mainNavItems: NavItem[] = [
         title: 'Notifikasi',
         href: '/user/notifications',
         icon: Bell,
+    },
+    {
+        title: 'Transaksi',
+        href: '/user/transaction',
+        icon: Wallet,
     },
     {
         title: 'Profile',

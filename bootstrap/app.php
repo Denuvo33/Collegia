@@ -18,6 +18,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+
+        // Exclude Midtrans webhook from CSRF protection
+        $middleware->validateCsrfTokens(except: [
+            'midtrans/webhook',
+        ]);
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);

@@ -245,13 +245,42 @@ function copyEvent(hashId: string) {
                     <h1 class="mb-3 text-4xl font-bold">Jelajahi Event</h1>
                     <p class="text-lg text-slate-400">Temukan event menarik di sekitar Anda</p>
                 </div>
+
+                <!-- For community, admin, moderator - direct navigation -->
                 <Button
+                    v-if="['community', 'admin', 'moderator'].includes(usePage().props.auth.user.role)"
                     class="flex transform items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-8 py-4 font-semibold text-black shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:bg-white/15 dark:text-white"
                     @click="$inertia.visit(route('user.create-event'))"
                 >
                     <Plus class="h-5 w-5" />
                     Buat Event Baru
                 </Button>
+
+                <!-- For regular users - show payment alert -->
+                <AlertDialog v-else>
+                    <AlertDialogTrigger as-child>
+                        <Button
+                            class="flex transform items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-8 py-4 font-semibold text-black shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:bg-white/15 dark:text-white"
+                        >
+                            <Plus class="h-5 w-5" />
+                            Buat Event Baru
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Buat Event Berbayar</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Pembuatan event gratis hanya untuk akun komunitas. Pengguna biasa perlu membayar Rp 5.000 untuk membuat event.
+                                <br /><br />
+                                Setelah pembayaran berhasil, event Anda akan langsung terlihat oleh semua pengguna.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                            <AlertDialogAction @click="$inertia.visit(route('user.create-event'))">Lanjut Bayar</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </div>
 

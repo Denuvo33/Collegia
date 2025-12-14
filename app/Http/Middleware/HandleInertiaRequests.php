@@ -52,6 +52,7 @@ class HandleInertiaRequests extends Middleware
                     'error' => session('error'),
                 ];
             },
+            'midtrans_client_key' => config('services.midtrans.client_key'),
             'ziggy' => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
