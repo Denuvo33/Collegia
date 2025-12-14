@@ -145,6 +145,15 @@ class EventController extends Controller
 
         $id = $decoded[0];
         $event = EventModel::with('user')->findOrFail($id);
+
+        // Check if event is invisible
+        if (!$event->is_visible) {
+            // Only allow owner to view invisible events
+            if (!Auth::check() || Auth::id() !== $event->user_id) {
+                abort(404, 'Event not found');
+            }
+        }
+
         return Inertia::render('user/DetailEvent', [
             'event' => $event,
         ]);

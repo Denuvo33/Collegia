@@ -21,7 +21,29 @@ class ProfileController extends Controller
     public function index()
     {
         $user = User::withCount(['posts', 'comments', 'events'])->findOrFail(Auth::id());
-        $events = EventModel::where('user_id', Auth::id())->latest()->paginate(10);
+
+        // Load events with transaction data
+        $events = EventModel::with('transaction')
+            ->where('user_id', Auth::id())
+            ->latest()
+            ->get()
+            ->map(function ($event) {
+                return [
+                    'id' => $event->id,
+                    'hash_id' => $event->hash_id,
+                    'title' => $event->title,
+                    'content' => $event->content,
+                    'date_event' => $event->date_event,
+                    'location' => $event->location,
+                    'price' => $event->price,
+                    'image' => $event->image,
+                    'is_visible' => $event->is_visible,
+                    'created_at' => $event->created_at,
+                    'order_id' => $event->transaction ? $event->transaction->order_id : null,
+                    'transaction_status' => $event->transaction ? $event->transaction->transaction_status : null,
+                ];
+            });
+
         $posts = Post::where('user_id', Auth::id())->latest()->paginate(10);
         $comments = CommentModel::where('user_id', Auth::id())->latest()->paginate(10);
 
@@ -35,7 +57,7 @@ class ProfileController extends Controller
                 'private_post' => $user->private_post,
                 'posts' => $posts->toArray(),
                 'comments' => $comments->toArray(),
-                'events' => $events->toArray(),
+                'events' => $events,
 
             ],
             'posts_count' => $user->posts_count,

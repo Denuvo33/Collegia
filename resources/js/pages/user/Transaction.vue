@@ -198,7 +198,10 @@ onMounted(() => {
                             </div>
 
                             <!-- Action Button -->
-                            <div v-if="transaction.transaction_status === 'pending' && transaction.snap_token" class="w-fit border-t pt-3">
+                            <div
+                                v-if="transaction.transaction_status === 'pending' && transaction.snap_token && transaction.event_id !== null"
+                                class="w-fit border-t pt-3"
+                            >
                                 <Button @click="continuePayment(transaction)" class="w-full" variant="default">
                                     <CreditCard class="mr-2 h-4 w-4" />
                                     Lanjutkan Pembayaran

@@ -47,6 +47,9 @@ type Event = {
     price: number;
     created_at: string;
     promoted_till: string | null;
+    is_visible: boolean;
+    order_id: string | null;
+    transaction_status: string | null;
 };
 
 const props = defineProps<{
@@ -67,11 +70,7 @@ const props = defineProps<{
             current_page: number;
             last_page: number;
         };
-        events: {
-            data: Event[];
-            current_page: number;
-            last_page: number;
-        };
+        events: Event[];
     };
 }>();
 
@@ -331,7 +330,7 @@ function copyPostUrl(hashId: string) {
                     <div
                         class="min-w-[100px] rounded-xl border border-white/10 bg-white/5 p-4 text-center shadow-lg backdrop-blur-sm transition hover:bg-white/10"
                     >
-                        <p class="mb-1 text-2xl font-bold text-black dark:text-white">{{ data.events.data.length }}</p>
+                        <p class="mb-1 text-2xl font-bold text-black dark:text-white">{{ data.events.length }}</p>
                         <p class="text-sm font-medium text-slate-500">Event</p>
                     </div>
                 </div>
@@ -563,7 +562,7 @@ function copyPostUrl(hashId: string) {
         <!-- Enhanced Event Tab -->
         <div v-if="activatedTabs == 'event'" class="grid grid-cols-1 gap-6 p-6 md:grid-cols-2 lg:grid-cols-3">
             <div
-                v-for="event in data.events.data"
+                v-for="event in data.events"
                 :key="event.id"
                 class="group transform transition-all duration-300 hover:-translate-y-2 hover:scale-105"
             >
@@ -588,6 +587,14 @@ function copyPostUrl(hashId: string) {
                             <Gem class="text-yellow-400" />
                             PROMOSI
                         </div>
+                        <!-- Visibility Badge for invisible events -->
+                        <div
+                            v-if="!event.is_visible"
+                            class="absolute bottom-4 left-4 flex items-center gap-1 rounded-full bg-red-500/90 px-3 py-1 shadow-lg backdrop-blur-sm"
+                        >
+                            <Eye class="h-4 w-4 text-white" />
+                            <span class="text-xs font-bold text-white">BELUM TERLIHAT</span>
+                        </div>
                     </div>
 
                     <!-- Event Content -->
@@ -608,6 +615,12 @@ function copyPostUrl(hashId: string) {
                             <div class="flex items-center gap-2 text-gray-500">
                                 <Tag class="h-4 w-4" />
                                 <span class="text-sm">Dibuat {{ formatTime(event.created_at) }}</span>
+                            </div>
+                            <!-- Order ID Badge -->
+                            <div v-if="event.order_id" class="flex items-center gap-2">
+                                <div class="rounded-md bg-blue-100 px-2 py-1 dark:bg-blue-900/30">
+                                    <span class="font-mono text-xs font-semibold text-blue-700 dark:text-blue-300">ID: {{ event.order_id }}</span>
+                                </div>
                             </div>
                         </div>
 
@@ -638,7 +651,7 @@ function copyPostUrl(hashId: string) {
             </div>
 
             <!-- Empty State for Events -->
-            <div v-if="data.events.data.length === 0" class="col-span-full flex items-center justify-center py-16">
+            <div v-if="data.events.length === 0" class="col-span-full flex items-center justify-center py-16">
                 <div class="text-center">
                     <div class="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
                         <Calendar class="h-12 w-12 text-gray-400" />
