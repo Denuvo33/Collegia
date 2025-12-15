@@ -38,6 +38,7 @@ type Comment = {
 
 type Event = {
     id: number;
+    is_promoted: boolean;
     hash_id: string;
     title: string;
     content: string;
@@ -594,7 +595,7 @@ function copyPostUrl(hashId: string) {
 
                         <div
                             v-if="event.is_promoted"
-                            class="absolute top-4 left-4 flex items-center gap-1 space-x-1 rounded-full bg-yellow-100/90 px-3 py-1 shadow-lg backdrop-blur-sm"
+                            class="absolute top-4 left-4 flex items-center gap-1 space-x-1 rounded-full bg-yellow-100/90 px-3 py-1 text-black shadow-lg backdrop-blur-sm"
                         >
                             <Gem class="text-yellow-400" />
                             PROMOSI

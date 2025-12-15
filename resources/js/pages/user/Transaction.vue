@@ -22,6 +22,7 @@ interface Transaction {
     promotion_days: number | null;
     promotion_start_date: string | null;
     promotion_end_date: string | null;
+    event_id: number | null;
     event: {
         id: number;
         title: string;

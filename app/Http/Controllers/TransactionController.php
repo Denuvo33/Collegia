@@ -626,6 +626,7 @@ class TransactionController extends Controller
 
             // Optionally query Midtrans API for latest status
             try {
+                /** @var object $status */
                 $status = \Midtrans\Transaction::status($orderId);
 
                 // Update local database with latest status

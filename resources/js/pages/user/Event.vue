@@ -43,6 +43,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 type Event = {
     id: number;
     title: string;
+    is_promoted: boolean;
     content: string;
     created_at: string;
     image: string;
@@ -527,7 +528,7 @@ onMounted(() => {
                                 class="mt-2 flex flex-row items-center space-x-1 rounded-full bg-yellow-100/90 px-3 py-1 shadow-lg backdrop-blur-sm"
                             >
                                 <Gem class="top-4 left-4 h-5 w-5 text-yellow-400" />
-                                <p class="font-bold">Dipromosikan</p>
+                                <p class="font-bold text-black">Dipromosikan</p>
                             </div>
                         </div>
 
