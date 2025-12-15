@@ -212,6 +212,182 @@ class TransactionController extends Controller
     }
 
     /**
+     * Initiate payment for event promotion
+     */
+    public function initiatePromotionPayment(Request $request)
+    {
+        try {
+            // Validate promotion data
+            $validated = $request->validate([
+                'event_id' => 'required|exists:event,id',
+                'start_date' => 'required|date|after_or_equal:today',
+                'end_date' => 'required|date|after:start_date',
+            ]);
+
+            $user = Auth::user();
+            $event = EventModel::findOrFail($validated['event_id']);
+
+            // Check if user is the event owner
+            if ($event->user_id !== $user->id) {
+                return response()->json([
+                    'error' => 'Anda tidak memiliki izin untuk mempromosikan event ini'
+                ], 403);
+            }
+
+            // Check if event is visible
+            if (!$event->is_visible) {
+                return response()->json([
+                    'error' => 'Event harus terlihat sebelum dapat dipromosikan'
+                ], 400);
+            }
+
+            // Calculate promotion days
+            $startDate = \Carbon\Carbon::parse($validated['start_date']);
+            $endDate = \Carbon\Carbon::parse($validated['end_date']);
+            $promotionDays = $startDate->diffInDays($endDate);
+            if ($promotionDays === 0) {
+                $promotionDays = 1; // Minimum 1 day for same day promotion
+            }
+
+            // Calculate promotion cost (Rp 5,000 per day)
+            $costPerDay = 5000;
+            $promotionAmount = $promotionDays * $costPerDay;
+
+            DB::beginTransaction();
+
+            // Generate unique order ID for promotion
+            $orderId = 'PROMO-' . $event->id . '-' . time();
+
+            // Create transaction record for promotion
+            $transaction = Transaction::create([
+                'order_id' => $orderId,
+                'transaction_type' => Transaction::TYPE_EVENT_PROMOTION,
+                'user_id' => $user->id,
+                'event_id' => $event->id,
+                'amount' => $promotionAmount,
+                'transaction_status' => Transaction::STATUS_PENDING,
+                'promotion_days' => $promotionDays,
+                'promotion_start_date' => $startDate,
+                'promotion_end_date' => $endDate,
+            ]);
+
+            // Prepare transaction details for Midtrans
+            $transactionDetails = [
+                'order_id' => $orderId,
+                'gross_amount' => (int) $promotionAmount,
+            ];
+
+            $itemDetails = [
+                [
+                    'id' => 'EVENT_PROMOTION',
+                    'price' => (int) $promotionAmount,
+                    'quantity' => 1,
+                    'name' => "Promosi Event ({$promotionDays} hari): " . $event->title,
+                ],
+            ];
+
+            $customerDetails = [
+                'first_name' => $user->name,
+                'email' => $user->email,
+            ];
+
+            $params = [
+                'transaction_details' => $transactionDetails,
+                'item_details' => $itemDetails,
+                'customer_details' => $customerDetails,
+                'enabled_payments' => [
+                    'gopay',
+                    'shopeepay',
+                    'qris',
+                    'bca_va',
+                    'bri_va',
+                    'bni_va',
+                    'permata_va',
+                    'echannel',
+                ],
+                'expiry' => [
+                    'unit' => 'minutes',
+                    'duration' => 1,
+                ],
+            ];
+
+            // Get Snap Token
+            $snapToken = Snap::getSnapToken($params);
+
+            // Save snap token to transaction
+            $transaction->snap_token = $snapToken;
+            $transaction->save();
+
+            DB::commit();
+
+            Log::info('Promotion payment initiated successfully', [
+                'order_id' => $orderId,
+                'user_id' => $user->id,
+                'event_id' => $event->id,
+                'promotion_days' => $promotionDays,
+                'amount' => $promotionAmount,
+            ]);
+
+            return response()->json([
+                'snap_token' => $snapToken,
+                'order_id' => $orderId,
+                'event_id' => $event->id,
+                'amount' => $promotionAmount,
+                'promotion_days' => $promotionDays,
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Promotion payment initiation failed: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'Failed to initiate promotion payment',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Cancel transaction when user closes payment without selecting method
+     */
+    public function cancelTransaction($orderId)
+    {
+        try {
+            $transaction = Transaction::where('order_id', $orderId)
+                ->where('user_id', Auth::id())
+                ->first();
+
+            if (!$transaction) {
+                return response()->json(['error' => 'Transaction not found'], 404);
+            }
+
+            // Only cancel if transaction is still pending and has no payment_type
+            // (meaning user hasn't selected a payment method yet)
+            if ($transaction->transaction_status === Transaction::STATUS_PENDING && !$transaction->payment_type) {
+                $transaction->transaction_status = Transaction::STATUS_CANCELLED;
+                $transaction->save();
+
+                Log::info('Transaction cancelled by user', [
+                    'order_id' => $orderId,
+                    'user_id' => Auth::id(),
+                ]);
+
+                return response()->json(['message' => 'Transaction cancelled successfully']);
+            }
+
+            return response()->json(['message' => 'Transaction cannot be cancelled'], 400);
+        } catch (Exception $e) {
+            Log::error('Failed to cancel transaction: ' . $e->getMessage());
+
+            return response()->json([
+                'error' => 'Failed to cancel transaction',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Refresh expired snap token for pending transaction
      */
     public function refreshSnapToken($orderId)
@@ -387,22 +563,36 @@ class TransactionController extends Controller
     }
 
     /**
-     * Update transaction to success and make event visible
+     * Update transaction to success and make event visible or promoted
      */
     private function updateTransactionSuccess(Transaction $transaction)
     {
         $transaction->transaction_status = Transaction::STATUS_SUCCESS;
         $transaction->paid_at = now();
 
-        // Make event visible
         if ($transaction->event) {
-            $transaction->event->is_visible = true;
-            $transaction->event->save();
+            // Handle based on transaction type
+            if ($transaction->transaction_type === Transaction::TYPE_EVENT_CREATION) {
+                // Make event visible for event creation payments
+                $transaction->event->is_visible = true;
+                $transaction->event->save();
 
-            Log::info('Event made visible', [
-                'event_id' => $transaction->event->id,
-                'event_title' => $transaction->event->title,
-            ]);
+                Log::info('Event made visible', [
+                    'event_id' => $transaction->event->id,
+                    'event_title' => $transaction->event->title,
+                ]);
+            } elseif ($transaction->transaction_type === Transaction::TYPE_EVENT_PROMOTION) {
+                // Update promoted_till for promotion payments
+                $transaction->event->promoted_till = $transaction->promotion_end_date;
+                $transaction->event->save();
+
+                Log::info('Event promotion activated', [
+                    'event_id' => $transaction->event->id,
+                    'event_title' => $transaction->event->title,
+                    'promoted_till' => $transaction->promotion_end_date,
+                    'promotion_days' => $transaction->promotion_days,
+                ]);
+            }
         }
     }
 

@@ -11,19 +11,21 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { BreadcrumbItem } from '@/types';
-import { Head, router, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { Calendar, Clock, EllipsisVertical, Eye, Filter, Flag, Gem, MapPin, Plus, Search, Share2, Trash2, User } from 'lucide-vue-next';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 
 import 'vue-sonner/style.css';
@@ -70,9 +72,28 @@ const props = defineProps<{
     currentSearch?: string;
 }>();
 
-const form = useForm({
-    promote_event: null,
+const promotionForm = ref({
+    event_id: null as number | null,
+    start_date: new Date().toISOString().split('T')[0],
+    end_date: new Date(Date.now() + 86400000).toISOString().split('T')[0], // +1 day
 });
+
+const promotionCost = computed(() => {
+    const start = new Date(promotionForm.value.start_date);
+    const end = new Date(promotionForm.value.end_date);
+    const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    return { days, total: days * 5000 };
+});
+
+const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+    }).format(amount);
+};
+
+const isPromotionDialogOpen = ref(false);
 
 const selectedFilter = ref(props.currentFilter || 'terbaru');
 const searchQuery = ref(props.currentSearch || '');
@@ -84,7 +105,6 @@ const paginationPages = computed(() => {
     const pages: number[] = [];
 
     if (last <= 7) {
-        // If total pages <= 7, show all pages
         for (let i = 1; i <= last; i++) {
             pages.push(i);
         }
@@ -151,18 +171,78 @@ const performSearch = () => {
     );
 };
 
-const promote_event = (event_id: number) => {
-    form.post(route('user.event.promote', event_id), {
-        preserveScroll: true,
-        preserveState: false,
-        onSuccess: () => {
-            toast.success('Event berhasil dipromosikan!');
-        },
+const initiatePromotion = async (eventId: number) => {
+    try {
+        // Validate dates
+        if (new Date(promotionForm.value.start_date) >= new Date(promotionForm.value.end_date)) {
+            toast.error('Tanggal akhir harus setelah tanggal mulai');
+            return;
+        }
 
-        onError: (errors) => {
-            toast.error('Gagal mempromosikan event. Silakan coba lagi.');
-        },
-    });
+        const response = await axios.post(route('user.event.promotion.initiate'), {
+            event_id: eventId,
+            start_date: promotionForm.value.start_date,
+            end_date: promotionForm.value.end_date,
+        });
+
+        const snapToken = response.data.snap_token;
+        const orderId = response.data.order_id;
+
+        if (snapToken && (window as any).snap) {
+            // Close dialog before opening Snap
+            isPromotionDialogOpen.value = false;
+
+            // Wait for dialog to fully close before opening Snap
+            setTimeout(() => {
+                let paymentMethodSelected = false;
+
+                (window as any).snap.pay(snapToken, {
+                    onSuccess: function () {
+                        paymentMethodSelected = true;
+                        toast.success('Pembayaran promosi berhasil! Event Anda akan dipromosikan.');
+                        setTimeout(() => {
+                            router.reload();
+                        }, 1500);
+                    },
+                    onPending: function () {
+                        paymentMethodSelected = true;
+                        toast.info('Pembayaran sedang diproses.');
+                        setTimeout(() => {
+                            router.visit(route('user.transaction'));
+                        }, 1500);
+                    },
+                    onError: function () {
+                        paymentMethodSelected = true;
+                        toast.error('Terjadi kesalahan. Silakan cek transaksi Anda.');
+                        setTimeout(() => {
+                            router.visit(route('user.transaction'));
+                        }, 1500);
+                    },
+                    onClose: function () {
+                        // If user closed without selecting payment method, cancel the transaction
+                        if (!paymentMethodSelected) {
+                            axios
+                                .post(route('user.transaction.cancel', orderId))
+                                .then(() => {
+                                    toast.info('Pembayaran dibatalkan.');
+                                })
+                                .catch((error) => {
+                                    console.error('Failed to cancel transaction:', error);
+                                });
+                        } else {
+                            toast.info('Cek status pembayaran di menu Transaksi.');
+                            router.visit(route('user.transaction'));
+                        }
+                    },
+                });
+            }, 500); // Increased delay to ensure dialog is fully closed
+        } else {
+            toast.error('Gagal memuat sistem pembayaran. Silakan refresh halaman dan coba lagi.');
+        }
+    } catch (error: any) {
+        console.error('Failed to initiate promotion payment', error);
+        toast.error(error.response?.data?.message || error.response?.data?.error || 'Gagal memulai pembayaran promosi');
+    }
 };
 const isPromotedActive = (promotedTill: string | null) => {
     if (!promotedTill) return false;
@@ -294,6 +374,14 @@ function copyEvent(hashId: string) {
         toast.success('Event url telah disalin');
     });
 }
+
+// Load Midtrans Snap script
+onMounted(() => {
+    const script = document.createElement('script');
+    script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+    script.setAttribute('data-client-key', usePage().props.midtrans_client_key as string);
+    document.head.appendChild(script);
+});
 </script>
 
 <template>
@@ -435,7 +523,7 @@ function copyEvent(hashId: string) {
                                 {{ getEventStatus(event.date_event) }}
                             </span>
                             <div
-                                v-if="isPromotedActive(event.promoted_till)"
+                                v-if="event.is_promoted"
                                 class="mt-2 flex flex-row items-center space-x-1 rounded-full bg-yellow-100/90 px-3 py-1 shadow-lg backdrop-blur-sm"
                             >
                                 <Gem class="top-4 left-4 h-5 w-5 text-yellow-400" />
@@ -605,18 +693,77 @@ function copyEvent(hashId: string) {
                             <Eye class="h-4 w-4" />
                             Lihat Detail Event
                         </Button>
-                        <div v-if="!isPromotedActive(event.promoted_till) && usePage().props.auth.user.id == event.user.id" class="mt-2">
-                            <Dialog>
-                                <DialogTrigger class="flex items-center gap-2 rounded bg-green-500 px-4 py-2 font-bold text-white">
-                                    {{ event.id }}</DialogTrigger
-                                >
-                                <DialogContent>
+                        <div v-if="!isPromotedActive(event.promoted_till) && usePage().props.auth.user.id == event.user.id" class="mt-3">
+                            <Dialog v-model:open="isPromotionDialogOpen">
+                                <DialogTrigger as-child>
+                                    <Button
+                                        class="flex w-full transform items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-green-700 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:from-green-700 hover:to-green-800 hover:shadow-xl"
+                                        @click="promotionForm.event_id = event.id"
+                                    >
+                                        <Gem class="h-4 w-4" />
+                                        Promosikan Event
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent class="sm:max-w-md">
                                     <DialogHeader>
-                                        <DialogTitle>Pilih Tanggal</DialogTitle>
-
-                                        <input type="date" v-model="form.promote_event" class="border p-2" />
-                                        <Button class="mt-4" @click="promote_event(event.id)">Promosikan Event</Button>
+                                        <DialogTitle>Promosikan Event</DialogTitle>
+                                        <DialogDescription>
+                                            Promosikan event Anda agar lebih mudah ditemukan. Biaya promosi Rp 5.000 per hari.
+                                        </DialogDescription>
                                     </DialogHeader>
+
+                                    <div class="space-y-4 py-4">
+                                        <!-- Start Date -->
+                                        <div class="space-y-2">
+                                            <Label for="start-date">Tanggal Mulai</Label>
+                                            <Input
+                                                id="start-date"
+                                                type="date"
+                                                v-model="promotionForm.start_date"
+                                                :min="new Date().toISOString().split('T')[0]"
+                                                class="w-full"
+                                            />
+                                        </div>
+
+                                        <!-- End Date -->
+                                        <div class="space-y-2">
+                                            <Label for="end-date">Tanggal Selesai</Label>
+                                            <Input
+                                                id="end-date"
+                                                type="date"
+                                                v-model="promotionForm.end_date"
+                                                :min="promotionForm.start_date"
+                                                class="w-full"
+                                            />
+                                        </div>
+
+                                        <!-- Cost Summary -->
+                                        <div class="rounded-lg bg-slate-50 p-4 dark:bg-slate-800">
+                                            <div class="space-y-2 text-sm">
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600 dark:text-gray-400">Durasi</span>
+                                                    <span class="font-semibold">{{ promotionCost.days }} hari</span>
+                                                </div>
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600 dark:text-gray-400">Biaya per hari</span>
+                                                    <span class="font-semibold">Rp 5.000</span>
+                                                </div>
+                                                <div class="border-t pt-2">
+                                                    <div class="flex justify-between text-base">
+                                                        <span class="font-bold">Total Biaya</span>
+                                                        <span class="font-bold text-green-600">{{ formatCurrency(promotionCost.total) }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <DialogFooter>
+                                        <Button @click="initiatePromotion(event.id)" class="w-full bg-green-600 hover:bg-green-700">
+                                            <Gem class="mr-2 h-4 w-4" />
+                                            Lanjut ke Pembayaran
+                                        </Button>
+                                    </DialogFooter>
                                 </DialogContent>
                             </Dialog>
                         </div>

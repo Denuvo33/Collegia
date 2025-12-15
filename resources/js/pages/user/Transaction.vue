@@ -12,12 +12,16 @@ import { onMounted } from 'vue';
 interface Transaction {
     id: number;
     order_id: string;
+    transaction_type: string;
     amount: number;
     transaction_status: string;
     payment_type: string | null;
     snap_token: string | null;
     created_at: string;
     paid_at: string | null;
+    promotion_days: number | null;
+    promotion_start_date: string | null;
+    promotion_end_date: string | null;
     event: {
         id: number;
         title: string;
@@ -163,6 +167,38 @@ onMounted(() => {
 
                             <!-- Event Details (if exists) -->
                             <div v-if="transaction.event" class="space-y-2 border-t pt-3">
+                                <!-- Transaction Type Badge -->
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                        <FileText class="h-4 w-4" />
+                                        Jenis Transaksi
+                                    </span>
+                                    <Badge :variant="transaction.transaction_type === 'event_promotion' ? 'default' : 'secondary'">
+                                        {{ transaction.transaction_type === 'event_promotion' ? 'Promosi Event' : 'Pembuatan Event' }}
+                                    </Badge>
+                                </div>
+
+                                <!-- Promotion Details (if promotion) -->
+                                <div
+                                    v-if="transaction.transaction_type === 'event_promotion'"
+                                    class="space-y-2 rounded bg-green-50 p-3 dark:bg-green-900/20"
+                                >
+                                    <div class="mb-1 font-semibold text-green-800 dark:text-green-200">Detail Promosi</div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600 dark:text-gray-400">Durasi</span>
+                                        <span>{{ transaction.promotion_days }} hari</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600 dark:text-gray-400">Mulai</span>
+                                        <span>{{ formatDate(transaction.promotion_start_date!) }}</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-600 dark:text-gray-400">Selesai</span>
+                                        <span>{{ formatDate(transaction.promotion_end_date!) }}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Event Info -->
                                 <div class="flex items-center justify-between text-sm">
                                     <span class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                                         <Calendar class="h-4 w-4" />
@@ -170,7 +206,7 @@ onMounted(() => {
                                     </span>
                                     <span>{{ formatDate(transaction.event.date_event) }}</span>
                                 </div>
-                                <div class="flex items-center justify-between text-sm">
+                                <div v-if="transaction.transaction_type === 'event_creation'" class="flex items-center justify-between text-sm">
                                     <span class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
                                         <FileText class="h-4 w-4" />
                                         Status Event

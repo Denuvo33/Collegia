@@ -67,7 +67,7 @@ Route::get('/user/create-event', [EventController::class, 'create'])->middleware
 
 Route::get('/user/event/{hashId}/{title}', [EventController::class, 'show'])->middleware(['auth'])->name('user.details.event');
 
-Route::post('/user/event/promote/{eventId}', [EventController::class, 'promote'])->middleware(['auth', 'verified'])->name('user.event.promote');
+Route::post('/user/event/promotion/initiate', [TransactionController::class, 'initiatePromotionPayment'])->middleware(['auth', 'verified'])->name('user.event.promotion.initiate');
 
 // User Routes Post
 Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified'])->name('user.post.store');
@@ -95,6 +95,10 @@ Route::get('/user/transaction/status/{orderId}', [TransactionController::class, 
 Route::post('/user/transaction/refresh/{orderId}', [TransactionController::class, 'refreshSnapToken'])
     ->middleware(['auth', 'verified'])
     ->name('user.transaction.refresh');
+
+Route::post('/user/transaction/cancel/{orderId}', [TransactionController::class, 'cancelTransaction'])
+    ->middleware(['auth', 'verified'])
+    ->name('user.transaction.cancel');
 
 //user Routes Destroy
 Route::delete('/user/post/comment/${id}', [CommentController::class, 'destroy'])->middleware('auth')->name('user.comment.delete');

@@ -15,7 +15,7 @@ class EventController extends Controller
 {
     public function index(Request $request)
     {
-        $today = now();
+        $today = now()->toDateString(); // Get today's date only (YYYY-MM-DD)
         $filter = $request->query('filter', 'terbaru');
         $search = $request->query('search', '');
 
@@ -24,7 +24,7 @@ class EventController extends Controller
             ->selectRaw("
             CASE 
                 WHEN promoted_till IS NOT NULL 
-                     AND promoted_till >= ? 
+                     AND DATE(promoted_till) >= ? 
                 THEN 1 
                 ELSE 0 
             END AS is_promoted
@@ -32,7 +32,7 @@ class EventController extends Controller
             ->selectRaw("
             CASE 
                 WHEN promoted_till IS NOT NULL 
-                     AND promoted_till >= ? 
+                     AND DATE(promoted_till) >= ? 
                 THEN promoted_till
                 ELSE NULL
             END AS sort_promoted_till
