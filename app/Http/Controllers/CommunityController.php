@@ -9,10 +9,12 @@ use App\Models\ReportComment;
 use App\Models\ReportEvent;
 use App\Models\ReportModel;
 use App\Models\Post;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class CommunityController extends Controller
@@ -20,6 +22,20 @@ class CommunityController extends Controller
 
     public function adminDashboard(Request $request)
     {
+        // Get selected year or default to current year
+        $selectedYear = $request->input('year', now()->year);
+
+        // Get all available years from transactions
+        $availableYears = Transaction::selectRaw('DISTINCT YEAR(created_at) as year')
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+
+        // If no transactions exist, use current year
+        if (empty($availableYears)) {
+            $availableYears = [now()->year];
+        }
+
         $totalUsers = User::count();
         $adminUsers = User::where('role', 'admin')->count();
         $moderatorUsers = User::where('role', 'moderator')->count();
@@ -30,9 +46,40 @@ class CommunityController extends Controller
         $totalComments = CommentModel::count();
 
         $totalEvents = EventModel::count();
-        $pendingEvents = EventModel::where('status', 'pending')->count();
-        $approvedEvents = EventModel::where('status', 'approved')->count();
-        $completedEvents = EventModel::where('status', 'completed')->count();
+        $visibleEvents = EventModel::where('is_visible', 1)->count();
+        $notVisibleEvents = EventModel::where('is_visible', 0)->count();
+
+        // Transaction statistics - all possible statuses
+        $totalTransactions = Transaction::count();
+        $successTransactions = Transaction::where('transaction_status', 'success')->count();
+        $pendingTransactions = Transaction::where('transaction_status', 'pending')->count();
+        $failedTransactions = Transaction::where('transaction_status', 'failed')->count();
+        $expiredTransactions = Transaction::where('transaction_status', 'expired')->count();
+        $cancelledTransactions = Transaction::where('transaction_status', 'cancelled')->count();
+
+        // Monthly transaction data for selected year
+        $monthlyTransactions = Transaction::select(
+            DB::raw('MONTH(created_at) as month'),
+            DB::raw('SUM(amount) as total_amount'),
+            DB::raw('COUNT(*) as transaction_count')
+        )
+            ->whereYear('created_at', $selectedYear)
+            ->where('transaction_status', 'success')
+            ->groupBy(DB::raw('MONTH(created_at)'))
+            ->orderBy('month')
+            ->get()
+            ->keyBy('month');
+
+        // Prepare monthly data for all 12 months
+        $monthlyData = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $monthlyData[] = [
+                'month' => $i,
+                'name' => date('M', mktime(0, 0, 0, $i, 1)),
+                'amount' => $monthlyTransactions->get($i)?->total_amount ?? 0,
+                'count' => $monthlyTransactions->get($i)?->transaction_count ?? 0,
+            ];
+        }
 
         $totalReportPosts = ReportModel::count();
         $totalReportComments = ReportComment::count();
@@ -41,6 +88,23 @@ class CommunityController extends Controller
 
         // Recent users (last 5)
         $recentUsers = User::orderBy('created_at', 'desc')->take(5)->get();
+
+        // Recent transactions (last 5)
+        $recentTransactions = Transaction::with(['user', 'event'])
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get()
+            ->map(function ($transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'order_id' => $transaction->order_id,
+                    'user_name' => $transaction->user ? $transaction->user->name : 'N/A',
+                    'event_title' => $transaction->event ? $transaction->event->title : 'N/A',
+                    'amount' => $transaction->amount,
+                    'status' => $transaction->transaction_status,
+                    'created_at' => $transaction->created_at,
+                ];
+            });
 
         // Recent events (last 5) with calculated status based on date
         $recentEvents = EventModel::with('user')->orderBy('created_at', 'desc')->take(5)->get()->map(function ($event) {
@@ -72,9 +136,16 @@ class CommunityController extends Controller
                 'comments' => $totalComments,
                 'events' => [
                     'total' => $totalEvents,
-                    'pending' => $pendingEvents,
-                    'approved' => $approvedEvents,
-                    'completed' => $completedEvents,
+                    'visible' => $visibleEvents,
+                    'notVisible' => $notVisibleEvents,
+                ],
+                'transactions' => [
+                    'total' => $totalTransactions,
+                    'success' => $successTransactions,
+                    'pending' => $pendingTransactions,
+                    'failed' => $failedTransactions,
+                    'expired' => $expiredTransactions,
+                    'cancelled' => $cancelledTransactions,
                 ],
                 'reports' => [
                     'total' => $totalReports,
@@ -83,8 +154,12 @@ class CommunityController extends Controller
                     'events' => $totalReportEvents,
                 ],
             ],
+            'monthlyTransactions' => $monthlyData,
             'recentUsers' => $recentUsers,
             'recentEvents' => $recentEvents,
+            'recentTransactions' => $recentTransactions,
+            'selectedYear' => $selectedYear,
+            'availableYears' => $availableYears,
         ]);
     }
 
