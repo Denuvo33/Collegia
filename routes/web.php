@@ -33,6 +33,8 @@ Route::get('/user/explore', [ExploreController::class, 'index'])->middleware(['a
 Route::get('/user/notifications', [NotificationController::class, 'index'])->middleware(['auth', 'verified'])->name('user.notifications');
 
 Route::get('/user/transaction', [TransactionController::class, 'index'])->middleware(['auth', 'verified'])->name('user.transaction');
+// API endpoint for fetching paginated transactions
+Route::get('/user/transaction/paginate', [TransactionController::class, 'getTransactions'])->middleware(['auth', 'verified'])->name('user.transaction.paginate');
 // API endpoint for fetching paginated notifications
 Route::get('/user/notifications/paginate', [NotificationController::class, 'getNotifications'])->middleware(['auth', 'verified'])->name('user.notifications.paginate');
 

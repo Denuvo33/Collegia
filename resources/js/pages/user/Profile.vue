@@ -593,7 +593,7 @@ function copyPostUrl(hashId: string) {
                         </div>
 
                         <div
-                            v-if="event.promoted_till"
+                            v-if="event.is_promoted"
                             class="absolute top-4 left-4 flex items-center gap-1 space-x-1 rounded-full bg-yellow-100/90 px-3 py-1 shadow-lg backdrop-blur-sm"
                         >
                             <Gem class="text-yellow-400" />

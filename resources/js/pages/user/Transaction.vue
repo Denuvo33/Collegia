@@ -7,7 +7,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { AlertCircle, Calendar, CheckCircle2, Clock, CreditCard, DollarSign, FileText, XCircle } from 'lucide-vue-next';
-import { onMounted } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 interface Transaction {
     id: number;
@@ -31,8 +31,16 @@ interface Transaction {
     } | null;
 }
 
+interface PaginatedTransactions {
+    data: Transaction[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+}
+
 interface Props {
-    transactions: Transaction[];
+    transactions: PaginatedTransactions;
 }
 
 const props = defineProps<Props>();
@@ -110,12 +118,53 @@ const continuePayment = async (transaction: Transaction) => {
     }
 };
 
+//Infinite scroll state
+const transactions = ref<Transaction[]>(props.transactions?.data || []);
+const currentPage = ref(props.transactions?.current_page || 1);
+const lastPage = ref(props.transactions?.last_page || 1);
+const isLoading = ref(false);
+const hasMore = computed(() => currentPage.value < lastPage.value);
+
+const loadMore = async () => {
+    if (isLoading.value || !hasMore.value) return;
+
+    isLoading.value = true;
+    try {
+        const response = await axios.get(route('user.transaction.paginate'), {
+            params: { page: currentPage.value + 1 },
+        });
+
+        transactions.value.push(...response.data.data);
+        currentPage.value = response.data.current_page;
+        lastPage.value = response.data.last_page;
+    } catch (error) {
+        console.error('Failed to load more transactions:', error);
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+const handleScroll = () => {
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const bottomPosition = document.documentElement.scrollHeight - 200;
+
+    if (scrollPosition >= bottomPosition && hasMore.value && !isLoading.value) {
+        loadMore();
+    }
+};
+
 // Load Midtrans Snap script
 onMounted(() => {
     const script = document.createElement('script');
     script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
     script.setAttribute('data-client-key', usePage().props.midtrans_client_key as string);
     document.head.appendChild(script);
+
+    window.addEventListener('scroll', handleScroll);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('scroll', handleScroll);
 });
 </script>
 
@@ -128,13 +177,13 @@ onMounted(() => {
                 <h1 class="text-3xl font-bold dark:text-white">Riwayat Transaksi</h1>
             </div>
 
-            <div v-if="props.transactions.length === 0" class="py-12 text-center">
+            <div v-if="transactions.length === 0" class="py-12 text-center">
                 <CreditCard class="mx-auto mb-4 h-16 w-16 text-gray-400" />
                 <p class="text-lg text-gray-600 dark:text-gray-400">Belum ada transaksi</p>
             </div>
 
             <div v-else class="grid gap-4">
-                <Card v-for="transaction in props.transactions" :key="transaction.id" class="transition-shadow hover:shadow-lg">
+                <Card v-for="transaction in props.transactions.data" :key="transaction.id" class="transition-shadow hover:shadow-lg">
                     <CardHeader>
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
@@ -245,6 +294,17 @@ onMounted(() => {
                         </div>
                     </CardContent>
                 </Card>
+            </div>
+
+            <!-- Loading indicator -->
+            <div v-if="isLoading" class="py-8 text-center">
+                <div class="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+                <p class="mt-2 text-gray-600 dark:text-gray-400">Memuat transaksi...</p>
+            </div>
+
+            <!-- End of list indicator -->
+            <div v-if="!hasMore && transactions.length > 0" class="py-8 text-center text-gray-500 dark:text-gray-400">
+                <p>Semua transaksi telah ditampilkan</p>
             </div>
         </div>
     </AppLayout>

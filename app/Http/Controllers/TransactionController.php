@@ -24,11 +24,24 @@ class TransactionController extends Controller
         $transactions = Transaction::where('user_id', Auth::id())
             ->with('event')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10);
 
         return Inertia::render('user/Transaction', [
             'transactions' => $transactions,
         ]);
+    }
+
+    /**
+     * Get paginated transactions for infinite scroll
+     */
+    public function getTransactions(Request $request)
+    {
+        $transactions = Transaction::where('user_id', Auth::id())
+            ->with('event')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        return response()->json($transactions);
     }
     public function __construct()
     {

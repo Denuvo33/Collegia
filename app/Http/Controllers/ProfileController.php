@@ -22,9 +22,20 @@ class ProfileController extends Controller
     {
         $user = User::withCount(['posts', 'comments', 'events'])->findOrFail(Auth::id());
 
-        // Load events with transaction data
+        // Load events with transaction data and is_promoted calculation
+        $today = now()->toDateString();
         $events = EventModel::with('transaction')
+            ->select('*')
+            ->selectRaw("
+                CASE 
+                    WHEN promoted_till IS NOT NULL 
+                         AND DATE(promoted_till) >= ? 
+                    THEN 1 
+                    ELSE 0 
+                END AS is_promoted
+            ", [$today])
             ->where('user_id', Auth::id())
+            ->orderByDesc('is_promoted')
             ->latest()
             ->get()
             ->map(function ($event) {
@@ -38,6 +49,8 @@ class ProfileController extends Controller
                     'price' => $event->price,
                     'image' => $event->image,
                     'is_visible' => $event->is_visible,
+                    'is_promoted' => (bool) $event->is_promoted,
+                    'promoted_till' => $event->promoted_till,
                     'created_at' => $event->created_at,
                     'order_id' => $event->transaction ? $event->transaction->order_id : null,
                     'transaction_status' => $event->transaction ? $event->transaction->transaction_status : null,
