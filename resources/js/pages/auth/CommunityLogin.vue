@@ -41,7 +41,7 @@ const login = () => {
                         placeholder="email@example"
                         autocomplete="email"
                         v-model="form.email"
-                        class="h-12 rounded-xl border-neutral-300 focus:border-neutral-700 focus:ring-0"
+                        class="h-12 rounded-xl border-neutral-300 focus:border-neutral-700 focus:ring-0 dark:bg-white dark:text-black"
                     />
                     <p v-if="form.errors.email" class="text-sm text-red-500">{{ form.errors.email }}</p>
                 </div>
@@ -52,7 +52,7 @@ const login = () => {
                         type="password"
                         v-model="form.password"
                         placeholder="••••••••"
-                        class="h-12 rounded-xl border-neutral-300 focus:border-neutral-700 focus:ring-0"
+                        class="h-12 rounded-xl border-neutral-300 focus:border-neutral-700 focus:ring-0 dark:bg-white dark:text-black"
                     />
                     <p v-if="form.errors.password" class="text-sm text-red-500">{{ form.errors.password }}</p>
                 </div>

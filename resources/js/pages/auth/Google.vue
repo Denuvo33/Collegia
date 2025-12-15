@@ -26,7 +26,7 @@ import { Podcast, ShieldCheck } from 'lucide-vue-next';
                 Masuk dengan Google
             </button>
             <div class="mt-2">
-                <p>
+                <p class="text-black">
                     Atau masuk sebagai Komunitas? <span><a href="/community/login" class="text-blue-500">Masuk</a></span>
                 </p>
             </div>
