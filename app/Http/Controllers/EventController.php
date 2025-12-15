@@ -13,13 +13,11 @@ use Vinkla\Hashids\Facades\Hashids;
 
 class EventController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index(Request $request)
     {
         $today = now();
         $filter = $request->query('filter', 'terbaru');
+        $search = $request->query('search', '');
 
         $query = EventModel::with('user')
             ->select('*')
@@ -40,6 +38,14 @@ class EventController extends Controller
             END AS sort_promoted_till
         ", [$today])
             ->where('is_visible', true);
+
+        // Apply global search if provided
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', '%' . $search . '%')
+                    ->orWhere('organizer', 'like', '%' . $search . '%');
+            });
+        }
 
         // Apply filter-specific logic
         switch ($filter) {
@@ -76,6 +82,7 @@ class EventController extends Controller
         return Inertia::render('user/Event', [
             'data' => $events,
             'currentFilter' => $filter,
+            'currentSearch' => $search,
         ]);
     }
 

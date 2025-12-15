@@ -67,6 +67,7 @@ const props = defineProps<{
         next_page_url?: string | null;
     };
     currentFilter?: string;
+    currentSearch?: string;
 }>();
 
 const form = useForm({
@@ -74,26 +75,77 @@ const form = useForm({
 });
 
 const selectedFilter = ref(props.currentFilter || 'terbaru');
-const searchQuery = ref('');
+const searchQuery = ref(props.currentSearch || '');
 
-function searchEvent(list: typeof props.data.data, query: string) {
-    if (!query) return list;
-    return list.filter(
-        (event) => event.title.toLowerCase().includes(query.toLowerCase()) || event.organizer.toLowerCase().includes(query.toLowerCase()),
-    );
-}
+// Computed property for smart pagination
+const paginationPages = computed(() => {
+    const current = props.data.current_page;
+    const last = props.data.last_page;
+    const pages: number[] = [];
 
-const filteredList = computed(() => {
-    return searchEvent(props.data.data, searchQuery.value);
+    if (last <= 7) {
+        // If total pages <= 7, show all pages
+        for (let i = 1; i <= last; i++) {
+            pages.push(i);
+        }
+    } else {
+        // Always include page 1
+        pages.push(1);
+
+        // Calculate range around current page
+        let start = Math.max(2, current - 2);
+        let end = Math.min(last - 1, current + 2);
+
+        // Adjust if we're near the start
+        if (current <= 4) {
+            end = 6;
+        }
+
+        // Adjust if we're near the end
+        if (current >= last - 3) {
+            start = last - 5;
+        }
+
+        // Add ellipsis if needed
+        if (start > 2) {
+            pages.push(-1); // -1 represents ellipsis
+        }
+
+        // Add middle pages
+        for (let i = start; i <= end; i++) {
+            pages.push(i);
+        }
+
+        // Add ellipsis if needed
+        if (end < last - 1) {
+            pages.push(-1); // -1 represents ellipsis
+        }
+
+        // Always include last page
+        pages.push(last);
+    }
+
+    return pages;
 });
 
 const changeFilter = (filter: string) => {
     selectedFilter.value = filter;
     router.get(
         route('user.event'),
-        { filter },
+        { filter, search: searchQuery.value },
         {
-            preserveScroll: true,
+            preserveScroll: false,
+            preserveState: true,
+        },
+    );
+};
+
+const performSearch = () => {
+    router.get(
+        route('user.event'),
+        { filter: selectedFilter.value, search: searchQuery.value },
+        {
+            preserveScroll: false,
             preserveState: true,
         },
     );
@@ -117,15 +169,28 @@ const isPromotedActive = (promotedTill: string | null) => {
     return new Date(promotedTill) >= new Date();
 };
 
+const goToPage = (page: number) => {
+    if (page !== props.data.current_page && page >= 1 && page <= props.data.last_page) {
+        router.get(
+            route('user.event'),
+            { page, filter: selectedFilter.value, search: searchQuery.value },
+            {
+                preserveScroll: false,
+                preserveState: true,
+            },
+        );
+    }
+};
+
 const nextPage = () => {
     if (props.data.next_page_url) {
-        router.get(props.data.next_page_url);
+        goToPage(props.data.current_page + 1);
     }
 };
 
 const backPage = () => {
     if (props.data.current_page > 1) {
-        router.get(route('user.event', { page: props.data.current_page - 1 }));
+        goToPage(props.data.current_page - 1);
     }
 };
 
@@ -289,7 +354,7 @@ function copyEvent(hashId: string) {
             <div class="flex flex-col items-center justify-between gap-4 md:flex-row">
                 <div class="flex items-center gap-2 text-slate-600 dark:text-slate-400">
                     <Calendar class="h-5 w-5" />
-                    <span class="font-medium">{{ data.data.length }} Event Tersedia</span>
+                    <span class="font-medium">Halaman {{ data.current_page }} dari {{ data.last_page }}</span>
                 </div>
 
                 <!-- Search and Filter Controls -->
@@ -299,10 +364,14 @@ function copyEvent(hashId: string) {
                         <input
                             type="text"
                             v-model="searchQuery"
-                            placeholder="Cari event..."
+                            @keyup.enter="performSearch"
+                            placeholder="Cari event... (tekan Enter)"
                             class="rounded-lg border border-gray-200 bg-gray-50 py-2 pr-4 pl-10 text-sm transition-all focus:border-transparent focus:ring-2 focus:ring-slate-500 dark:border-gray-600 dark:bg-gray-700"
                         />
                     </div>
+                    <Button @click="performSearch" class="bg-slate-700 text-white hover:bg-slate-800">
+                        <Search class="h-4 w-4" />
+                    </Button>
                     <DropdownMenu>
                         <DropdownMenuTrigger class="flex items-center justify-center gap-2">
                             <Filter class="h-4 w-4" />
@@ -332,7 +401,7 @@ function copyEvent(hashId: string) {
         <!-- Events Grid -->
         <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             <div
-                v-for="event in filteredList"
+                v-for="event in data.data"
                 :key="event.id"
                 class="group transform transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02]"
             >
@@ -555,13 +624,59 @@ function copyEvent(hashId: string) {
                 </div>
             </div>
         </div>
-        <div>
-            <div class="mt-8 flex flex-row justify-center gap-4">
-                <Button class="" @click="backPage" :disabled="data.current_page == 1">Previous</Button>
-                <div v-for="(page, index) in data.last_page" :key="page">
-                    <Button @click="nextPage" :disabled="data.current_page == index + 1">{{ index + 1 }} </Button>
+        <!-- Pagination -->
+        <div v-if="data.last_page > 1" class="mt-8 flex justify-center">
+            <div class="flex items-center gap-2">
+                <!-- Previous Button -->
+                <Button
+                    @click="backPage"
+                    :disabled="data.current_page === 1"
+                    class="rounded-lg px-4 py-2 font-medium transition-all"
+                    :class="
+                        data.current_page === 1
+                            ? 'cursor-not-allowed bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                            : 'bg-white text-slate-700 hover:bg-slate-100 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700'
+                    "
+                >
+                    Previous
+                </Button>
+
+                <!-- Page Numbers -->
+                <div class="flex items-center gap-1">
+                    <template v-for="page in paginationPages" :key="page">
+                        <!-- Ellipsis -->
+                        <span v-if="page === -1" class="px-2 text-slate-600 dark:text-slate-400">...</span>
+
+                        <!-- Page Button -->
+                        <Button
+                            v-else
+                            @click="goToPage(page)"
+                            :disabled="data.current_page === page"
+                            class="min-w-[40px] rounded-lg px-3 py-2 font-medium transition-all"
+                            :class="
+                                data.current_page === page
+                                    ? 'cursor-default bg-slate-700 text-white dark:bg-slate-600'
+                                    : 'bg-white text-slate-700 hover:bg-slate-100 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700'
+                            "
+                        >
+                            {{ page }}
+                        </Button>
+                    </template>
                 </div>
-                <Button @click="nextPage" :disabled="props.data.next_page_url == null">Next</Button>
+
+                <!-- Next Button -->
+                <Button
+                    @click="nextPage"
+                    :disabled="data.next_page_url === null"
+                    class="rounded-lg px-4 py-2 font-medium transition-all"
+                    :class="
+                        data.next_page_url === null
+                            ? 'cursor-not-allowed bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
+                            : 'bg-white text-slate-700 hover:bg-slate-100 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700'
+                    "
+                >
+                    Next
+                </Button>
             </div>
         </div>
         <!-- Empty State -->

@@ -575,11 +575,23 @@ function copyPostUrl(hashId: string) {
                         <div v-else class="flex h-full items-center justify-center">
                             <Calendar class="h-16 w-16 text-white/80" />
                         </div>
-                        <div class="absolute top-4 right-4 rounded-lg bg-white/90 px-3 py-1 backdrop-blur-sm">
-                            <span class="text-sm font-bold text-gray-800">
-                                {{ event.price == 0 ? 'GRATIS' : `Rp ${event.price.toLocaleString()}` }}
-                            </span>
+                        <div class="absolute top-4 right-4 flex">
+                            <div class="flex rounded-lg bg-white/90 px-3 py-1 backdrop-blur-sm">
+                                <span class="text-sm font-bold text-gray-800">
+                                    {{ event.price == 0 ? 'GRATIS' : `Rp ${event.price.toLocaleString()}` }}
+                                </span>
+                            </div>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger>
+                                    <EllipsisVertical class="h-5 w-5" />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem class="text-red-500">Hapus</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
+
                         <div
                             v-if="event.promoted_till"
                             class="absolute top-4 left-4 flex items-center gap-1 space-x-1 rounded-full bg-yellow-100/90 px-3 py-1 shadow-lg backdrop-blur-sm"
@@ -626,12 +638,13 @@ function copyPostUrl(hashId: string) {
 
                         <!-- Action Button -->
                         <Button
+                            v-if="event.is_visible"
                             class="w-full transform rounded-xl bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:from-slate-700 hover:to-slate-700 hover:shadow-xl"
                             @click="$inertia.visit(route('user.details.event', { hashId: event.hash_id, title: event.title }))"
                         >
                             Lihat Detail Event
                         </Button>
-                        <div v-if="event.promoted_till == null" class="mt-2">
+                        <div v-if="event.promoted_till == null && event.is_visible" class="mt-2">
                             <Dialog>
                                 <DialogTrigger class="flex items-center gap-2 rounded bg-green-500 px-4 py-2 font-bold text-white"
                                     >Promosikan</DialogTrigger
