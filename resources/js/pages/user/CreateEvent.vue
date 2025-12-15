@@ -214,9 +214,11 @@ onMounted(() => {
                         <Image class="mt-5 h-10 w-10"></Image>
                         <div v-if="form.errors.image" class="text-red-500">{{ form.errors.image }}</div>
                     </Label>
+
                     <div>
                         <Button class="mt-5" @click="submit">Buat Event</Button>
                     </div>
+                    <span class="font-bold text-black uppercase">Jika pembayaran terputus, Anda dapat melanjutkanya di Halaman Transaksi.</span>
                 </div>
             </CardContent>
             <CardFooter> </CardFooter>

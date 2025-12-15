@@ -126,7 +126,6 @@ onMounted(() => {
         <div class="container mx-auto p-6">
             <div class="mb-6">
                 <h1 class="text-3xl font-bold dark:text-white">Riwayat Transaksi</h1>
-                <p class="text-gray-600 dark:text-gray-400">Kelola pembayaran event Anda</p>
             </div>
 
             <div v-if="props.transactions.length === 0" class="py-12 text-center">

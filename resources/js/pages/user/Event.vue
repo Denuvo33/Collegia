@@ -708,7 +708,10 @@ onMounted(() => {
                                     <DialogHeader>
                                         <DialogTitle>Promosikan Event</DialogTitle>
                                         <DialogDescription>
-                                            Promosikan event Anda agar lebih mudah ditemukan. Biaya promosi Rp 5.000 per hari.
+                                            Promosikan event Anda agar lebih mudah ditemukan. Biaya promosi Rp 5.000 per hari.<br />
+                                            <span class="font-bold text-black uppercase"
+                                                >Jika pembayaran terputus, Anda dapat melanjutkanya di Halaman Transaksi</span
+                                            >
                                         </DialogDescription>
                                     </DialogHeader>
 
