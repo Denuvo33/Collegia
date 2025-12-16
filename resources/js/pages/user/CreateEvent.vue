@@ -218,7 +218,12 @@ onMounted(() => {
                     <div>
                         <Button class="mt-5" @click="submit">Buat Event</Button>
                     </div>
-                    <span class="font-bold text-black uppercase">Jika pembayaran terputus, Anda dapat melanjutkanya di Halaman Transaksi.</span>
+                    <div class="w-fit rounded bg-black/40 p-2 font-bold text-white uppercase shadow">
+                        <span>
+                            Jika pembayaran terputus, Anda dapat melanjutkanya di Halaman Transaksi.<br />
+                            Event dapat dilihat di profile dengan status Tidak Terlihat hingga pembayaran selesai.
+                        </span>
+                    </div>
                 </div>
             </CardContent>
             <CardFooter> </CardFooter>

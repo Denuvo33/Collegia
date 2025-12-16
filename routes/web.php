@@ -67,6 +67,8 @@ Route::get('/user/event', [EventController::class, 'index'])->middleware(['auth'
 
 Route::get('/user/create-event', [EventController::class, 'create'])->middleware(['auth', 'verified'])->name('user.create-event');
 
+Route::get('/user/event/promote/{id}', [EventController::class, 'promoteForm'])->middleware(['auth', 'verified'])->name('user.event.promote.form');
+
 Route::get('/user/event/{hashId}/{title}', [EventController::class, 'show'])->middleware(['auth'])->name('user.details.event');
 
 Route::post('/user/event/promotion/initiate', [TransactionController::class, 'initiatePromotionPayment'])->middleware(['auth', 'verified'])->name('user.event.promotion.initiate');

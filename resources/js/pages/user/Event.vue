@@ -11,9 +11,7 @@ import {
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Toaster } from '@/components/ui/sonner';
@@ -190,10 +188,10 @@ const initiatePromotion = async (eventId: number) => {
         const orderId = response.data.order_id;
 
         if (snapToken && (window as any).snap) {
-            // Close dialog before opening Snap
+            // Close dialog before opening Snap to avoid z-index conflict
             isPromotionDialogOpen.value = false;
 
-            // Wait for dialog to fully close before opening Snap
+            // Wait for dialog animation to complete before opening Snap
             setTimeout(() => {
                 let paymentMethodSelected = false;
 
@@ -695,81 +693,19 @@ onMounted(() => {
                             Lihat Detail Event
                         </Button>
                         <div v-if="!isPromotedActive(event.promoted_till) && usePage().props.auth.user.id == event.user.id" class="mt-3">
-                            <Dialog v-model:open="isPromotionDialogOpen">
-                                <DialogTrigger as-child>
-                                    <Button
-                                        class="flex w-full transform items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-green-700 py-3 font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:from-green-700 hover:to-green-800 hover:shadow-xl"
-                                        @click="promotionForm.event_id = event.id"
-                                    >
-                                        <Gem class="h-4 w-4" />
-                                        Promosikan Event
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent class="sm:max-w-md">
-                                    <DialogHeader>
-                                        <DialogTitle>Promosikan Event</DialogTitle>
-                                        <DialogDescription>
-                                            Promosikan event Anda agar lebih mudah ditemukan. Biaya promosi Rp 5.000 per hari.<br />
-                                            <span class="font-bold text-black uppercase"
-                                                >Jika pembayaran terputus, Anda dapat melanjutkanya di Halaman Transaksi</span
-                                            >
-                                        </DialogDescription>
-                                    </DialogHeader>
-
-                                    <div class="space-y-4 py-4">
-                                        <!-- Start Date -->
-                                        <div class="space-y-2">
-                                            <Label for="start-date">Tanggal Mulai</Label>
-                                            <Input
-                                                id="start-date"
-                                                type="date"
-                                                v-model="promotionForm.start_date"
-                                                :min="new Date().toISOString().split('T')[0]"
-                                                class="w-full"
-                                            />
-                                        </div>
-
-                                        <!-- End Date -->
-                                        <div class="space-y-2">
-                                            <Label for="end-date">Tanggal Selesai</Label>
-                                            <Input
-                                                id="end-date"
-                                                type="date"
-                                                v-model="promotionForm.end_date"
-                                                :min="promotionForm.start_date"
-                                                class="w-full"
-                                            />
-                                        </div>
-
-                                        <!-- Cost Summary -->
-                                        <div class="rounded-lg bg-slate-50 p-4 dark:bg-slate-800">
-                                            <div class="space-y-2 text-sm">
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600 dark:text-gray-400">Durasi</span>
-                                                    <span class="font-semibold">{{ promotionCost.days }} hari</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600 dark:text-gray-400">Biaya per hari</span>
-                                                    <span class="font-semibold">Rp 5.000</span>
-                                                </div>
-                                                <div class="border-t pt-2">
-                                                    <div class="flex justify-between text-base">
-                                                        <span class="font-bold">Total Biaya</span>
-                                                        <span class="font-bold text-green-600">{{ formatCurrency(promotionCost.total) }}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <DialogFooter>
-                                        <Button @click="initiatePromotion(event.id)" class="w-full bg-green-600 hover:bg-green-700">
-                                            <Gem class="mr-2 h-4 w-4" />
-                                            Lanjut ke Pembayaran
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
+                            <Button
+                                class="group hover:shadow-3xl relative w-full overflow-hidden rounded-xl border-2 border-gray-900 bg-gradient-to-r from-gray-900 via-black to-gray-900 py-4 font-bold text-white shadow-2xl transition-all duration-500 hover:scale-[1.02] hover:border-gray-700 dark:border-gray-100 dark:from-gray-100 dark:via-white dark:to-gray-100 dark:text-black dark:hover:border-gray-300"
+                                @click="$inertia.visit(route('user.event.promote.form', event.id))"
+                            >
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 dark:via-black/10"
+                                ></div>
+                                <div class="relative flex items-center justify-center gap-2">
+                                    <Gem class="h-5 w-5 animate-pulse" />
+                                    <span class="text-lg">Promosikan Event</span>
+                                    <Gem class="h-5 w-5 animate-pulse" />
+                                </div>
+                            </Button>
                         </div>
                     </div>
                 </div>

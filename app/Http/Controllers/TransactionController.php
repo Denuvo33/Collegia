@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Midtrans\Config;
 use Midtrans\Snap;
@@ -362,39 +363,118 @@ class TransactionController extends Controller
     }
 
     /**
-     * Cancel transaction when user closes payment without selecting method
+     * Cancel and delete transaction with associated event
+     * Only works for pending transactions without payment method selected
+     * - For event_creation: deletes both transaction and invisible event
+     * - For event_promotion: deletes only transaction, keeps the event
      */
     public function cancelTransaction($orderId)
     {
         try {
+            DB::beginTransaction();
+
+            // Find transaction and verify ownership
             $transaction = Transaction::where('order_id', $orderId)
                 ->where('user_id', Auth::id())
+                ->with('event')
                 ->first();
 
             if (!$transaction) {
-                return response()->json(['error' => 'Transaction not found'], 404);
+                return response()->json(['error' => 'Transaksi tidak ditemukan'], 404);
             }
 
-            // Only cancel if transaction is still pending and has no payment_type
-            // (meaning user hasn't selected a payment method yet)
-            if ($transaction->transaction_status === Transaction::STATUS_PENDING && !$transaction->payment_type) {
-                $transaction->transaction_status = Transaction::STATUS_CANCELLED;
-                $transaction->save();
+            // Security check: Only allow deletion of pending transactions
+            if ($transaction->transaction_status !== Transaction::STATUS_PENDING) {
+                return response()->json([
+                    'error' => 'Hanya transaksi dengan status pending yang dapat dibatalkan',
+                    'current_status' => $transaction->transaction_status
+                ], 400);
+            }
 
-                Log::info('Transaction cancelled by user', [
+            // Additional security: Only delete if user hasn't selected payment method
+            // This prevents deletion after user has committed to a payment method
+            if ($transaction->payment_type) {
+                return response()->json([
+                    'error' => 'Transaksi tidak dapat dibatalkan setelah metode pembayaran dipilih'
+                ], 400);
+            }
+
+            $deletedEventId = null;
+            $deletedEventTitle = null;
+            $transactionType = $transaction->transaction_type ?? Transaction::TYPE_EVENT_CREATION;
+
+            // Handle based on transaction type
+            if ($transactionType === Transaction::TYPE_EVENT_CREATION) {
+                // For event creation: delete both transaction and event
+                if ($transaction->event) {
+                    $event = $transaction->event;
+
+                    // Only delete event if it's invisible (not yet paid)
+                    if (!$event->is_visible) {
+                        $deletedEventId = $event->id;
+                        $deletedEventTitle = $event->title;
+
+                        // Delete event image if exists
+                        if ($event->image && \Storage::disk('public')->exists($event->image)) {
+                            \Storage::disk('public')->delete($event->image);
+                        }
+
+                        $event->delete();
+
+                        Log::info('Event deleted along with transaction', [
+                            'event_id' => $deletedEventId,
+                            'event_title' => $deletedEventTitle,
+                            'order_id' => $orderId,
+                        ]);
+                    } else {
+                        // Event is visible, don't delete it
+                        return response()->json([
+                            'error' => 'Transaksi tidak dapat dibatalkan karena event sudah terlihat'
+                        ], 400);
+                    }
+                }
+            } else if ($transactionType === Transaction::TYPE_EVENT_PROMOTION) {
+                // For event promotion: only delete transaction, keep the event
+                Log::info('Promotion transaction cancelled, event kept', [
                     'order_id' => $orderId,
-                    'user_id' => Auth::id(),
+                    'event_id' => $transaction->event_id,
                 ]);
-
-                return response()->json(['message' => 'Transaction cancelled successfully']);
             }
 
-            return response()->json(['message' => 'Transaction cannot be cancelled'], 400);
-        } catch (Exception $e) {
-            Log::error('Failed to cancel transaction: ' . $e->getMessage());
+            // Delete the transaction
+            $transaction->delete();
+
+            DB::commit();
+
+            Log::info('Transaction deleted by user', [
+                'order_id' => $orderId,
+                'user_id' => Auth::id(),
+                'transaction_type' => $transactionType,
+                'event_id' => $deletedEventId,
+                'event_title' => $deletedEventTitle,
+            ]);
+
+            // Customize message based on transaction type
+            $message = $transactionType === Transaction::TYPE_EVENT_CREATION
+                ? 'Transaksi dan event berhasil dibatalkan'
+                : 'Transaksi promosi berhasil dibatalkan';
 
             return response()->json([
-                'error' => 'Failed to cancel transaction',
+                'message' => $message,
+                'deleted_transaction' => $orderId,
+                'deleted_event_id' => $deletedEventId,
+                'transaction_type' => $transactionType,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to cancel transaction: ' . $e->getMessage(), [
+                'order_id' => $orderId,
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Gagal membatalkan transaksi',
                 'message' => $e->getMessage(),
             ], 500);
         }

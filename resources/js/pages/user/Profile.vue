@@ -277,6 +277,19 @@ function copyPostUrl(hashId: string) {
         },
     );
 }
+
+// Delete event
+const deleteEvent = (eventId: number) => {
+    router.delete(route('user.delete.event', eventId), {
+        onSuccess: () => {
+            // Remove event from the list
+            props.data.events = props.data.events.filter((e) => e.id !== eventId);
+        },
+        onError: (errors) => {
+            console.error('Failed to delete event:', errors);
+        },
+    });
+};
 </script>
 
 <template>
@@ -588,7 +601,13 @@ function copyPostUrl(hashId: string) {
                                     <EllipsisVertical class="h-5 w-5" />
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                    <DropdownMenuItem class="text-red-500">Hapus</DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        v-if="!event.is_visible"
+                                        @click="deleteEvent(event.id)"
+                                        class="cursor-pointer text-red-500 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
+                                    >
+                                        Hapus
+                                    </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>

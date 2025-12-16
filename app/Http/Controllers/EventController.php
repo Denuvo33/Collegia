@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EventRequest;
 use App\Models\EventModel;
+use App\Models\Transaction;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Vinkla\Hashids\Facades\Hashids;
 
@@ -109,6 +112,36 @@ class EventController extends Controller
     }
 
     /**
+     * Show promotion form for specific event
+     */
+    public function promoteForm($eventId)
+    {
+        try {
+            $event = EventModel::findOrFail($eventId);
+
+            // Only allow owner to promote
+            if (Auth::id() != $event->user_id) {
+                return redirect()->back()->with('failed', 'Anda tidak memiliki izin untuk mempromosikan event ini');
+            }
+
+            return Inertia::render('user/PromoteEvent', [
+                'event' => [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'content' => $event->content,
+                    'image' => $event->image,
+                    'date_event' => $event->date_event,
+                    'location' => $event->location,
+                    'organizer' => $event->organizer,
+                    'price' => $event->price,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return redirect()->route('user.event')->with('failed', 'Event tidak ditemukan');
+        }
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()
@@ -184,18 +217,61 @@ class EventController extends Controller
 
     /**
      * Remove the specified resource from storage.
+     * Also deletes associated pending transaction if event is invisible
      */
     public function destroy(string $id)
     {
         try {
-            $data = EventModel::findOrFail($id);
-            if ($data->user_id == Auth::id() || Auth::user()->role == 'admin' || Auth::user()->role == 'moderator') {
-                $data->delete();
-                return redirect()->back()->with('success', 'Event telah dihapus');
-            } else {
+            DB::beginTransaction();
+
+            $event = EventModel::findOrFail($id);
+
+            // Check permissions
+            if ($event->user_id != Auth::id() && Auth::user()->role != 'admin' && Auth::user()->role != 'moderator') {
                 return redirect()->back()->with('failed', 'Anda tidak memiliki izin untuk menghapus event ini');
             }
+
+            $deletedTransactionId = null;
+
+            // If event is invisible, delete associated pending transaction
+            if (!$event->is_visible) {
+                $transaction = Transaction::where('event_id', $event->id)
+                    ->where('transaction_status', Transaction::STATUS_PENDING)
+                    ->first();
+
+                if ($transaction) {
+                    $deletedTransactionId = $transaction->order_id;
+                    $transaction->delete();
+
+                    Log::info('Pending transaction deleted along with invisible event', [
+                        'transaction_id' => $deletedTransactionId,
+                        'event_id' => $event->id,
+                        'event_title' => $event->title,
+                        'user_id' => Auth::id(),
+                    ]);
+                }
+            }
+
+            // Delete event
+            $event->delete();
+
+            DB::commit();
+
+            Log::info('Event deleted', [
+                'event_id' => $id,
+                'was_visible' => $event->is_visible,
+                'deleted_transaction' => $deletedTransactionId,
+                'user_id' => Auth::id(),
+            ]);
+
+            return redirect()->back()->with('success', 'Event telah dihapus');
         } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to delete event: ' . $e->getMessage(), [
+                'event_id' => $id,
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return redirect()->back()->with('failed', 'Event gagal dihapus');
         }
     }

@@ -2,12 +2,27 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { AlertCircle, Calendar, CheckCircle2, Clock, CreditCard, DollarSign, FileText, XCircle } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { toast } from 'vue-sonner';
+import 'vue-sonner/style.css';
+
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface Transaction {
     id: number;
@@ -92,7 +107,6 @@ const continuePayment = async (transaction: Transaction) => {
             snapToken = response.data.snap_token;
 
             if (response.data.message) {
-                console.log(response.data.message);
             }
         }
 
@@ -104,16 +118,14 @@ const continuePayment = async (transaction: Transaction) => {
                 onPending: function () {
                     router.reload();
                 },
-                onError: function () {
-                    alert('Pembayaran gagal. Silakan coba lagi.');
-                },
+                onError: function () {},
             });
         }
     } catch (error: any) {
         if (error.response?.data?.message) {
-            alert(error.response.data.message);
+            toast.error(error.response.data.message);
         } else {
-            alert('Gagal memuat pembayaran. Silakan coba lagi.');
+            toast.error('Gagal memuat pembayaran. Silakan coba lagi.');
         }
         console.error('Continue payment error:', error);
     }
@@ -167,10 +179,30 @@ onMounted(() => {
 onUnmounted(() => {
     window.removeEventListener('scroll', handleScroll);
 });
+
+// Delete transaction
+const deleteTransaction = async (orderId: string) => {
+    try {
+        const response = await axios.post(route('user.transaction.cancel', orderId));
+
+        // Remove transaction from the list
+        transactions.value = transactions.value.filter((t) => t.order_id !== orderId);
+
+        toast.success(response.data.message || 'Transaksi dan event berhasil dibatalkan', {
+            duration: 3000,
+        });
+    } catch (error: any) {
+        const errorMessage = error.response?.data?.error || 'Gagal membatalkan transaksi';
+        toast.error(errorMessage, {
+            duration: 5000,
+        });
+    }
+};
 </script>
 
 <template>
     <Head title="Transaksi" />
+    <Toaster />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="container mx-auto p-6">
@@ -184,7 +216,7 @@ onUnmounted(() => {
             </div>
 
             <div v-else class="grid gap-4">
-                <Card v-for="transaction in props.transactions.data" :key="transaction.id" class="transition-shadow hover:shadow-lg">
+                <Card v-for="transaction in transactions" :key="transaction.id" class="transition-shadow hover:shadow-lg">
                     <CardHeader>
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
@@ -283,14 +315,39 @@ onUnmounted(() => {
                             </div>
 
                             <!-- Action Button -->
-                            <div
-                                v-if="transaction.transaction_status === 'pending' && transaction.snap_token && transaction.event_id !== null"
-                                class="w-fit border-t pt-3"
-                            >
+                            <div v-if="transaction.transaction_status === 'pending' && transaction.snap_token" class="w-fit space-y-2 border-t pt-3">
                                 <Button @click="continuePayment(transaction)" class="w-full" variant="default">
                                     <CreditCard class="mr-2 h-4 w-4" />
                                     Lanjutkan Pembayaran
                                 </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger class="w-full">
+                                        <Button @click="" class="w-full" variant="destructive">
+                                            <XCircle class="mr-2 h-4 w-4" />
+                                            Batalkan Transaksi
+                                        </Button></AlertDialogTrigger
+                                    >
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Apakah anda yakin ingin membatalkan transaksi ini?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                <template v-if="transaction.transaction_type === 'event_creation'">
+                                                    Transaksi ini tidak dapat diulangi.
+                                                    <strong>Transaksi dan Event yang dibuat akan dihapus</strong> dari akun anda.
+                                                </template>
+                                                <template v-else-if="transaction.transaction_type === 'event_promotion'">
+                                                    Transaksi promosi ini tidak dapat diulangi. <strong>Hanya transaksi yang akan dihapus</strong>,
+                                                    event tetap ada.
+                                                </template>
+                                                <template v-else> Transaksi ini tidak dapat diulangi dan akan dihapus dari akun anda. </template>
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                                            <AlertDialogAction @click="deleteTransaction(transaction.order_id)">Ya, Batalkan</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </div>
                         </div>
                     </CardContent>
