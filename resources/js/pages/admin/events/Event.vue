@@ -28,6 +28,7 @@ type Event = {
     date_event: string;
     status: 'akan datang' | 'berjalan' | 'selesai';
     promoted_till: string | null;
+    is_visible: boolean;
 };
 
 const props = defineProps<{
@@ -43,7 +44,6 @@ const props = defineProps<{
     };
 }>();
 
-const allEvents = ref<Event[]>([...props.events.data]);
 const statusFilter = ref<string>(props.filters?.status || 'all');
 const searchQuery = ref<string>(props.filters?.search || '');
 
@@ -65,26 +65,22 @@ const getEventStatus = (dateEvent: string): 'akan datang' | 'berjalan' | 'selesa
     }
 };
 
+// Check if event is promoted (using date comparison like EventController)
+const isPromoted = (promotedTill: string | null): boolean => {
+    if (!promotedTill) return false;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset to start of day
+
+    const promotedDate = new Date(promotedTill);
+    promotedDate.setHours(0, 0, 0, 0); // Reset to start of day
+
+    return promotedDate >= today;
+};
+
 // Pagination logic
 const currentPage = ref(props.events.current_page);
 const lastPage = props.events.last_page;
-
-const filteredEvents = computed(() => {
-    let filtered = allEvents.value;
-
-    // Filter by status
-    if (statusFilter.value !== 'all') {
-        filtered = filtered.filter((event) => event.status === statusFilter.value);
-    }
-
-    // Filter by search query
-    if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase();
-        filtered = filtered.filter((event) => event.title.toLowerCase().includes(query) || event.organizer.toLowerCase().includes(query));
-    }
-
-    return filtered;
-});
 
 const paginationNumbers = computed(() => {
     const delta = 3;
@@ -128,7 +124,6 @@ const deleteEvent = (id: number) => {
             preserveScroll: true,
             preserveState: false,
             onSuccess: () => {
-                allEvents.value = allEvents.value.filter((e) => e.id !== id);
                 toast.success('Event berhasil dihapus', {
                     dismissible: true,
                     duration: 5000,
@@ -161,7 +156,6 @@ const deleteAllCompleteEvents = () => {
         preserveScroll: true,
         preserveState: false,
         onSuccess: () => {
-            allEvents.value = allEvents.value.filter((e) => e.status !== 'selesai');
             toast.success('All complete events have been deleted', {
                 dismissible: true,
                 duration: 5000,
@@ -200,16 +194,16 @@ const filterByStatus = (status: string) => {
     statusFilter.value = status;
     currentPage.value = 1;
     router.get(route('admin.event', { page: 1, status: status, search: searchQuery.value }), {
-        preserveState: true,
-        preserveScroll: true,
+        preserveState: false,
+        preserveScroll: false,
     });
 };
 
 const handleSearch = () => {
     currentPage.value = 1;
     router.get(route('admin.event', { page: 1, status: statusFilter.value, search: searchQuery.value }), {
-        preserveState: true,
-        preserveScroll: true,
+        preserveState: false,
+        preserveScroll: false,
     });
 };
 
@@ -364,12 +358,13 @@ watch(
                             <th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase">Created At</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase">Event Date</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase">Status</th>
+                            <th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase">Visible</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase">Promoted</th>
                             <th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-700 uppercase">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
-                        <tr v-for="(event, index) in filteredEvents" :key="event.id" class="transition-colors hover:bg-gray-50">
+                        <tr v-for="(event, index) in props.events.data" :key="event.id" class="transition-colors hover:bg-gray-50">
                             <td class="px-6 py-4 text-sm font-medium whitespace-nowrap text-gray-900">
                                 {{ getRowNumber(index) }}
                             </td>
@@ -394,24 +389,35 @@ watch(
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span
                                     :class="[
-                                        'inline-flex border px-3 py-1 text-xs font-medium tracking-wide uppercase',
+                                        'inline-flex border px-2.5 py-1 text-xs font-semibold tracking-wider uppercase',
                                         getEventStatus(event.date_event) === 'akan datang'
-                                            ? 'border-gray-300 bg-blue-500 text-gray-800'
+                                            ? 'border-gray-800 bg-gray-100 text-gray-900'
                                             : getEventStatus(event.date_event) === 'berjalan'
                                               ? 'border-black bg-black text-white'
-                                              : 'border-gray-400 bg-gray-200 text-gray-600',
+                                              : 'border-gray-400 bg-white text-gray-500',
                                     ]"
                                 >
                                     {{ getEventStatus(event.date_event) }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <p
-                                    v-if="event.promoted_till != null && new Date(event.promoted_till) >= new Date()"
-                                    class="font-bold text-yellow-600"
+                                <span
+                                    :class="[
+                                        'inline-flex border px-2.5 py-1 text-xs font-semibold tracking-wider uppercase',
+                                        event.is_visible ? 'border-black bg-white text-black' : 'border-gray-400 bg-gray-100 text-gray-600',
+                                    ]"
                                 >
-                                    Active
-                                </p>
+                                    {{ event.is_visible ? 'Visible' : 'Hidden' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span
+                                    v-if="isPromoted(event.promoted_till)"
+                                    class="inline-flex border border-black bg-black px-2.5 py-1 text-xs font-semibold tracking-wider text-white uppercase"
+                                >
+                                    Promoted
+                                </span>
+                                <span v-else class="text-xs text-gray-400">—</span>
                             </td>
                             <td class="px-6 py-4 text-sm whitespace-nowrap">
                                 <button
@@ -423,8 +429,8 @@ watch(
                                 </button>
                             </td>
                         </tr>
-                        <tr v-if="filteredEvents.length === 0">
-                            <td colspan="7" class="px-6 py-12 text-center text-sm text-gray-500">No events found</td>
+                        <tr v-if="props.events.data.length === 0">
+                            <td colspan="9" class="px-6 py-12 text-center text-sm text-gray-500">No events found</td>
                         </tr>
                     </tbody>
                 </table>
