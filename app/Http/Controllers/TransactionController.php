@@ -80,10 +80,12 @@ class TransactionController extends Controller
                 ], 403);
             }
 
-            // Check for existing pending transaction (prevent duplicates when user retries)
+            // SECURITY: Prevent duplicate/spam transactions
+            // Check for existing pending transaction within last 5 minutes
             $existingTransaction = Transaction::where('user_id', $user->id)
                 ->where('transaction_status', Transaction::STATUS_PENDING)
-                ->where('created_at', '>=', now()->subMinutes(2)) // Check within expiry window
+                ->where('created_at', '>=', now()->subMinutes(5)) // Extended window for security
+                ->where('transaction_type', Transaction::TYPE_EVENT_CREATION)
                 ->with('event')
                 ->orderBy('created_at', 'desc')
                 ->first();
@@ -133,15 +135,17 @@ class TransactionController extends Controller
             // Generate unique order ID
             $orderId = 'EVENT-' . $event->id . '-' . time();
 
-            // Set payment amount (Rp 5,000)
+            // SECURITY: Hardcoded payment amount to prevent manipulation
+            // This amount is set server-side and cannot be changed by user
             $paymentAmount = 5000;
 
             // Create transaction record
             $transaction = Transaction::create([
                 'order_id' => $orderId,
+                'transaction_type' => Transaction::TYPE_EVENT_CREATION,
                 'user_id' => $user->id,
                 'event_id' => $event->id,
-                'amount' => $paymentAmount,
+                'amount' => $paymentAmount, // Hardcoded for security
                 'transaction_status' => Transaction::STATUS_PENDING,
             ]);
 
@@ -169,22 +173,16 @@ class TransactionController extends Controller
                 'email' => $user->email,
             ];
 
-            // UPDATED: Limit payment methods to specific options only
+            // E-wallet only payment methods (no account linking required)
             $params = [
                 'transaction_details' => $transactionDetails,
                 'item_details' => $itemDetails,
                 'customer_details' => $customerDetails,
                 'enabled_payments' => [
-                    // E-wallets
-                    'gopay',
-                    'shopeepay',
-                    'qris',
-                    // Bank transfers (Virtual Account)
-                    'bca_va',
-                    'bri_va',
-                    'bni_va',
-                    'permata_va', // BSI
-                    'echannel', // Mandiri Bill Payment
+                    // E-wallets only (scan to pay, no linking required)
+                    'other_qris',      // Universal QR payment
+                    'gopay',     // GoPay QR scan
+                    'shopeepay', // ShopeePay QR scan
                 ],
                 'expiry' => [
                     'unit' => 'minutes',
@@ -263,9 +261,17 @@ class TransactionController extends Controller
                 $promotionDays = 1; // Minimum 1 day for same day promotion
             }
 
-            // Calculate promotion cost (Rp 5,000 per day)
+            // SECURITY: Calculate promotion cost server-side to prevent manipulation
+            // Cost per day is hardcoded and cannot be changed by user
             $costPerDay = 5000;
             $promotionAmount = $promotionDays * $costPerDay;
+
+            // SECURITY: Validate promotion amount to prevent integer overflow
+            if ($promotionAmount > 100000000) { // Max 100 million IDR
+                return response()->json([
+                    'error' => 'Jumlah promosi terlalu besar. Maksimal durasi promosi adalah 20,000 hari.'
+                ], 400);
+            }
 
             DB::beginTransaction();
 
@@ -278,7 +284,7 @@ class TransactionController extends Controller
                 'transaction_type' => Transaction::TYPE_EVENT_PROMOTION,
                 'user_id' => $user->id,
                 'event_id' => $event->id,
-                'amount' => $promotionAmount,
+                'amount' => $promotionAmount, // Server-side calculated for security
                 'transaction_status' => Transaction::STATUS_PENDING,
                 'promotion_days' => $promotionDays,
                 'promotion_start_date' => $startDate,
@@ -310,18 +316,14 @@ class TransactionController extends Controller
                 'item_details' => $itemDetails,
                 'customer_details' => $customerDetails,
                 'enabled_payments' => [
-                    'gopay',
-                    'shopeepay',
-                    'qris',
-                    'bca_va',
-                    'bri_va',
-                    'bni_va',
-                    'permata_va',
-                    'echannel',
+                    // E-wallets only (scan to pay, no linking required)
+                    'other_qris',      // Universal QR payment
+                    'gopay',     // GoPay QR scan
+                    'shopeepay', // ShopeePay QR scan
                 ],
                 'expiry' => [
                     'unit' => 'minutes',
-                    'duration' => 1,
+                    'duration' => 10,
                 ],
             ];
 
@@ -543,18 +545,14 @@ class TransactionController extends Controller
                 'item_details' => $itemDetails,
                 'customer_details' => $customerDetails,
                 'enabled_payments' => [
-                    'gopay',
-                    'shopeepay',
-                    'qris',
-                    'bca_va',
-                    'bri_va',
-                    'bni_va',
-                    'permata_va',
-                    'echannel',
+                    // E-wallets only (scan to pay, no linking required)
+                    'other_qris',      // Universal QR payment
+                    'gopay',     // GoPay QR scan
+                    'shopeepay', // ShopeePay QR scan
                 ],
                 'expiry' => [
                     'unit' => 'minutes',
-                    'duration' => 1,
+                    'duration' => 3,
                 ],
             ];
 

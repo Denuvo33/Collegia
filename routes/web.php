@@ -71,7 +71,14 @@ Route::get('/user/event/promote/{id}', [EventController::class, 'promoteForm'])-
 
 Route::get('/user/event/{hashId}/{title}', [EventController::class, 'show'])->middleware(['auth'])->name('user.details.event');
 
-Route::post('/user/event/promotion/initiate', [TransactionController::class, 'initiatePromotionPayment'])->middleware(['auth', 'verified'])->name('user.event.promotion.initiate');
+// Payment routes with rate limiting
+Route::post('/user/event/initiate-payment', [TransactionController::class, 'initiatePayment'])
+    ->middleware(['auth', 'verified', 'throttle:10,1']) // Max 10 attempts per minute
+    ->name('user.event.payment.initiate');
+
+Route::post('/user/event/promotion/initiate', [TransactionController::class, 'initiatePromotionPayment'])
+    ->middleware(['auth', 'verified', 'throttle:10,1']) // Max 10 attempts per minute
+    ->name('user.event.promotion.initiate');
 
 // User Routes Post
 Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified'])->name('user.post.store');
@@ -84,10 +91,6 @@ Route::post('/user/comment/report', [ReportController::class, 'reportComment'])-
 
 Route::post('/user/create-event', [EventController::class, 'store'])->middleware(['auth', 'verified'])->name('user.event.store');
 
-// Payment routes
-Route::post('/user/event/initiate-payment', [TransactionController::class, 'initiatePayment'])
-    ->middleware(['auth', 'verified'])
-    ->name('user.event.payment.initiate');
 
 Route::post('/midtrans/webhook', [TransactionController::class, 'handleWebhook'])
     ->name('midtrans.webhook');

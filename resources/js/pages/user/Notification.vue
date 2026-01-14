@@ -201,7 +201,7 @@ const sortNotif = computed(() => {
                 <div class="mb-8">
                     <div class="mb-4 flex items-center gap-3">
                         <div class="rounded-xl bg-indigo-100 p-3">
-                            <Bell class="h-6 w-6 text-indigo-600" />
+                            <Bell class="h-6 w-6 text-black" />
                         </div>
                         <div>
                             <h1 class="text-3xl font-bold">Notifikasi</h1>
@@ -214,7 +214,7 @@ const sortNotif = computed(() => {
                 <!-- Empty State -->
                 <div v-if="notifications.length === 0" class="flex flex-col items-center justify-center px-4 py-16">
                     <div class="mb-6 rounded-full bg-white p-6 shadow-lg">
-                        <Bell class="h-12 w-12 text-gray-400" />
+                        <Bell class="h-12 w-12 text-black" />
                     </div>
                     <h3 class="mb-2 text-xl font-semibold text-gray-700">Belum ada notifikasi</h3>
                     <p class="max-w-md text-center text-gray-500">Anda akan menerima pemberitahuan ketika ada aktivitas baru pada postingan Anda</p>
@@ -234,7 +234,7 @@ const sortNotif = computed(() => {
                                     <!-- Icon -->
                                     <div class="mt-1 flex-shrink-0">
                                         <div class="rounded-lg border border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 p-2.5">
-                                            <MessageCircle class="h-5 w-5 text-indigo-600" />
+                                            <MessageCircle class="h-5 w-5 text-black" />
                                         </div>
                                     </div>
 
@@ -261,7 +261,7 @@ const sortNotif = computed(() => {
                                             <!-- Arrow Icon -->
                                             <div class="mt-2 flex-shrink-0">
                                                 <ChevronRight
-                                                    class="h-5 w-5 text-gray-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-indigo-500"
+                                                    class="h-5 w-5 text-gray-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-black"
                                                 />
                                             </div>
                                         </div>
@@ -271,7 +271,7 @@ const sortNotif = computed(() => {
 
                             <!-- Subtle border accent -->
                             <div
-                                class="h-1 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                                class="h-1 bg-gradient-to-r from-black to-blue-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                             ></div>
                         </div>
 

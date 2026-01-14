@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AdminLayout from '@/layouts/AdminLayout.vue';
 import { router } from '@inertiajs/vue3';
 import {
@@ -416,6 +417,123 @@ const hideTooltip = () => {
             </div>
 
             <!-- Charts Section -->
+            <!-- Transaction Trends - Full Width -->
+            <Card class="chart-card transaction-trends-card">
+                <CardHeader>
+                    <div class="chart-header-row">
+                        <div>
+                            <CardTitle class="chart-title">Transaction Trends</CardTitle>
+                            <CardDescription>Monthly successful transaction amounts & counts</CardDescription>
+                        </div>
+                        <Select :model-value="selectedYear.toString()" @update:model-value="changeYear">
+                            <SelectTrigger class="year-selector">
+                                <SelectValue placeholder="Select Year" />
+                            </SelectTrigger>
+                            <SelectContent align="end" side="bottom">
+                                <SelectItem v-for="year in availableYears" :key="year" :value="year.toString()">
+                                    {{ year }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div class="line-chart">
+                        <div class="chart-container">
+                            <!-- Y-axis labels -->
+                            <div class="y-axis-labels">
+                                <div v-for="i in 6" :key="'y-' + i" class="y-label">
+                                    Rp {{ Math.round((maxTransactionAmount / 5) * (6 - i)).toLocaleString() }}
+                                </div>
+                            </div>
+
+                            <div class="svg-wrapper">
+                                <svg viewBox="0 0 600 300" class="line-chart-svg">
+                                    <!-- Grid lines -->
+                                    <g class="grid-lines">
+                                        <line v-for="i in 5" :key="'h-' + i" x1="0" :y1="i * 60" x2="600" :y2="i * 60" />
+                                    </g>
+
+                                    <!-- Line path -->
+                                    <path :d="generateLinePath()" class="line-path" fill="none" stroke="url(#lineGradient)" stroke-width="3" />
+
+                                    <!-- Area fill -->
+                                    <path :d="generateAreaPath()" class="area-path" fill="url(#areaGradient)" />
+
+                                    <!-- Data points -->
+                                    <g class="data-points">
+                                        <circle
+                                            v-for="(month, index) in monthlyTransactions"
+                                            :key="month.month"
+                                            :cx="index * 50 + 25"
+                                            :cy="300 - (month.amount / maxTransactionAmount) * 280"
+                                            r="6"
+                                            class="data-point"
+                                            @mouseenter="showTooltip(month, $event)"
+                                            @mouseleave="hideTooltip"
+                                        />
+                                    </g>
+
+                                    <!-- Gradients -->
+                                    <defs>
+                                        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" style="stop-color: #166534; stop-opacity: 1" />
+                                            <stop offset="100%" style="stop-color: #15803d; stop-opacity: 1" />
+                                        </linearGradient>
+                                        <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" style="stop-color: #166534; stop-opacity: 0.3" />
+                                            <stop offset="100%" style="stop-color: #166534; stop-opacity: 0" />
+                                        </linearGradient>
+                                    </defs>
+                                </svg>
+
+                                <!-- Tooltip -->
+                                <div
+                                    v-if="tooltipData.visible"
+                                    class="chart-tooltip"
+                                    :style="{ left: tooltipData.x + 'px', top: tooltipData.y + 'px' }"
+                                >
+                                    <div class="tooltip-month">{{ tooltipData.month }} {{ selectedYear }}</div>
+                                    <div class="tooltip-row">
+                                        <span class="tooltip-label">Amount:</span>
+                                        <span class="tooltip-value">Rp {{ Math.round(tooltipData.amount).toLocaleString() }}</span>
+                                    </div>
+                                    <div class="tooltip-row">
+                                        <span class="tooltip-label">Count:</span>
+                                        <span class="tooltip-value">{{ tooltipData.count }} transactions</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- X-axis labels -->
+                        <div class="chart-axis-labels">
+                            <div v-for="month in monthlyTransactions" :key="month.month" class="axis-label">
+                                {{ month.name }}
+                            </div>
+                        </div>
+
+                        <!-- Stats Summary -->
+                        <div class="chart-stats-summary">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Amount ({{ selectedYear }}):</span>
+                                <span class="stat-value"
+                                    >Rp
+                                    {{
+                                        Math.round(monthlyTransactions.reduce((sum, m) => sum + parseFloat(m.amount || 0), 0)).toLocaleString()
+                                    }}</span
+                                >
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Transactions:</span>
+                                <span class="stat-value">{{ monthlyTransactions.reduce((sum, m) => sum + parseInt(m.count || 0), 0) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <!-- Event Visibility & Report Breakdown - Row Below -->
             <div class="charts-grid">
                 <!-- Event Visibility Distribution -->
                 <Card class="chart-card">
@@ -445,122 +563,6 @@ const hideTooltip = () => {
                                     <div class="chart-bar chart-bar-not-visible" :style="{ width: eventVisibilityPercentages.notVisible + '%' }">
                                         <span class="chart-bar-value">{{ stats.events.notVisible }}</span>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <!-- Monthly Transaction Trends -->
-                <Card class="chart-card">
-                    <CardHeader>
-                        <div class="chart-header-row">
-                            <div>
-                                <CardTitle class="chart-title">Transaction Trends</CardTitle>
-                                <CardDescription>Monthly successful transaction amounts & counts</CardDescription>
-                            </div>
-                            <Select :model-value="selectedYear.toString()" @update:model-value="changeYear">
-                                <SelectTrigger class="year-selector">
-                                    <SelectValue placeholder="Select Year" />
-                                </SelectTrigger>
-                                <SelectContent align="end" side="bottom">
-                                    <SelectItem v-for="year in availableYears" :key="year" :value="year.toString()">
-                                        {{ year }}
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div class="line-chart">
-                            <div class="chart-container">
-                                <!-- Y-axis labels -->
-                                <div class="y-axis-labels">
-                                    <div v-for="i in 6" :key="'y-' + i" class="y-label">
-                                        Rp {{ Math.round((maxTransactionAmount / 5) * (6 - i)).toLocaleString() }}
-                                    </div>
-                                </div>
-
-                                <div class="svg-wrapper">
-                                    <svg viewBox="0 0 600 300" class="line-chart-svg">
-                                        <!-- Grid lines -->
-                                        <g class="grid-lines">
-                                            <line v-for="i in 5" :key="'h-' + i" x1="0" :y1="i * 60" x2="600" :y2="i * 60" />
-                                        </g>
-
-                                        <!-- Line path -->
-                                        <path :d="generateLinePath()" class="line-path" fill="none" stroke="url(#lineGradient)" stroke-width="3" />
-
-                                        <!-- Area fill -->
-                                        <path :d="generateAreaPath()" class="area-path" fill="url(#areaGradient)" />
-
-                                        <!-- Data points -->
-                                        <g class="data-points">
-                                            <circle
-                                                v-for="(month, index) in monthlyTransactions"
-                                                :key="month.month"
-                                                :cx="index * 50 + 25"
-                                                :cy="300 - (month.amount / maxTransactionAmount) * 280"
-                                                r="6"
-                                                class="data-point"
-                                                @mouseenter="showTooltip(month, $event)"
-                                                @mouseleave="hideTooltip"
-                                            />
-                                        </g>
-
-                                        <!-- Gradients -->
-                                        <defs>
-                                            <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                <stop offset="0%" style="stop-color: #166534; stop-opacity: 1" />
-                                                <stop offset="100%" style="stop-color: #15803d; stop-opacity: 1" />
-                                            </linearGradient>
-                                            <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                <stop offset="0%" style="stop-color: #166534; stop-opacity: 0.3" />
-                                                <stop offset="100%" style="stop-color: #166534; stop-opacity: 0" />
-                                            </linearGradient>
-                                        </defs>
-                                    </svg>
-
-                                    <!-- Tooltip -->
-                                    <div
-                                        v-if="tooltipData.visible"
-                                        class="chart-tooltip"
-                                        :style="{ left: tooltipData.x + 'px', top: tooltipData.y + 'px' }"
-                                    >
-                                        <div class="tooltip-month">{{ tooltipData.month }} {{ selectedYear }}</div>
-                                        <div class="tooltip-row">
-                                            <span class="tooltip-label">Amount:</span>
-                                            <span class="tooltip-value">Rp {{ Math.round(tooltipData.amount).toLocaleString() }}</span>
-                                        </div>
-                                        <div class="tooltip-row">
-                                            <span class="tooltip-label">Count:</span>
-                                            <span class="tooltip-value">{{ tooltipData.count }} transactions</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- X-axis labels -->
-                            <div class="chart-axis-labels">
-                                <div v-for="month in monthlyTransactions" :key="month.month" class="axis-label">
-                                    {{ month.name }}
-                                </div>
-                            </div>
-
-                            <!-- Stats Summary -->
-                            <div class="chart-stats-summary">
-                                <div class="stat-item">
-                                    <span class="stat-label">Total Amount ({{ selectedYear }}):</span>
-                                    <span class="stat-value"
-                                        >Rp
-                                        {{
-                                            Math.round(monthlyTransactions.reduce((sum, m) => sum + parseFloat(m.amount || 0), 0)).toLocaleString()
-                                        }}</span
-                                    >
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">Total Transactions:</span>
-                                    <span class="stat-value">{{ monthlyTransactions.reduce((sum, m) => sum + parseInt(m.count || 0), 0) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -860,7 +862,7 @@ const hideTooltip = () => {
 }
 
 .stat-breakdown-item svg {
-    color: #a3a3a3;
+    color: #525252;
 }
 
 .stat-description {
@@ -914,6 +916,19 @@ const hideTooltip = () => {
 }
 
 /* Charts Grid */
+.transaction-trends-card {
+    border: 1px solid #e5e5e5;
+    background: #ffffff;
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+.transaction-trends-card:hover {
+    box-shadow: 0 8px 16px -8px rgba(0, 0, 0, 0.1);
+    border-color: #d4d4d4;
+}
+
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -1073,7 +1088,7 @@ const hideTooltip = () => {
     border-radius: 0.5rem;
     font-size: 0.75rem;
     pointer-events: none;
-    z-index: 1000;
+    z-index: 9999;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     transform: translate(-50%, -100%);
     min-width: 160px;

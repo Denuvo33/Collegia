@@ -220,141 +220,150 @@ function copyPostUrl(hashId: string) {
     <AppLayout :breadcrumbs="breadcrumbs">
         <Toaster />
         <!-- Profile Header -->
-        <div class="relative mb-8 overflow-hidden rounded-b-2xl p-8 shadow-2xl">
-            <div class="relative flex flex-col items-center gap-6 text-white">
+        <div class="mb-8 rounded-lg border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div class="flex flex-col items-center gap-6">
                 <!-- Avatar -->
-                <div class="relative">
-                    <div
-                        class="flex h-24 w-24 items-center justify-center rounded-full border border-white/20 bg-gradient-to-br from-slate-700 to-slate-600 text-2xl font-bold shadow-lg"
-                    >
-                        {{ user.name.charAt(0).toUpperCase() }}
-                    </div>
-                    <div
-                        class="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-slate-900 bg-emerald-400 shadow-sm"
-                    >
-                        <div class="h-2 w-2 rounded-full bg-emerald-600"></div>
-                    </div>
+                <div
+                    class="flex h-20 w-20 items-center justify-center rounded-full bg-gray-200 text-2xl font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                >
+                    {{ user.name.charAt(0).toUpperCase() }}
                 </div>
 
                 <!-- Name + Join -->
                 <div class="text-center">
-                    <div class="flex flex-wrap gap-2">
-                        <h1 class="mb-2 text-3xl font-bold text-black dark:text-white">{{ user.role == 'user' ? user.clean_name : user.name }}</h1>
-                        <div v-if="user.role === 'moderator'" class="flex h-fit items-center rounded bg-blue-600 p-1 font-bold text-white">
+                    <div class="flex flex-wrap items-center justify-center gap-2">
+                        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ user.role == 'user' ? user.clean_name : user.name }}</h1>
+                        <span
+                            v-if="user.role === 'moderator'"
+                            class="rounded-md bg-blue-100 px-2 py-1 text-sm font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                        >
                             Moderator
-                        </div>
-                        <div v-if="user.role === 'community'" class="flex h-fit items-center rounded bg-yellow-500 p-1 font-bold text-white shadow">
+                        </span>
+                        <span
+                            v-if="user.role === 'community'"
+                            class="rounded-md bg-yellow-100 px-2 py-1 text-sm font-medium text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
+                        >
                             Komunitas
-                        </div>
+                        </span>
                     </div>
-                    <div class="flex items-center justify-center gap-2 text-slate-300">
+                    <div class="mt-2 flex items-center justify-center gap-1.5 text-sm text-gray-500">
                         <Clock class="h-4 w-4" />
-                        <p class="text-sm font-medium text-gray-500">Bergabung {{ formatTime(user.created_at) }}</p>
+                        <p>Bergabung {{ formatTime(user.created_at) }}</p>
                     </div>
                 </div>
 
                 <!-- Stats -->
-                <div class="flex flex-wrap justify-center gap-4">
-                    <div
-                        class="min-w-[100px] rounded-xl border border-white/10 bg-white/5 p-4 text-center shadow-lg backdrop-blur-sm transition hover:bg-white/10"
-                    >
-                        <p class="mb-1 text-2xl font-bold text-black dark:text-white">{{ user.posts_count }}</p>
-                        <p class="text-sm font-medium text-slate-500">Postingan</p>
+                <div class="flex gap-8">
+                    <div class="text-center">
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ user.posts_count }}</p>
+                        <p class="text-sm text-gray-500">Postingan</p>
                     </div>
-                    <div
-                        class="min-w-[100px] rounded-xl border border-white/10 bg-white/5 p-4 text-center shadow-lg backdrop-blur-sm transition hover:bg-white/10"
-                    >
-                        <p class="mb-1 text-2xl font-bold text-black dark:text-white">{{ user.comments_count }}</p>
-                        <p class="text-sm font-medium text-slate-500">Komentar</p>
+                    <div class="h-12 w-px bg-gray-200 dark:bg-gray-700"></div>
+                    <div class="text-center">
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ user.comments_count }}</p>
+                        <p class="text-sm text-gray-500">Komentar</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Enhanced Tab Navigation -->
-        <div class="sticky top-0 z-10 mb-8 border-b border-gray-200 bg-white/80 shadow-sm backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/80">
+        <!-- Tab Navigation -->
+        <div class="sticky top-0 z-10 mb-8 border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
             <div class="flex justify-center">
-                <div class="m-4 flex rounded-xl bg-gray-100 p-1 dark:bg-gray-800">
+                <div class="flex gap-1">
                     <button
-                        class="relative overflow-hidden rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-300"
+                        class="border-b-2 px-6 py-3 text-sm font-medium transition-colors"
                         @click="activeTabs = 'posts'"
                         :class="
                             activeTabs == 'posts'
-                                ? 'scale-105 transform bg-white text-blue-600 shadow-lg dark:bg-gray-700 dark:text-blue-400'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                                ? 'border-gray-900 text-gray-900 dark:border-white dark:text-white'
+                                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                         "
                     >
-                        <span class="relative z-10">Postingan</span>
+                        Postingan
                     </button>
                     <button
-                        class="relative overflow-hidden rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-300"
+                        class="border-b-2 px-6 py-3 text-sm font-medium transition-colors"
                         :class="
                             activeTabs == 'comments'
-                                ? 'scale-105 transform bg-white text-blue-600 shadow-lg dark:bg-gray-700 dark:text-blue-400'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                                ? 'border-gray-900 text-gray-900 dark:border-white dark:text-white'
+                                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                         "
                         @click="activeTabs = 'comments'"
                     >
-                        <span class="relative z-10">Komentar</span>
+                        Komentar
                     </button>
 
                     <button
-                        class="relative overflow-hidden rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-300"
+                        class="border-b-2 px-6 py-3 text-sm font-medium transition-colors"
                         :class="
                             activeTabs == 'inkrip'
-                                ? 'scale-105 transform bg-white text-blue-600 shadow-lg dark:bg-gray-700 dark:text-blue-400'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+                                ? 'border-gray-900 text-gray-900 dark:border-white dark:text-white'
+                                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                         "
                         @click="activeTabs = 'inkrip'"
                     >
-                        <span class="relative z-10">Inkrip</span>
+                        Inkrip
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="p-8">
+        <div class="px-8">
             <!-- POSTS -->
             <div v-if="activeTabs == 'posts'">
                 <div
                     v-if="user.private_post == false"
                     v-for="post in posts"
                     :key="post.id"
-                    class="group transform p-4 transition-all hover:-translate-y-1 hover:scale-[1.02]"
+                    class="mb-4 rounded-lg border border-gray-200 bg-white transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
                 >
-                    <div
-                        class="dakr:hover:shadow-gray-700 flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-6 shadow hover:shadow-lg dark:border-gray-700 dark:bg-gray-800"
-                    >
-                        <div>
-                            <p class="font-bold">{{ user.clean_name }}</p>
-                            <div class="flex flex-row items-center gap-1 text-sm text-gray-500">
-                                <Clock class="h-3 w-3"></Clock>
-                                <p class="text-gray-400">dibuat {{ formatTime(post.created_at) }}</p>
+                    <div class="p-5">
+                        <div class="mb-3 flex items-center gap-3">
+                            <div
+                                class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                            >
+                                {{ user.name.charAt(0).toUpperCase() }}
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ user.clean_name }}</p>
+                                <div class="flex items-center gap-1 text-xs text-gray-500">
+                                    <Clock class="h-3 w-3"></Clock>
+                                    <p>dibuat {{ formatTime(post.created_at) }}</p>
+                                </div>
                             </div>
                         </div>
 
-                        <p>{{ post.content }}</p>
-                        <img v-if="post.image" :src="`/storage/${post.image}`" class="h-80 w-80 rounded object-contain" alt="post image" />
-                        <div class="-mx-6 mt-4 -mb-6 flex items-center justify-start border-t px-6 py-3 dark:border-gray-700">
-                            <div class="flex gap-4">
-                                <Button
-                                    @click="$inertia.visit(route('user.post.details', post.hash_id))"
-                                    class="flex cursor-pointer hover:text-blue-600"
-                                    ><MessageCircle /> Komentar</Button
-                                >
+                        <p class="mb-3 text-gray-700 dark:text-gray-300">{{ post.content }}</p>
+                        <img v-if="post.image" :src="`/storage/${post.image}`" class="max-h-80 max-w-80 rounded-lg object-contain" alt="post image" />
+                    </div>
+                    <div class="border-t border-gray-100 px-5 py-3 dark:border-gray-700">
+                        <div class="flex gap-4">
+                            <Button
+                                @click="$inertia.visit(route('user.post.details', post.hash_id))"
+                                class="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                                ><MessageCircle class="h-4 w-4" /> Komentar</Button
+                            >
 
-                                <Button @click="copyPostUrl(post.hash_id)" class="flex cursor-pointer hover:text-blue-600"><Share2 /> Bagikan</Button>
-                            </div>
+                            <Button
+                                @click="copyPostUrl(post.hash_id)"
+                                class="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                                ><Share2 class="h-4 w-4" /> Bagikan</Button
+                            >
                         </div>
                     </div>
                 </div>
-                <div class="flex flex-row justify-center p-4" v-else-if="user.private_post == true">
-                    <Lock></Lock>
-                    <p>Private</p>
+                <div class="flex justify-center py-8" v-else-if="user.private_post == true">
+                    <div class="flex items-center gap-2 text-gray-500">
+                        <Lock class="h-5 w-5"></Lock>
+                        <p>Private</p>
+                    </div>
                 </div>
                 <div v-if="postPage < postLastPage" ref="postSentinel" class="h-1"></div>
-                <div v-if="postLoading" class="p-4 text-center">Loading posts...</div>
-                <div v-else-if="postPage >= postLastPage && posts.length > 0" class="p-4 text-center text-gray-500">No more posts to load</div>
+                <div v-if="postLoading" class="flex justify-center py-8 text-sm text-gray-500">Loading posts...</div>
+                <div v-else-if="postPage >= postLastPage && posts.length > 0" class="py-8 text-center text-sm text-gray-500">
+                    No more posts to load
+                </div>
             </div>
 
             <!-- COMMENTS -->
@@ -364,33 +373,43 @@ function copyPostUrl(hashId: string) {
                     v-for="comment in comments"
                     :key="comment.id"
                     @click="$inertia.visit(route('user.post.details', comment.hash_id))"
-                    class="p-4"
+                    class="mb-4 cursor-pointer rounded-lg border border-gray-200 bg-white p-5 transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
                 >
-                    <div
-                        class="flex transform flex-col rounded-2xl bg-white p-4 shadow transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg dark:bg-gray-800 dark:hover:shadow-gray-700"
-                    >
-                        <p class="font-bold">{{ user.clean_name }}</p>
-                        <div class="flex items-center gap-1 text-sm text-gray-500">
-                            <Clock class="h-3 w-3" />
-                            <p class="text-gray-400">dibuat {{ formatTime(comment.created_at) }}</p>
+                    <div class="mb-3 flex items-center gap-3">
+                        <div
+                            class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                        >
+                            {{ user.name.charAt(0).toUpperCase() }}
                         </div>
-                        <p>{{ comment.content }}</p>
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">{{ user.clean_name }}</p>
+                            <div class="flex items-center gap-1 text-xs text-gray-500">
+                                <Clock class="h-3 w-3" />
+                                <p>dibuat {{ formatTime(comment.created_at) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-gray-700 dark:text-gray-300">{{ comment.content }}</p>
+                </div>
+                <div class="flex justify-center py-8" v-else-if="user.private_comment == true">
+                    <div class="flex items-center gap-2 text-gray-500">
+                        <Lock class="h-5 w-5"></Lock>
+                        <p>Private</p>
                     </div>
                 </div>
-                <div class="flex flex-row justify-center p-4" v-else-if="user.private_comment == true">
-                    <Lock></Lock>
-                    <p>Private</p>
-                </div>
                 <div v-if="commentPage < commentLastPage" ref="commentSentinel" class="h-1"></div>
-                <div v-if="commentLoading" class="p-4 text-center">Loading comments...</div>
-                <div v-else-if="commentPage >= commentLastPage && comments.length > 0" class="p-4 text-center text-gray-500">
+                <div v-if="commentLoading" class="flex justify-center py-8 text-sm text-gray-500">Loading comments...</div>
+                <div v-else-if="commentPage >= commentLastPage && comments.length > 0" class="py-8 text-center text-sm text-gray-500">
                     No more comments to load
                 </div>
             </div>
 
             <!-- INKRIP -->
             <div v-else-if="activeTabs == 'inkrip'">
-                <div class="p-8 text-center text-gray-500">Inkrip content coming soon...</div>
+                <div class="py-20 text-center">
+                    <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Segera Hadir!</h2>
+                    <p class="text-sm text-gray-500">Fitur Inkrip sedang dalam tahap pengembangan.</p>
+                </div>
             </div>
         </div>
     </AppLayout>
