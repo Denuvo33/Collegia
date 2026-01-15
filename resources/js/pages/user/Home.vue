@@ -18,7 +18,7 @@ import { Head, router, usePage } from '@inertiajs/vue3';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Calendar, Clock, EllipsisVertical, MapPin, Pin, Rat, Share2, Users, Workflow } from 'lucide-vue-next';
+import { Calendar, Clock, EllipsisVertical, MapPin, Pin, Plus, Rat, Share2, Users, Workflow } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css';
@@ -496,73 +496,136 @@ function getTypeLabel(type: string) {
 
                 <!-- Empty State -->
                 <div v-if="filteredFeed.length === 0" class="flex flex-col items-center justify-center py-12 text-center text-gray-500">
-                    <Floating>
-                        <Button variant="ghost" class="h-16 w-16" disabled>
-                            <AlertDialog>
-                                <AlertDialogTrigger as-child>
-                                    <Button class="text-lg">Posting</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent class="max-w-md">
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle class="text-xl">Pilih Jenis Postingan</AlertDialogTitle>
-                                    </AlertDialogHeader>
+                    <AlertDialog>
+                        <AlertDialogTrigger as-child>
+                            <Button class="text-lg">Posting</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent class="max-w-md">
+                            <AlertDialogHeader>
+                                <AlertDialogTitle class="text-xl">Pilih Jenis Postingan</AlertDialogTitle>
+                            </AlertDialogHeader>
 
-                                    <div class="grid gap-3 py-4">
-                                        <Card
-                                            class="cursor-pointer rounded border-2 p-2 transition-all hover:border-blue-500 hover:shadow-lg"
-                                            @click="$inertia.visit(route('user.create-event'))"
-                                        >
-                                            <CardContent class="p-4">
-                                                <div class="flex items-center gap-4">
-                                                    <Calendar class="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                                                    <div>
-                                                        <h3 class="text-lg font-semibold">Event</h3>
-                                                        <p class="text-sm text-gray-500">Buat acara kampus/komunitas</p>
-                                                    </div>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
+                            <div class="grid gap-3 py-4">
+                                <Card
+                                    class="cursor-pointer rounded border-2 p-2 transition-all hover:border-blue-500 hover:shadow-lg"
+                                    @click="$inertia.visit(route('user.create-event'))"
+                                >
+                                    <CardContent class="p-4">
+                                        <div class="flex items-center gap-4">
+                                            <Calendar class="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                                            <div>
+                                                <h3 class="text-lg font-semibold">Event</h3>
+                                                <p class="text-sm text-gray-500">Buat acara kampus/komunitas</p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
 
-                                        <Card
-                                            class="cursor-pointer rounded border-2 p-2 transition-all hover:border-green-500 hover:shadow-lg"
-                                            @click="$inertia.visit(route('user.create-collaboration'))"
-                                        >
-                                            <CardContent class="p-4">
-                                                <div class="flex items-center gap-4">
-                                                    <Workflow class="h-8 w-8 text-green-600 dark:text-green-400" />
-                                                    <div>
-                                                        <h3 class="text-lg font-semibold">Kolaborasi / Relawan</h3>
-                                                        <p class="text-sm text-gray-500">Cari rekan atau volunteer</p>
-                                                    </div>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
+                                <Card
+                                    class="cursor-pointer rounded border-2 p-2 transition-all hover:border-green-500 hover:shadow-lg"
+                                    @click="$inertia.visit(route('user.create-collaboration'))"
+                                >
+                                    <CardContent class="p-4">
+                                        <div class="flex items-center gap-4">
+                                            <Workflow class="h-8 w-8 text-green-600 dark:text-green-400" />
+                                            <div>
+                                                <h3 class="text-lg font-semibold">Kolaborasi / Relawan</h3>
+                                                <p class="text-sm text-gray-500">Cari rekan atau volunteer</p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
 
-                                        <Card
-                                            class="cursor-pointer rounded border-2 p-2 transition-all hover:border-purple-500 hover:shadow-lg"
-                                            @click="$inertia.visit(route('user.create-post'))"
-                                        >
-                                            <CardContent class="p-4">
-                                                <div class="flex items-center gap-4">
-                                                    <Rat class="h-8 w-8 text-purple-600 dark:text-purple-400" />
-                                                    <div>
-                                                        <h3 class="text-lg font-semibold">Cerita</h3>
-                                                        <p class="text-sm text-gray-500">Info terkait kampus/komunitas</p>
-                                                    </div>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    </div>
+                                <Card
+                                    class="cursor-pointer rounded border-2 p-2 transition-all hover:border-purple-500 hover:shadow-lg"
+                                    @click="$inertia.visit(route('user.create-post'))"
+                                >
+                                    <CardContent class="p-4">
+                                        <div class="flex items-center gap-4">
+                                            <Rat class="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                                            <div>
+                                                <h3 class="text-lg font-semibold">Cerita</h3>
+                                                <p class="text-sm text-gray-500">Info terkait kampus/komunitas</p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </div>
 
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </Button>
-                    </Floating>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                     <div class="mt-4">Tidak ada konten untuk ditampilkan</div>
                 </div>
+            </div>
+
+            <!-- Floating Action Button -->
+            <div class="fixed right-6 bottom-6 z-50">
+                <AlertDialog>
+                    <AlertDialogTrigger as-child>
+                        <Button size="icon" class="h-14 w-14 rounded-full shadow-xl transition-transform hover:scale-105">
+                            <Plus class="h-8 w-8" />
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent class="max-w-md">
+                        <AlertDialogHeader>
+                            <AlertDialogTitle class="text-xl">Pilih Jenis Postingan</AlertDialogTitle>
+                        </AlertDialogHeader>
+
+                        <div class="grid gap-3 py-4">
+                            <Card
+                                class="cursor-pointer rounded border-2 p-2 transition-all hover:border-blue-500 hover:shadow-lg"
+                                @click="$inertia.visit(route('user.create-event'))"
+                            >
+                                <CardContent class="p-4">
+                                    <div class="flex items-center gap-4">
+                                        <Calendar class="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                                        <div>
+                                            <h3 class="text-lg font-semibold">Event</h3>
+                                            <p class="text-sm text-gray-500">Buat acara kampus/komunitas</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card
+                                class="cursor-pointer rounded border-2 p-2 transition-all hover:border-green-500 hover:shadow-lg"
+                                @click="$inertia.visit(route('user.create-collaboration'))"
+                            >
+                                <CardContent class="p-4">
+                                    <div class="flex items-center gap-4">
+                                        <Workflow class="h-8 w-8 text-green-600 dark:text-green-400" />
+                                        <div>
+                                            <h3 class="text-lg font-semibold">Kolaborasi / Relawan</h3>
+                                            <p class="text-sm text-gray-500">Cari rekan atau volunteer</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card
+                                class="cursor-pointer rounded border-2 p-2 transition-all hover:border-purple-500 hover:shadow-lg"
+                                @click="$inertia.visit(route('user.create-post'))"
+                            >
+                                <CardContent class="p-4">
+                                    <div class="flex items-center gap-4">
+                                        <Rat class="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                                        <div>
+                                            <h3 class="text-lg font-semibold">Cerita</h3>
+                                            <p class="text-sm text-gray-500">Info terkait kampus/komunitas</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </div>
     </AppLayout>
