@@ -8,7 +8,7 @@ import { Bell, CalendarClock, Home, Telescope, User, Wallet } from 'lucide-vue-n
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Beranda',
+        title: 'Feed',
         href: '/user/home',
         icon: Home,
     },
@@ -18,7 +18,7 @@ const mainNavItems: NavItem[] = [
         icon: CalendarClock,
     },
     {
-        title: 'Jelajah',
+        title: 'People / Community',
         href: '/user/explore',
         icon: Telescope,
     },
@@ -27,15 +27,16 @@ const mainNavItems: NavItem[] = [
         href: '/user/notifications',
         icon: Bell,
     },
-    {
-        title: 'Transaksi',
-        href: '/user/transaction',
-        icon: Wallet,
-    },
+
     {
         title: 'Profile',
         href: '/user/profile',
         icon: User,
+    },
+    {
+        title: 'Transaksi',
+        href: '/user/transaction',
+        icon: Wallet,
     },
 ];
 

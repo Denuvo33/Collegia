@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\CollaborationController;
 
 
 Route::get('/', function () {
@@ -52,6 +53,21 @@ Route::get('/user/post/{hashId}', [HomeController::class, 'details'])->middlewar
 Route::get('/user/post/{postId}/comments', [CommentController::class, 'getComments'])->middleware(['auth', 'verified'])->name('post.comments.paginate');
 
 
+Route::get('/user/event', [EventController::class, 'index'])->middleware(['auth', 'verified'])->name('user.event');
+
+Route::get('/user/create-event', [EventController::class, 'create'])->middleware(['auth', 'verified'])->name('user.create-event');
+
+Route::get('/user/create-collaboration', [CollaborationController::class, 'index'])->middleware(['auth', 'verified'])->name('user.create-collaboration');
+
+Route::get('/user/collaboration/{hashId}', [CollaborationController::class, 'show'])->middleware(['auth'])->name('user.collaboration.details');
+
+Route::get('/user/collaboration/{hashId}/edit', [CollaborationController::class, 'edit'])->middleware(['auth', 'verified'])->name('user.collaboration.edit');
+
+Route::get('/user/event/promote/{id}', [EventController::class, 'promoteForm'])->middleware(['auth', 'verified'])->name('user.event.promote.form');
+
+Route::get('/user/event/{hashId}/{title}', [EventController::class, 'show'])->middleware(['auth'])->name('user.details.event');
+
+// This wildcard route must be LAST to avoid catching specific routes above
 Route::get('/user/{hashId}/{name}', [HomeController::class, 'user'])->middleware(['auth'])->name('user.details');
 // API khusus load posts
 Route::get('/user/{hashId}/{name}/posts', [HomeController::class, 'userPosts'])
@@ -61,15 +77,6 @@ Route::get('/user/{hashId}/{name}/posts', [HomeController::class, 'userPosts'])
 Route::get('/user/{hashId}/{name}/comments', [HomeController::class, 'userComments'])
     ->middleware(['auth'])
     ->name('user.comments');
-
-
-Route::get('/user/event', [EventController::class, 'index'])->middleware(['auth', 'verified'])->name('user.event');
-
-Route::get('/user/create-event', [EventController::class, 'create'])->middleware(['auth', 'verified'])->name('user.create-event');
-
-Route::get('/user/event/promote/{id}', [EventController::class, 'promoteForm'])->middleware(['auth', 'verified'])->name('user.event.promote.form');
-
-Route::get('/user/event/{hashId}/{title}', [EventController::class, 'show'])->middleware(['auth'])->name('user.details.event');
 
 // Payment routes with rate limiting
 Route::post('/user/event/initiate-payment', [TransactionController::class, 'initiatePayment'])
@@ -82,6 +89,14 @@ Route::post('/user/event/promotion/initiate', [TransactionController::class, 'in
 
 // User Routes Post
 Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified'])->name('user.post.store');
+
+Route::post('/user/create-collaboration', [CollaborationController::class, 'store'])->middleware(['auth', 'verified'])->name('user.collaboration.store');
+
+Route::put('/user/collaboration/{hashId}', [CollaborationController::class, 'update'])->middleware(['auth', 'verified'])->name('user.collaboration.update');
+
+Route::post('/user/collaboration/{hashId}/interest', [CollaborationController::class, 'toggleInterest'])->middleware(['auth'])->name('user.collaboration.interest');
+
+Route::delete('/user/collaboration/{hashId}', [CollaborationController::class, 'destroy'])->middleware(['auth', 'verified'])->name('user.collaboration.delete');
 
 Route::post('/user/create-comment', [CommentController::class, 'store'])->middleware('auth')->name('post.store.comment');
 

@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { Calendar, FileText, Image, MapPin, Pen, Users, Wallet } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
@@ -126,7 +126,7 @@ function submit() {
                 if (error.response?.data?.errors) {
                     // Show validation errors
                     Object.keys(error.response.data.errors).forEach((key) => {
-                        form.errors[key] = error.response.data.errors[key][0];
+                        form.errors[key as keyof typeof form.errors] = error.response.data.errors[key][0];
                     });
                 }
                 toast.error(error.response?.data?.message || 'Gagal memulai pembayaran');

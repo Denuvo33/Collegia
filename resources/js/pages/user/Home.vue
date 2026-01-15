@@ -1,47 +1,36 @@
 <script setup lang="ts">
 import {
     AlertDialog,
-    AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
-    AlertDialogDescription,
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Label } from '@/components/ui/label';
 import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Clock, EllipsisVertical, Eye, MessageCircle, Share2 } from 'lucide-vue-next';
+import { Calendar, Clock, EllipsisVertical, MapPin, Pin, Rat, Share2, Users, Workflow } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
-
 import 'vue-sonner/style.css';
-
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 dayjs.extend(relativeTime);
 dayjs.locale('id');
 
 const page = usePage();
-
 const reportValue = ref('spam');
 
-const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Home',
-        href: '/user/home',
-    },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Home', href: '/user/home' }];
+
 type User = {
     id: number;
     name: string;
@@ -51,222 +40,136 @@ type User = {
     clean_name: string;
 };
 
-type Post = {
+type FeedItem = {
     id: number;
-    user_id: number;
-    content: string;
-    hash_id: string;
+    type: 'post' | 'event' | 'collaboration' | 'volunteer';
+    title?: string;
+    content?: string;
+    description?: string;
     image?: string;
+    hash_id: string;
     created_at: string;
     user: User;
+    location?: string;
+    date_event?: string;
+    price?: number;
+    organizer?: string;
+    participants_needed?: number;
+    interests_count?: number;
+};
+
+type PaginatedFeed = {
+    data: FeedItem[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    next_page_url: string | null;
 };
 
 const props = defineProps<{
-    data: {
-        current_page: number;
-        last_page: number;
-        data: Post[];
-        next_page_url?: string | null;
-    };
+    pinnedEvents?: FeedItem[];
+    feed?: PaginatedFeed;
 }>();
 
-// Cache configuration
-const CACHE_KEY = 'home_posts_cache';
-const CACHE_EXPIRATION = 3 * 60 * 1000;
-const MAX_CACHED_POSTS = 50;
-const SCROLL_POSITION_KEY = 'home_scroll_position';
+// Filter configuration
+const FILTER_CACHE_KEY = 'home_filter_cache';
+const filters = ['all', 'event', 'collaboration', 'volunteer', 'post'] as const;
+type FilterType = (typeof filters)[number];
 
-type CachedData = {
-    posts: Post[];
-    currentPage: number;
-    lastPage: number;
-    timestamp: number;
-};
+// Restore filter from cache
+const savedFilter = sessionStorage.getItem(FILTER_CACHE_KEY) as FilterType | null;
+const activeFilter = ref<FilterType>(savedFilter || 'all');
 
-// Cache management functions
-function saveToCache() {
-    try {
-        const cacheData: CachedData = {
-            posts: posts.value.slice(0, MAX_CACHED_POSTS), // Limit cache size
-            currentPage: currentPage.value,
-            lastPage: lastPage.value,
-            timestamp: Date.now(),
-        };
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-    } catch (error) {
-        console.error('Failed to save cache:', error);
+// Save filter to cache when changed
+watch(activeFilter, (newFilter) => {
+    sessionStorage.setItem(FILTER_CACHE_KEY, newFilter);
+});
+
+const feed = ref<FeedItem[]>(props.feed?.data || []);
+const pinnedEvents = ref<FeedItem[]>(props.pinnedEvents || []);
+const currentPage = ref(props.feed?.current_page || 1);
+const lastPage = ref(props.feed?.last_page || 1);
+const isLoadingMore = ref(false);
+
+const filteredFeed = computed(() => {
+    if (activeFilter.value === 'all') {
+        return feed.value;
     }
-}
+    return feed.value.filter((item) => item.type === activeFilter.value);
+});
 
-function loadFromCache(): CachedData | null {
+async function loadMore() {
+    if (isLoadingMore.value || currentPage.value >= lastPage.value) return;
+
+    isLoadingMore.value = true;
     try {
-        const cached = sessionStorage.getItem(CACHE_KEY);
-        if (!cached) return null;
-
-        const cacheData: CachedData = JSON.parse(cached);
-        const now = Date.now();
-
-        // Check if cache is expired
-        if (now - cacheData.timestamp > CACHE_EXPIRATION) {
-            sessionStorage.removeItem(CACHE_KEY);
-            return null;
-        }
-
-        return cacheData;
-    } catch (error) {
-        console.error('Failed to load cache:', error);
-        return null;
-    }
-}
-
-function clearCache() {
-    sessionStorage.removeItem(CACHE_KEY);
-    sessionStorage.removeItem(SCROLL_POSITION_KEY);
-}
-
-function saveScrollPosition() {
-    try {
-        sessionStorage.setItem(SCROLL_POSITION_KEY, window.scrollY.toString());
-    } catch (error) {
-        console.error('Failed to save scroll position:', error);
-    }
-}
-
-function restoreScrollPosition() {
-    try {
-        const savedPosition = sessionStorage.getItem(SCROLL_POSITION_KEY);
-        if (savedPosition) {
-            // Use requestAnimationFrame to ensure DOM is ready
-            requestAnimationFrame(() => {
-                window.scrollTo(0, parseInt(savedPosition, 10));
-                sessionStorage.removeItem(SCROLL_POSITION_KEY);
-            });
-        }
-    } catch (error) {
-        console.error('Failed to restore scroll position:', error);
-    }
-}
-
-// Initialize from cache or props
-// Only use cache if there's a saved scroll position (indicating navigation back from post details)
-const hasSavedScrollPosition = sessionStorage.getItem(SCROLL_POSITION_KEY) !== null;
-const cachedData = hasSavedScrollPosition ? loadFromCache() : null;
-
-// If no saved scroll position, clear cache to ensure fresh data on reload
-if (!hasSavedScrollPosition) {
-    clearCache();
-}
-
-const posts = ref<Post[]>(cachedData ? cachedData.posts : [...props.data.data]);
-const currentPage = ref(cachedData ? cachedData.currentPage : props.data.current_page);
-const lastPage = ref(cachedData ? cachedData.lastPage : props.data.last_page);
-const loading = ref(false);
-
-const loadMore = async () => {
-    if (loading.value || currentPage.value >= lastPage.value) return;
-    loading.value = true;
-
-    try {
-        const res = await axios.get(`/user/home?page=${currentPage.value + 1}`, {
+        const response = await fetch(`/user/home?page=${currentPage.value + 1}`, {
             headers: { Accept: 'application/json' },
         });
-
-        const newData = res.data;
-        posts.value.push(...newData.data);
-
-        currentPage.value = newData.current_page;
-        lastPage.value = newData.last_page;
-
-        // Save to cache after loading more posts
-        saveToCache();
+        const data = await response.json();
+        feed.value = [...feed.value, ...data.data];
+        currentPage.value = data.current_page;
+        lastPage.value = data.last_page;
+    } catch (error) {
+        console.error('Failed to load more:', error);
     } finally {
-        loading.value = false;
+        isLoadingMore.value = false;
     }
-};
-const sentinel = ref<HTMLElement | null>(null);
-let observer: IntersectionObserver | null = null;
+}
+
+// Infinite scroll handler
+function handleScroll() {
+    const scrollTop = window.scrollY;
+    const windowHeight = window.innerHeight;
+    const documentHeight = document.documentElement.scrollHeight;
+
+    if (scrollTop + windowHeight >= documentHeight - 200) {
+        loadMore();
+    }
+}
 
 onMounted(() => {
-    // Restore scroll position if coming back from post details
-    restoreScrollPosition();
-
-    // Save cache on mount to refresh timestamp
-    saveToCache();
-
-    observer = new IntersectionObserver(
-        (entries) => {
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    loadMore();
-                }
-            });
-        },
-        { rootMargin: '200px' },
-    );
-    if (sentinel.value) observer.observe(sentinel.value);
+    window.addEventListener('scroll', handleScroll);
 });
 
 onBeforeUnmount(() => {
-    if (observer && sentinel.value) observer.disconnect();
-});
-
-const sortedPosts = computed(() => {
-    return posts.value.slice().sort((a, b) => {
-        const dateA = new Date(a.created_at);
-        const dateB = new Date(b.created_at);
-        return dateB.getTime() - dateA.getTime();
-    });
+    window.removeEventListener('scroll', handleScroll);
 });
 
 function formatDate(date: string) {
     return dayjs(date).fromNow();
 }
 
-function deletePost(id: number) {
-    return router.delete(route('user.post.delete', id), {
-        onError: (errors) => {
-            console.error('error: ', errors);
-            toast.error('Terjadi kesalahan saat menghapus.');
-        },
-        onSuccess: (success) => {},
-
-        preserveState: false,
-        preserveScroll: true,
-    });
+function formatEventDate(date: string) {
+    return dayjs(date).format('DD MMM YYYY, HH:mm');
 }
 
-watch(
-    () => page.props.flash,
-    (flash: any) => {
-        if (flash?.success) {
-            toast.success(flash.success, {
-                dismissible: true,
-                duration: 5000,
-                action: {
-                    label: 'Tutup',
-                    onClick: () => {
-                        toast.dismiss();
-                    },
-                },
-            });
+function navigateToItem(item: FeedItem) {
+    if (item.type === 'post') {
+        router.visit(`/user/post/${item.hash_id}`);
+    } else if (item.type === 'event') {
+        const slug = item.title?.toLowerCase().split(' ').join('-') || 'event';
+        router.visit(`/user/event/${item.hash_id}/${slug}`);
+    } else {
+        router.visit(`/user/collaboration/${item.hash_id}`);
+    }
+}
 
-            clearCache();
-        }
-        if (flash?.error) {
-            toast.error(flash.error, {
-                dismissible: true,
-                duration: 5000,
-                action: {
-                    label: 'Tutup',
-                    onClick: () => {
-                        toast.dismiss();
-                    },
-                },
-            });
-        }
-    },
-    { deep: true, immediate: true },
-);
+function copyUrl(item: FeedItem) {
+    let url = '';
+    if (item.type === 'post') {
+        url = `${window.location.origin}/user/post/${item.hash_id}`;
+    } else if (item.type === 'event') {
+        const slug = item.title?.toLowerCase().split(' ').join('-') || 'event';
+        url = `${window.location.origin}/user/event/${item.hash_id}/${slug}`;
+    } else {
+        url = `${window.location.origin}/user/collaboration/${item.hash_id}`;
+    }
+    navigator.clipboard.writeText(url).then(() => {
+        toast.success('Link disalin!', { duration: 3000 });
+    });
+}
 
 function reportPost(postId: number) {
     router.post(
@@ -277,40 +180,60 @@ function reportPost(postId: number) {
         },
         {
             preserveScroll: true,
-
-            onError: (errors) => {
-                toast.error('Gagal mengirim laporan.');
-                console.error(errors);
-            },
+            onError: () => toast.error('Gagal mengirim laporan.'),
         },
     );
 }
 
-function copyPostUrl(hashId: string) {
-    const postUrl = `${window.location.origin}/user/post/${hashId}`;
-    navigator.clipboard.writeText(postUrl).then(
-        () => {
-            toast.success('Link postingan disalin ke clipboard!', {
-                duration: 3000,
-                action: {
-                    label: 'Tutup',
-                    onClick: () => {
-                        toast.dismiss();
-                    },
-                },
-            });
-        },
-        (err) => {
-            console.error('Could not copy text: ', err);
-        },
-    );
+function deletePost(id: number) {
+    router.delete(route('user.post.delete', id), {
+        preserveScroll: true,
+        onError: () => toast.error('Gagal menghapus.'),
+    });
 }
 
-function navigateToPost(hashId: string) {
-    // Save scroll position and cache before navigating
-    saveScrollPosition();
-    saveToCache();
-    router.visit(`/user/post/${hashId}`);
+watch(
+    () => page.props.flash,
+    (flash: any) => {
+        if (flash?.success) {
+            toast.success(flash.success, { duration: 5000 });
+        }
+        if (flash?.error) {
+            toast.error(flash.error, { duration: 5000 });
+        }
+    },
+    { deep: true, immediate: true },
+);
+
+function getFilterLabel(filter: FilterType) {
+    const labels: Record<FilterType, string> = {
+        all: 'Semua',
+        event: 'Event',
+        collaboration: 'Kolaborasi',
+        volunteer: 'Relawan',
+        post: 'Cerita',
+    };
+    return labels[filter];
+}
+
+function getTypeColor(type: string) {
+    const colors: Record<string, string> = {
+        event: 'bg-blue-500',
+        collaboration: 'bg-green-500',
+        volunteer: 'bg-purple-500',
+        post: 'bg-gray-500',
+    };
+    return colors[type] || 'bg-gray-500';
+}
+
+function getTypeLabel(type: string) {
+    const labels: Record<string, string> = {
+        event: 'Event',
+        collaboration: 'Kolaborasi',
+        volunteer: 'Relawan',
+        post: 'Cerita',
+    };
+    return labels[type] || type;
 }
 </script>
 
@@ -319,149 +242,326 @@ function navigateToPost(hashId: string) {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <Toaster />
-
-        <!-- Nuxt, vue-sonner v1 because inserting inline CSS with JS to the head tag -->
-        <ClientOnly>
-            <Toaster />
-        </ClientOnly>
-
-        <!-- Nuxt, vue-sonner v2 no need to ClientOnly -->
-        <Toaster />
         <div class="space-y-4 p-8">
-            <div>
-                <Button @click="$inertia.visit(route('user.create-post'))" class="text-lg">Tulis Cerita</Button>
-            </div>
-            <div class="fixed right-8 bottom-8 z-50">
-                <Button class="text-lg font-bold" @click="$inertia.visit(route('user.create-post'))">+</Button>
-            </div>
-            <div
-                class="group transform space-y-4 rounded-2xl border border-gray-200 bg-white p-4 shadow transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:shadow-gray-700"
-                v-for="posts in sortedPosts"
-                :key="posts.id"
-            >
-                <div class="flex flex-wrap gap-2">
-                    <div class="flex flex-row items-center gap-1">
-                        <div class="relative">
-                            <div
-                                class="border-white/ border/20 flex h-10 w-10 items-center justify-center rounded-full bg-white text-2xl font-bold text-black shadow-lg"
+            <!-- Posting Button -->
+            <div class="flex items-center justify-between">
+                <AlertDialog>
+                    <AlertDialogTrigger as-child>
+                        <Button class="text-lg">Posting</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent class="max-w-md">
+                        <AlertDialogHeader>
+                            <AlertDialogTitle class="text-xl">Pilih Jenis Postingan</AlertDialogTitle>
+                        </AlertDialogHeader>
+
+                        <div class="grid gap-3 py-4">
+                            <Card
+                                class="cursor-pointer rounded border-2 p-2 transition-all hover:border-blue-500 hover:shadow-lg"
+                                @click="$inertia.visit(route('user.create-event'))"
                             >
-                                {{ posts.user.name.charAt(0).toUpperCase() }}
-                            </div>
+                                <CardContent class="p-4">
+                                    <div class="flex items-center gap-4">
+                                        <Calendar class="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                                        <div>
+                                            <h3 class="text-lg font-semibold">Event</h3>
+                                            <p class="text-sm text-gray-500">Buat acara kampus/komunitas</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card
+                                class="cursor-pointer rounded border-2 p-2 transition-all hover:border-green-500 hover:shadow-lg"
+                                @click="$inertia.visit(route('user.create-collaboration'))"
+                            >
+                                <CardContent class="p-4">
+                                    <div class="flex items-center gap-4">
+                                        <Workflow class="h-8 w-8 text-green-600 dark:text-green-400" />
+                                        <div>
+                                            <h3 class="text-lg font-semibold">Kolaborasi / Relawan</h3>
+                                            <p class="text-sm text-gray-500">Cari rekan atau volunteer</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card
+                                class="cursor-pointer rounded border-2 p-2 transition-all hover:border-purple-500 hover:shadow-lg"
+                                @click="$inertia.visit(route('user.create-post'))"
+                            >
+                                <CardContent class="p-4">
+                                    <div class="flex items-center gap-4">
+                                        <Rat class="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                                        <div>
+                                            <h3 class="text-lg font-semibold">Cerita</h3>
+                                            <p class="text-sm text-gray-500">Info terkait kampus/komunitas</p>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
                         </div>
-                        <div class="flex flex-col">
-                            <h1 class="cursor-pointer text-2xl font-bold" @click="navigateToPost(posts.hash_id)">
-                                {{ posts.user.role == 'user' ? posts.user.clean_name : posts.user.name }}
-                            </h1>
-                            <div class="flex items-center gap-1 text-sm text-gray-500">
-                                <Clock class="h-3 w-3" />
-                                <span>{{ formatDate(posts.created_at) }}</span>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div v-if="posts.user.role === 'moderator'" class="flex h-fit items-center rounded bg-blue-600 p-1 font-bold text-white">
-                        Moderator
-                    </div>
-                    <div v-if="posts.user.role === 'community'" class="flex h-fit items-center rounded bg-yellow-500 p-1 font-bold text-white shadow">
-                        Komunitas
-                    </div>
-                    <div class="ml-auto">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger><EllipsisVertical></EllipsisVertical></DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                                <DropdownMenuItem
-                                    @click="
-                                        $inertia.visit(
-                                            route('user.details', {
-                                                hashId: posts.user.hash_id,
-                                                name: posts.user.name.toLowerCase().split(' ').join('-'),
-                                            }),
-                                        )
-                                    "
-                                    >Profile</DropdownMenuItem
-                                >
-                                <AlertDialog>
-                                    <AlertDialogTrigger as-child>
-                                        <DropdownMenuItem @select.prevent>Laporkan</DropdownMenuItem>
-                                    </AlertDialogTrigger>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
 
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Pilih alasan laporan</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                                Laporan ini akan dikirim ke moderator untuk ditinjau lebih lanjut.
-                                            </AlertDialogDescription>
-                                            <RadioGroup v-model="reportValue" default-value="spam">
-                                                <div class="flex items-center space-x-2">
-                                                    <RadioGroupItem id="r1" value="spam" />
-                                                    <Label for="r1">Spam</Label>
-                                                </div>
-                                                <div class="flex items-center space-x-2">
-                                                    <RadioGroupItem id="r2" value="inappropriate" />
-                                                    <Label for="r2">Tidak Pantas</Label>
-                                                </div>
-                                                <div class="flex items-center space-x-2">
-                                                    <RadioGroupItem id="r3" value="harassment" />
-                                                    <Label for="r3">Pelecehan</Label>
-                                                </div>
-                                                <div class="flex items-center space-x-2">
-                                                    <RadioGroupItem id="r3" value="abusive" />
-                                                    <Label for="r3">Kekerasan</Label>
-                                                </div>
-                                                <div class="flex items-center space-x-2">
-                                                    <RadioGroupItem id="r3" value="porn" />
-                                                    <Label for="r3">Pornografi</Label>
-                                                </div>
-                                                <div class="flex items-center space-x-2">
-                                                    <RadioGroupItem id="r3" value="pretend to be other people" />
-                                                    <Label for="r3">Berpura-pura menjadi orang lain</Label>
-                                                </div>
-                                            </RadioGroup>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel>Batal</AlertDialogCancel>
-                                            <AlertDialogAction @click="reportPost(posts.id)">Kirim</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
-
-                                <DropdownMenuItem
-                                    v-if="posts.user.id === usePage().props.auth.user.id || usePage().props.auth.user.role === 'moderator'"
-                                    @click="deletePost(posts.id)"
-                                    >Hapus</DropdownMenuItem
-                                >
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
-                </div>
-
-                <p>{{ posts.content }}</p>
-
-                <img v-if="posts.image" :src="`/storage/${posts.image}`" alt="Post Image" class="h-80 w-60 rounded object-cover" />
-
-                <div class="flex flex-row gap-6 border-t border-gray-100 px-6 pt-4 pb-6 dark:border-gray-700">
-                    <input type="hidden" name="like" id="like" />
-                    <!-- <Label class="cursor-pointer">
-                        <Heart for="like" />
-                    </Label> -->
-                    <Label class="cursor-pointer" @click="navigateToPost(posts.hash_id)">
-                        <MessageCircle />
-                        Komentar
-                    </Label>
-                    <Label class="cursor-pointer" @click="copyPostUrl(posts.hash_id)">
-                        <Share2 />
-                        Bagikan
-                    </Label>
+            <!-- Filter Tabs -->
+            <div
+                class="sticky top-0 z-40 -mx-8 bg-slate-50/95 px-8 pt-4 pb-2 backdrop-blur supports-[backdrop-filter]:bg-slate-50/60 dark:bg-slate-950/95 dark:supports-[backdrop-filter]:bg-slate-950/60"
+            >
+                <div class="flex gap-2 overflow-x-auto pb-2">
+                    <Button
+                        v-for="filter in filters"
+                        :key="filter"
+                        :variant="activeFilter === filter ? 'default' : 'outline'"
+                        size="sm"
+                        @click="activeFilter = filter"
+                        class="shrink-0"
+                    >
+                        {{ getFilterLabel(filter) }}
+                    </Button>
                 </div>
             </div>
-            <div ref="sentinel"></div>
-            <div v-if="loading" class="py-4 text-center">Loading...</div>
-            <div v-else-if="currentPage >= lastPage && posts.length > 0" class="flex justify-center p-8 text-gray-500">
-                <div class="text-center">
-                    <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700">
-                        <Eye class="h-6 w-6" />
+
+            <!-- Pinned Events -->
+            <div v-if="pinnedEvents.length > 0 && (activeFilter === 'all' || activeFilter === 'event')" class="space-y-4">
+                <h2 class="flex items-center gap-2 text-lg font-bold">
+                    <Pin class="h-5 w-5 text-red-500" />
+                    Event Terbaru
+                </h2>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div
+                        v-for="event in pinnedEvents"
+                        :key="'pinned-' + event.id"
+                        class="group cursor-pointer overflow-hidden rounded-xl border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-white shadow transition-all hover:shadow-lg dark:border-blue-800 dark:from-blue-950 dark:to-gray-900"
+                        @click="navigateToItem(event)"
+                    >
+                        <div class="flex">
+                            <div v-if="event.image" class="h-32 w-32 flex-shrink-0">
+                                <img :src="`/storage/${event.image}`" :alt="event.title" class="h-full w-full object-cover" />
+                            </div>
+                            <div class="flex-1 p-4">
+                                <div class="mb-1 flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <span class="rounded-full bg-blue-500 px-2 py-0.5 text-xs font-semibold text-white">Event</span>
+                                        <Pin class="h-3 w-3 text-red-500" />
+                                    </div>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        class="h-6 w-6 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                                        @click.stop="copyUrl(event)"
+                                    >
+                                        <Share2 class="h-3 w-3" />
+                                    </Button>
+                                </div>
+                                <h3 class="font-bold text-gray-900 dark:text-white">{{ event.title }}</h3>
+                                <div class="mt-2 flex items-center gap-3 text-xs text-gray-500">
+                                    <div class="flex items-center gap-1">
+                                        <Calendar class="h-3 w-3" />
+                                        <span>{{ event.date_event ? formatEventDate(event.date_event) : '-' }}</span>
+                                    </div>
+                                    <div v-if="event.location" class="flex items-center gap-1">
+                                        <MapPin class="h-3 w-3" />
+                                        <span class="max-w-20 truncate">{{ event.location }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <p>Tidak ada postingan lagi</p>
+                </div>
+            </div>
+
+            <!-- Feed Items -->
+            <div class="space-y-4">
+                <div
+                    v-for="item in filteredFeed"
+                    :key="item.type + '-' + item.id"
+                    class="group transform cursor-pointer space-y-4 rounded-2xl border border-gray-200 bg-white p-4 shadow transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:shadow-gray-700"
+                    @click="navigateToItem(item)"
+                >
+                    <!-- Header -->
+                    <div class="mb-3 flex items-start justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg font-bold text-black shadow">
+                                {{ item.user.name.charAt(0).toUpperCase() }}
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-bold">
+                                        {{ item.user.role === 'user' ? item.user.clean_name : item.user.name }}
+                                    </h3>
+                                    <div v-if="item.user.role === 'admin'" class="rounded bg-red-600 px-3 py-1 text-sm font-bold text-white shadow">
+                                        Admin
+                                    </div>
+                                    <div
+                                        v-if="item.user.role === 'moderator'"
+                                        class="rounded bg-blue-600 px-3 py-1 text-sm font-bold text-white shadow"
+                                    >
+                                        Moderator
+                                    </div>
+                                    <div
+                                        v-if="item.user.role === 'community'"
+                                        class="rounded bg-yellow-500 px-3 py-1 text-sm font-bold text-white shadow"
+                                    >
+                                        Komunitas
+                                    </div>
+                                    <span :class="getTypeColor(item.type)" class="rounded-full px-4 py-1 text-sm font-semibold text-white">
+                                        {{ getTypeLabel(item.type) }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-1 text-xs text-gray-500">
+                                    <Clock class="h-3 w-3" />
+                                    <span>{{ formatDate(item.created_at) }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                                @click.stop="copyUrl(item)"
+                            >
+                                <Share2 class="h-4 w-4" />
+                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger @click.stop>
+                                    <EllipsisVertical class="h-5 w-5 text-gray-500" />
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem @click="copyUrl(item)">Salin Link</DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        @click="
+                                            $inertia.visit(
+                                                route('user.details', {
+                                                    hashId: item.user.hash_id,
+                                                    name: item.user.clean_name.toLowerCase().split(' ').join('-'),
+                                                }),
+                                            )
+                                        "
+                                    >
+                                        Lihat Profil
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+
+                    <!-- Content based on type -->
+                    <div v-if="item.title" class="mb-2 text-xl font-bold">
+                        {{ item.title }}
+                    </div>
+
+                    <div v-if="item.image">
+                        <img
+                            :src="`/storage/${item.image}`"
+                            class="max-h-[500px] w-auto max-w-full rounded-xl object-cover shadow-sm"
+                            alt="Post content"
+                        />
+                    </div>
+
+                    <p v-if="item.content || item.description" class="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                        {{ item.content || item.description }}
+                    </p>
+
+                    <!-- Event specific details -->
+                    <div v-if="item.type === 'event'" class="mt-4 grid grid-cols-2 gap-4 text-sm">
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <Calendar class="h-4 w-4" />
+                            <span>{{ item.date_event ? formatEventDate(item.date_event) : '-' }}</span>
+                        </div>
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <MapPin class="h-4 w-4" />
+                            <span>{{ item.location }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Collaboration/Volunteer specific details -->
+                    <div v-if="item.type === 'collaboration' || item.type === 'volunteer'" class="mt-4 flex flex-wrap gap-4 text-sm">
+                        <div v-if="item.participants_needed" class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <Users class="h-4 w-4" />
+                            <span>Dibutuhkan: {{ item.participants_needed }} orang</span>
+                        </div>
+                        <div v-if="item.interests_count" class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <Users class="h-4 w-4" />
+                            <span>{{ item.interests_count }} tertarik</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div v-if="filteredFeed.length === 0" class="flex flex-col items-center justify-center py-12 text-center text-gray-500">
+                    <Floating>
+                        <Button variant="ghost" class="h-16 w-16" disabled>
+                            <AlertDialog>
+                                <AlertDialogTrigger as-child>
+                                    <Button class="text-lg">Posting</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent class="max-w-md">
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle class="text-xl">Pilih Jenis Postingan</AlertDialogTitle>
+                                    </AlertDialogHeader>
+
+                                    <div class="grid gap-3 py-4">
+                                        <Card
+                                            class="cursor-pointer rounded border-2 p-2 transition-all hover:border-blue-500 hover:shadow-lg"
+                                            @click="$inertia.visit(route('user.create-event'))"
+                                        >
+                                            <CardContent class="p-4">
+                                                <div class="flex items-center gap-4">
+                                                    <Calendar class="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                                                    <div>
+                                                        <h3 class="text-lg font-semibold">Event</h3>
+                                                        <p class="text-sm text-gray-500">Buat acara kampus/komunitas</p>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card
+                                            class="cursor-pointer rounded border-2 p-2 transition-all hover:border-green-500 hover:shadow-lg"
+                                            @click="$inertia.visit(route('user.create-collaboration'))"
+                                        >
+                                            <CardContent class="p-4">
+                                                <div class="flex items-center gap-4">
+                                                    <Workflow class="h-8 w-8 text-green-600 dark:text-green-400" />
+                                                    <div>
+                                                        <h3 class="text-lg font-semibold">Kolaborasi / Relawan</h3>
+                                                        <p class="text-sm text-gray-500">Cari rekan atau volunteer</p>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card
+                                            class="cursor-pointer rounded border-2 p-2 transition-all hover:border-purple-500 hover:shadow-lg"
+                                            @click="$inertia.visit(route('user.create-post'))"
+                                        >
+                                            <CardContent class="p-4">
+                                                <div class="flex items-center gap-4">
+                                                    <Rat class="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                                                    <div>
+                                                        <h3 class="text-lg font-semibold">Cerita</h3>
+                                                        <p class="text-sm text-gray-500">Info terkait kampus/komunitas</p>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </Button>
+                    </Floating>
+                    <div class="mt-4">Tidak ada konten untuk ditampilkan</div>
                 </div>
             </div>
         </div>

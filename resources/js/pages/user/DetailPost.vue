@@ -25,6 +25,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import { AlertTriangle, CheckCircle, Clock, EllipsisVertical, Image as ImageIcon, MessageSquare, Send, X } from 'lucide-vue-next';
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { toast } from 'vue-sonner';
 
 dayjs.locale('id');
 dayjs.extend(relativeTime);
@@ -405,12 +406,19 @@ function reportComment(commentId: number) {
         successComment.value = 'Gagal mengirim laporan, periksa kembali jaringan anda';
     }
 }
+const copyUrl = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+        toast.success('Link disalin!', { duration: 3000 });
+    });
+};
 </script>
 
 <template>
     <Head title="Detail Post" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
+        <Toaster />
         <div class="min-h-screen">
             <div class="mx-auto max-w-4xl px-4 py-6">
                 <!-- Success/Error Alert -->
@@ -490,10 +498,19 @@ function reportComment(commentId: number) {
                                     <span>Dibuat {{ formatTime(data.created_at) }}</span>
                                 </div>
                             </div>
-                            <div>
+                            <div class="flex items-center gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    class="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                                    @click="copyUrl"
+                                >
+                                    <Share2 class="h-4 w-4" />
+                                </Button>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger><EllipsisVertical></EllipsisVertical></DropdownMenuTrigger>
                                     <DropdownMenuContent>
+                                        <DropdownMenuItem @click="copyUrl">Salin Link</DropdownMenuItem>
                                         <DropdownMenuItem
                                             @click="
                                                 $inertia.visit(

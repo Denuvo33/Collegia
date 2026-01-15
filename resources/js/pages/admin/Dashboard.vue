@@ -148,12 +148,17 @@ const maxTransactionAmount = computed(() => {
     return Math.max(...props.monthlyTransactions.map((t) => t.amount), 1);
 });
 
+const chartSpacing = computed(() => {
+    const width = 600;
+    return width / (props.monthlyTransactions.length || 1);
+});
+
 // Generate SVG path for line chart
 const generateLinePath = () => {
     if (!props.monthlyTransactions || props.monthlyTransactions.length === 0) return '';
 
     const points = props.monthlyTransactions.map((month, index) => {
-        const x = index * 50 + 25;
+        const x = chartSpacing.value * index + chartSpacing.value / 2; // Center in each segment
         const y = 300 - (month.amount / maxTransactionAmount.value) * 280;
         return `${x},${y}`;
     });
@@ -166,13 +171,13 @@ const generateAreaPath = () => {
     if (!props.monthlyTransactions || props.monthlyTransactions.length === 0) return '';
 
     const points = props.monthlyTransactions.map((month, index) => {
-        const x = index * 50 + 25;
+        const x = chartSpacing.value * index + chartSpacing.value / 2;
         const y = 300 - (month.amount / maxTransactionAmount.value) * 280;
         return `${x},${y}`;
     });
 
-    const firstX = 25;
-    const lastX = (props.monthlyTransactions.length - 1) * 50 + 25;
+    const firstX = chartSpacing.value / 2;
+    const lastX = chartSpacing.value * (props.monthlyTransactions.length - 1) + chartSpacing.value / 2;
 
     return `M ${firstX},300 L ${points.join(' L ')} L ${lastX},300 Z`;
 };
@@ -268,7 +273,7 @@ const hideTooltip = () => {
                 <Card class="stat-card stat-card-hover">
                     <CardHeader class="stat-card-header">
                         <div class="stat-icon-wrapper stat-icon-users">
-                            <Users :size="24" :stroke-width="2" />
+                            <Users :size="24" :stroke-width="2" class="text-black" />
                         </div>
                         <CardTitle class="stat-card-title">Total Users</CardTitle>
                     </CardHeader>
@@ -465,7 +470,7 @@ const hideTooltip = () => {
                                         <circle
                                             v-for="(month, index) in monthlyTransactions"
                                             :key="month.month"
-                                            :cx="index * 50 + 25"
+                                            :cx="chartSpacing * index + chartSpacing / 2"
                                             :cy="300 - (month.amount / maxTransactionAmount) * 280"
                                             r="6"
                                             class="data-point"
@@ -1178,8 +1183,8 @@ const hideTooltip = () => {
 
 .chart-axis-labels {
     display: flex;
-    justify-content: space-between;
-    padding: 0 1rem;
+    justify-content: space-around;
+    padding: 0;
     margin-bottom: 1rem;
 }
 
