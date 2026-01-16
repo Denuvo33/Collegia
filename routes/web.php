@@ -44,6 +44,7 @@ Route::get('/user/profile', [ProfileController::class, 'index'])->name('user.pro
 // API endpoints for infinite scroll
 Route::get('/user/profile/posts', [ProfileController::class, 'posts'])->name('user.profile.posts');
 Route::get('/user/profile/comments', [ProfileController::class, 'comments'])->name('user.profile.comments');
+Route::patch('/user/profile/bio', [ProfileController::class, 'updateBio'])->middleware('auth')->name('user.profile.bio.update');
 
 Route::get('/user/create-post', [CreatePostController::class, 'index'])->middleware(['auth', 'verified'])->name('user.create-post');
 

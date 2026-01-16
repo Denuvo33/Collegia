@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Toaster } from '@/components/ui/sonner';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm, usePage, useRemember } from '@inertiajs/vue3';
@@ -9,8 +11,22 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Calendar, Clock, EllipsisVertical, Eye, Gem, MapPin, MessageCircle, Share2, Tag } from 'lucide-vue-next';
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import {
+    Calendar,
+    Clock,
+    EllipsisVertical,
+    Eye,
+    Gem,
+    HandHeart,
+    MapPin,
+    MessageCircle,
+    MessageSquare,
+    Pencil,
+    Share2,
+    Tag,
+    Workflow,
+} from 'lucide-vue-next';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 
 import 'vue-sonner/style.css';
@@ -26,6 +42,13 @@ type Post = {
     id: number;
     hash_id: string;
     created_at: string;
+    type: 'post' | 'collaboration' | 'volunteer';
+    title?: string;
+    description?: string;
+    location?: string;
+    start_date?: string;
+    end_date?: string;
+    participants_needed?: number;
 };
 
 type Comment = {
@@ -54,12 +77,14 @@ type Event = {
 
 const props = defineProps<{
     posts_count: number;
+    collaborations_count: number;
     data: {
         id: number;
         name: string;
         clean_name: string;
         created_at: string;
         role: string;
+        bio?: string;
         posts: {
             data: Post[];
             current_page: number;
@@ -80,6 +105,43 @@ const form = useForm({
 
 const activatedTabs = useRemember(ref<'post' | 'comment' | 'inkrip' | 'event'>('post'), 'activeTabs');
 
+// Post filter
+const POST_FILTER_CACHE_KEY = 'profile_post_filter_cache';
+const postFilters = ['all', 'post', 'collaboration', 'volunteer'] as const;
+type PostFilterType = (typeof postFilters)[number];
+
+const savedPostFilter = sessionStorage.getItem(POST_FILTER_CACHE_KEY) as PostFilterType | null;
+const activePostFilter = ref<PostFilterType>(savedPostFilter || 'all');
+
+watch(activePostFilter, (newFilter) => {
+    sessionStorage.setItem(POST_FILTER_CACHE_KEY, newFilter);
+
+    // Check if data for this filter is already cached
+    const cachedData = postsCacheMap.get(newFilter);
+    if (cachedData) {
+        posts.value = cachedData.posts;
+        postPage.value = cachedData.page;
+        postLastPage.value = cachedData.lastPage;
+        return; // Use cached data, no need to load
+    }
+
+    // Reset posts when filter changes and no cache
+    posts.value = [];
+    postPage.value = 0;
+    postLastPage.value = 1;
+    loadMorePosts();
+});
+
+function getPostFilterLabel(filter: PostFilterType) {
+    const labels: Record<PostFilterType, string> = {
+        all: 'Semua',
+        post: 'Cerita',
+        collaboration: 'Kolaborasi',
+        volunteer: 'Relawan',
+    };
+    return labels[filter];
+}
+
 const formatTime = (date: string) => {
     return dayjs(date).fromNow();
 };
@@ -99,17 +161,62 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+// Bio editing
+const bioDialog = ref(false);
+const bioForm = useForm({
+    bio: props.data.bio || '',
+});
+
+const bioWordCount = computed(() => {
+    return bioForm.bio
+        ? bioForm.bio
+              .trim()
+              .split(/\s+/)
+              .filter((word) => word.length > 0).length
+        : 0;
+});
+
+function saveBio() {
+    bioForm.patch(route('user.profile.bio.update'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            bioDialog.value = false;
+            toast.success('Bio berhasil diperbarui!');
+        },
+        onError: () => {
+            toast.error('Gagal memperbarui bio.');
+        },
+    });
+}
+
+function clearBio() {
+    bioForm.bio = '';
+    saveBio();
+}
+
+function openBioDialog() {
+    bioForm.bio = props.data.bio || '';
+    bioDialog.value = true;
+}
+
 // Posts state
-const posts = ref<Post[]>([...props.data.posts.data]);
-const postPage = ref(props.data.posts.current_page);
-const postLastPage = ref(props.data.posts.last_page);
+const posts = ref<Post[]>([]);
+const postPage = ref(0);
+const postLastPage = ref(1);
 const postLoading = ref(false);
+
+// Posts cache: Map<filterType, {posts, page, lastPage}>
+const postsCacheMap = new Map<PostFilterType, { posts: Post[]; page: number; lastPage: number }>();
+// Don't pre-cache initial data - let it load from API with proper filter
 
 // Comments state
 const comments = ref<Comment[]>([...props.data.comments.data]);
 const commentPage = ref(props.data.comments.current_page);
 const commentLastPage = ref(props.data.comments.last_page);
 const commentLoading = ref(false);
+
+// Comments cache flag
+const commentsCached = ref(false);
 
 // Load more posts
 const loadMorePosts = async () => {
@@ -118,13 +225,23 @@ const loadMorePosts = async () => {
 
     try {
         const res = await axios.get('/user/profile/posts', {
-            params: { page: postPage.value + 1 },
+            params: {
+                page: postPage.value + 1,
+                filter: activePostFilter.value,
+            },
             headers: { Accept: 'application/json' },
         });
         const newData = res.data;
         posts.value.push(...newData.data);
         postPage.value = newData.current_page;
         postLastPage.value = newData.last_page;
+
+        // Update cache for current filter
+        postsCacheMap.set(activePostFilter.value, {
+            posts: [...posts.value],
+            page: postPage.value,
+            lastPage: postLastPage.value,
+        });
     } catch (error) {
         console.error('Error loading posts:', error);
         toast.error('Failed to load more posts');
@@ -136,6 +253,12 @@ const loadMorePosts = async () => {
 // Load more comments
 const loadMoreComments = async () => {
     if (commentLoading.value || commentPage.value >= commentLastPage.value) return;
+
+    // If already cached and on first page, skip loading
+    if (commentsCached.value && commentPage.value === props.data.comments.current_page) {
+        return;
+    }
+
     commentLoading.value = true;
 
     try {
@@ -147,6 +270,7 @@ const loadMoreComments = async () => {
         comments.value.push(...newData.data);
         commentPage.value = newData.current_page;
         commentLastPage.value = newData.last_page;
+        commentsCached.value = true;
     } catch (error) {
         console.error('Error loading comments:', error);
         toast.error('Failed to load more comments');
@@ -221,8 +345,81 @@ function deletePost(id: number) {
         },
         onSuccess: () => {
             posts.value = posts.value.filter((post) => post.id !== id);
+            // Clear cache since data changed
+            postsCacheMap.clear();
+            // Re-cache current filter
+            postsCacheMap.set(activePostFilter.value, {
+                posts: [...posts.value],
+                page: postPage.value,
+                lastPage: postLastPage.value,
+            });
         },
     });
+}
+
+function deleteCollaboration(hashId: string) {
+    return router.delete(route('user.collaboration.delete', hashId), {
+        onError: (errors) => {
+            console.error('error: ', errors);
+            toast.error('Gagal menghapus');
+        },
+        onSuccess: () => {
+            posts.value = posts.value.filter((post) => post.hash_id !== hashId);
+            // Clear cache since data changed
+            postsCacheMap.clear();
+            // Re-cache current filter
+            postsCacheMap.set(activePostFilter.value, {
+                posts: [...posts.value],
+                page: postPage.value,
+                lastPage: postLastPage.value,
+            });
+            toast.success('Berhasil dihapus');
+        },
+    });
+}
+
+function getTypeStyles(type: string) {
+    const styles: Record<string, { border: string; gradient: string; icon: string }> = {
+        event: {
+            border: 'border-l-blue-500',
+            gradient: 'bg-gradient-to-r from-blue-50/30 to-transparent dark:from-blue-950/20',
+            icon: 'Calendar',
+        },
+        collaboration: {
+            border: 'border-l-green-500',
+            gradient: 'bg-gradient-to-r from-green-50/30 to-transparent dark:from-green-950/20',
+            icon: 'Workflow',
+        },
+        volunteer: {
+            border: 'border-l-purple-500',
+            gradient: 'bg-gradient-to-r from-purple-50/30 to-transparent dark:from-purple-950/20',
+            icon: 'HandHeart',
+        },
+        post: {
+            border: 'border-l-orange-500',
+            gradient: 'bg-gradient-to-r from-orange-50/30 to-transparent dark:from-orange-950/20',
+            icon: 'MessageSquare',
+        },
+    };
+    return styles[type] || styles.post;
+}
+
+function getTypeLabel(type: string) {
+    const labels: Record<string, string> = {
+        event: 'Event',
+        collaboration: 'Kolaborasi',
+        volunteer: 'Relawan',
+        post: 'Cerita',
+    };
+    return labels[type] || type;
+}
+
+function navigateToItem(item: Post) {
+    if (item.type === 'post') {
+        router.visit(`/user/post/${item.hash_id}`);
+    } else {
+        router.visit(`/user/collaboration/${item.hash_id}`);
+    }
 }
 
 watch(
@@ -249,6 +446,10 @@ const sortList = <T extends { created_at: string }>(list: Array<T>) => {
 onMounted(() => {
     setupObservers();
     observeCurrentTab();
+    // Load initial data for current filter
+    if (posts.value.length === 0) {
+        loadMorePosts();
+    }
 });
 
 onBeforeUnmount(() => {
@@ -306,10 +507,16 @@ const deleteEvent = (eventId: number) => {
                     {{ data.name.charAt(0).toUpperCase() }}
                 </div>
 
-                <!-- Name + Join -->
-                <div class="text-center">
+                <!-- Name + Role + Bio -->
+                <div class="w-full text-center">
                     <div class="flex flex-wrap items-center justify-center gap-2">
                         <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ data.role == 'user' ? data.clean_name : data.name }}</h1>
+                        <span
+                            v-if="data.role === 'user'"
+                            class="rounded-md bg-green-100 px-2 py-1 text-sm font-medium text-green-700 dark:bg-green-900 dark:text-green-300"
+                        >
+                            Mahasiswa
+                        </span>
                         <span
                             v-if="data.role === 'moderator'"
                             class="rounded-md bg-blue-100 px-2 py-1 text-sm font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300"
@@ -327,13 +534,37 @@ const deleteEvent = (eventId: number) => {
                         <Clock class="h-4 w-4" />
                         <p>Bergabung {{ formatTime(data.created_at) }}</p>
                     </div>
+
+                    <!-- Bio Section -->
+                    <div class="mx-auto mt-4 max-w-md">
+                        <div v-if="data.bio" class="group relative rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50">
+                            <p class="text-sm text-gray-700 dark:text-gray-300">{{ data.bio }}</p>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="absolute top-1 right-1 h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100"
+                                @click="openBioDialog"
+                            >
+                                <Pencil class="h-3 w-3" />
+                            </Button>
+                        </div>
+                        <Button v-else variant="outline" size="sm" class="mt-2" @click="openBioDialog">
+                            <Pencil class="mr-2 h-3 w-3" />
+                            Tambah Bio
+                        </Button>
+                    </div>
                 </div>
 
                 <!-- Stats -->
                 <div class="flex gap-8">
                     <div class="text-center">
                         <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ posts_count }}</p>
-                        <p class="text-sm text-gray-500">Postingan</p>
+                        <p class="text-sm text-gray-500">Cerita</p>
+                    </div>
+                    <div class="h-12 w-px bg-gray-200 dark:bg-gray-700"></div>
+                    <div class="text-center">
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ collaborations_count }}</p>
+                        <p class="text-sm text-gray-500">Kolaborasi/Relawan</p>
                     </div>
                     <div class="h-12 w-px bg-gray-200 dark:bg-gray-700"></div>
                     <div class="text-center">
@@ -343,6 +574,27 @@ const deleteEvent = (eventId: number) => {
                 </div>
             </div>
         </div>
+
+        <!-- Bio Edit Dialog -->
+        <Dialog v-model:open="bioDialog">
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Edit Bio</DialogTitle>
+                    <DialogDescription>Tulis bio Anda (maksimal 20 kata)</DialogDescription>
+                </DialogHeader>
+                <div class="space-y-4 py-4">
+                    <Textarea v-model="bioForm.bio" placeholder="Tulis bio Anda..." class="min-h-[100px]" rows="4" />
+                    <div class="flex items-center justify-between text-sm">
+                        <span :class="bioWordCount > 20 ? 'text-red-500' : 'text-gray-500'">{{ bioWordCount }} / 20 kata</span>
+                    </div>
+                </div>
+                <DialogFooter class="gap-2">
+                    <Button v-if="data.bio" variant="outline" @click="clearBio">Hapus Bio</Button>
+                    <Button variant="outline" @click="bioDialog = false">Batal</Button>
+                    <Button @click="saveBio" :disabled="bioWordCount > 20 || bioForm.processing">Simpan</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
 
         <!-- Tab Navigation -->
         <div class="sticky top-0 z-10 mb-8 border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
@@ -381,27 +633,39 @@ const deleteEvent = (eventId: number) => {
                     >
                         Event
                     </button>
-                    <button
-                        class="border-b-2 px-6 py-3 text-sm font-medium transition-colors"
-                        :class="
-                            activatedTabs == 'inkrip'
-                                ? 'border-gray-900 text-gray-900 dark:border-white dark:text-white'
-                                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                        "
-                        @click="activatedTabs = 'inkrip'"
-                    >
-                        Inkrip
-                    </button>
                 </div>
             </div>
         </div>
 
         <!-- Posts Tab -->
         <div class="space-y-4 px-6" v-if="activatedTabs == 'post'">
+            <!-- Filter Tabs -->
+            <div
+                class="sticky top-0 z-30 -mx-6 bg-slate-50/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-slate-50/60 dark:bg-slate-950/95 dark:supports-[backdrop-filter]:bg-slate-950/60"
+            >
+                <div class="flex gap-2 overflow-x-auto pb-1">
+                    <Button
+                        v-for="filter in postFilters"
+                        :key="filter"
+                        :variant="activePostFilter === filter ? 'default' : 'outline'"
+                        size="sm"
+                        @click="activePostFilter = filter"
+                        class="shrink-0"
+                    >
+                        {{ getPostFilterLabel(filter) }}
+                    </Button>
+                </div>
+            </div>
+
             <div
                 v-for="post in sortList(posts)"
-                :key="post.id"
-                class="rounded-lg border border-gray-200 bg-white transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+                :key="post.type + '-' + post.id"
+                :class="[
+                    'cursor-pointer overflow-hidden rounded-2xl border-y border-r border-l-4 bg-white shadow transition-shadow hover:shadow-lg dark:border-y-gray-700 dark:border-r-gray-700 dark:bg-gray-800',
+                    getTypeStyles(post.type).border,
+                    getTypeStyles(post.type).gradient,
+                ]"
+                @click="navigateToItem(post)"
             >
                 <!-- Post Header -->
                 <div class="p-5">
@@ -413,25 +677,45 @@ const deleteEvent = (eventId: number) => {
                                 {{ data.name.charAt(0).toUpperCase() }}
                             </div>
                             <div>
-                                <h3
-                                    class="cursor-pointer font-medium text-gray-900 hover:text-gray-700 dark:text-white dark:hover:text-gray-300"
-                                    @click="$inertia.visit(`/user/post/${post.hash_id}`)"
-                                >
+                                <h3 class="font-medium text-gray-900 dark:text-white">
                                     {{ data.clean_name }}
                                 </h3>
-                                <div class="flex items-center gap-1 text-xs text-gray-500">
+                                <div class="flex items-center gap-2 text-xs text-gray-500">
+                                    <!-- Type Badge with Icon -->
+                                    <div
+                                        class="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                                        :class="{
+                                            'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': post.type === 'collaboration',
+                                            'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300': post.type === 'volunteer',
+                                            'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300': post.type === 'post',
+                                        }"
+                                    >
+                                        <Workflow v-if="post.type === 'collaboration'" class="h-3 w-3" />
+                                        <HandHeart v-if="post.type === 'volunteer'" class="h-3 w-3" />
+                                        <MessageSquare v-if="post.type === 'post'" class="h-3 w-3" />
+                                        <span>{{ getTypeLabel(post.type) }}</span>
+                                    </div>
+                                    <span class="text-gray-400">•</span>
                                     <Clock class="h-3 w-3" />
                                     <span>{{ formatTime(post.created_at) }}</span>
                                 </div>
                             </div>
                         </div>
                         <DropdownMenu>
-                            <DropdownMenuTrigger class="rounded p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <DropdownMenuTrigger @click.stop class="rounded p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <EllipsisVertical class="h-5 w-5 text-gray-400" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                                 <DropdownMenuItem
-                                    @click="deletePost(post.id)"
+                                    v-if="post.type === 'post'"
+                                    @click.stop="deletePost(post.id)"
+                                    class="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
+                                >
+                                    Hapus
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    v-else
+                                    @click.stop="deleteCollaboration(post.hash_id)"
                                     class="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
                                 >
                                     Hapus
@@ -440,28 +724,45 @@ const deleteEvent = (eventId: number) => {
                         </DropdownMenu>
                     </div>
 
-                    <!-- Post Content -->
-                    <p class="mb-3 text-gray-700 dark:text-gray-300">{{ post.content }}</p>
+                    <!-- Title for collaboration/volunteer -->
+                    <div v-if="post.title" class="mb-2 text-xl font-bold text-gray-900 dark:text-white">
+                        {{ post.title }}
+                    </div>
 
                     <!-- Post Image -->
                     <div v-if="post.image" class="mb-3">
-                        <img :src="`/storage/${post.image}`" alt="post image" class="max-h-96 w-96 cursor-pointer rounded-lg object-cover" />
+                        <img :src="`/storage/${post.image}`" alt="post image" class="max-h-[500px] w-auto max-w-full rounded-lg object-cover" />
+                    </div>
+
+                    <!-- Post Content -->
+                    <p class="whitespace-pre-wrap text-gray-700 dark:text-gray-300">{{ post.content }}</p>
+
+                    <!-- Collaboration/Volunteer details -->
+                    <div v-if="post.type === 'collaboration' || post.type === 'volunteer'" class="mt-4 flex flex-wrap gap-4 text-sm">
+                        <div v-if="post.location" class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <MapPin class="h-4 w-4" />
+                            <span>{{ post.location }}</span>
+                        </div>
+                        <div v-if="post.participants_needed" class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <Users class="h-4 w-4" />
+                            <span>Dibutuhkan: {{ post.participants_needed }} orang</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Post Actions -->
-                <div class="border-t border-gray-100 px-5 py-3 dark:border-gray-700">
+                <!-- Post Actions (only for posts) -->
+                <div v-if="post.type === 'post'" class="border-t border-gray-100 px-5 py-3 dark:border-gray-700">
                     <div class="flex items-center gap-4">
                         <button
                             class="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-                            @click="$inertia.visit(route('user.post.details', post.hash_id))"
+                            @click.stop="$inertia.visit(route('user.post.details', post.hash_id))"
                         >
                             <MessageCircle class="h-4 w-4" />
                             <span>Komentar</span>
                         </button>
                         <button
                             class="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-                            @click="copyPostUrl(post.hash_id)"
+                            @click.stop="copyPostUrl(post.hash_id)"
                         >
                             <Share2 class="h-4 w-4" />
                             <span>Bagikan</span>

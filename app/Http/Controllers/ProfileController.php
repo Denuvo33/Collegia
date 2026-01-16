@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use App\Models\CommentModel;
 use App\Models\EventModel;
+use App\Models\Collaboration;
 
 class ProfileController extends Controller
 {
@@ -20,7 +21,9 @@ class ProfileController extends Controller
      */
     public function index()
     {
-        $user = User::withCount(['posts', 'comments', 'events'])->findOrFail(Auth::id());
+        $user = User::withCount(['posts', 'comments', 'events'])
+            ->selectRaw('users.*, (SELECT COUNT(*) FROM collaborations WHERE collaborations.user_id = users.id) as collaborations_count')
+            ->findOrFail(Auth::id());
 
         // Load events with transaction data and is_promoted calculation
         $today = now()->toDateString();
@@ -68,19 +71,82 @@ class ProfileController extends Controller
                 'role' => $user->role,
                 'created_at' => $user->created_at,
                 'private_post' => $user->private_post,
+                'bio' => $user->bio,
                 'posts' => $posts->toArray(),
                 'comments' => $comments->toArray(),
                 'events' => $events,
 
             ],
             'posts_count' => $user->posts_count,
+            'collaborations_count' => $user->collaborations_count ?? 0,
         ]);
     }
 
     public function posts(Request $request)
     {
-        $posts = Post::where('user_id', Auth::id())->latest()->paginate(10);
-        return response()->json($posts);
+        $filter = $request->input('filter', 'all');
+
+        // Get posts
+        $posts = Post::where('user_id', Auth::id())
+            ->latest()
+            ->get()
+            ->map(function ($post) {
+                return [
+                    'id' => $post->id,
+                    'hash_id' => $post->hash_id,
+                    'type' => 'post',
+                    'content' => $post->content,
+                    'image' => $post->image,
+                    'created_at' => $post->created_at,
+                ];
+            });
+
+        // Get collaborations and volunteers
+        $collaborations = Collaboration::where('user_id', Auth::id())
+            ->latest()
+            ->get()
+            ->map(function ($collab) {
+                return [
+                    'id' => $collab->id,
+                    'hash_id' => $collab->hash_id,
+                    'type' => $collab->type, // 'collaboration' or 'volunteer'
+                    'title' => $collab->title,
+                    'content' => $collab->description,
+                    'description' => $collab->description,
+                    'image' => $collab->image,
+                    'location' => $collab->location,
+                    'start_date' => $collab->start_date,
+                    'end_date' => $collab->end_date,
+                    'participants_needed' => $collab->participants_needed,
+                    'created_at' => $collab->created_at,
+                ];
+            });
+
+        // Combine and sort by created_at
+        $combined = $posts->concat($collaborations)
+            ->sortByDesc('created_at')
+            ->values();
+
+        // Filter by type if not 'all'
+        if ($filter !== 'all') {
+            $combined = $combined->filter(function ($item) use ($filter) {
+                return $item['type'] === $filter;
+            })->values();
+        }
+
+        // Paginate manually
+        $page = $request->input('page', 1);
+        $perPage = 10;
+        $total = $combined->count();
+        $items = $combined->forPage($page, $perPage)->values();
+
+        return response()->json([
+            'data' => $items,
+            'current_page' => (int) $page,
+            'last_page' => (int) ceil($total / $perPage),
+            'per_page' => $perPage,
+            'total' => $total,
+        ]);
     }
 
     public function comments(Request $request)
@@ -152,6 +218,31 @@ class ProfileController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    public function updateBio(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'bio' => 'nullable|string',
+            ]);
+
+            // Validate max 20 words
+            if ($validated['bio']) {
+                $wordCount = str_word_count($validated['bio']);
+                if ($wordCount > 20) {
+                    return back()->with('error', 'Bio maksimal 20 kata. Saat ini: ' . $wordCount . ' kata.');
+                }
+            }
+
+            $user = User::findOrFail(Auth::id());
+            $user->bio = $validated['bio'];
+            $user->save();
+
+            return back()->with('success', 'Bio berhasil diperbarui.');
+        } catch (Exception $e) {
+            return back()->with('error', 'Gagal memperbarui bio.');
+        }
+    }
+
     public function destroy($id)
     {
         try {
