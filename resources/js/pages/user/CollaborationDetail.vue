@@ -137,8 +137,8 @@ watch(
         <div class="mx-auto max-w-4xl p-8">
             <Card class="overflow-hidden">
                 <!-- Image Header -->
-                <div v-if="collaboration.image" class="relative h-64 w-full">
-                    <img :src="`/storage/${collaboration.image}`" :alt="collaboration.title" class="h-full w-full object-cover" />
+                <div v-if="collaboration.image" class="relative h-64 w-full bg-gray-100 dark:bg-gray-800">
+                    <img :src="`/storage/${collaboration.image}`" :alt="collaboration.title" class="h-full w-full object-contain" />
                     <div class="absolute top-4 left-4">
                         <span
                             :class="collaboration.type === 'collaboration' ? 'bg-green-500' : 'bg-purple-500'"

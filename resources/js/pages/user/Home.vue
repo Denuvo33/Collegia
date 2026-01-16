@@ -18,7 +18,7 @@ import { Head, router, usePage } from '@inertiajs/vue3';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Calendar, Clock, EllipsisVertical, MapPin, Pin, Plus, Rat, Share2, Users, Workflow } from 'lucide-vue-next';
+import { Calendar, Clock, EllipsisVertical, HandHeart, MapPin, MessageSquare, Pin, Plus, Rat, Share2, Users, Workflow } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css';
@@ -216,14 +216,30 @@ function getFilterLabel(filter: FilterType) {
     return labels[filter];
 }
 
-function getTypeColor(type: string) {
-    const colors: Record<string, string> = {
-        event: 'bg-blue-500',
-        collaboration: 'bg-green-500',
-        volunteer: 'bg-purple-500',
-        post: 'bg-gray-500',
+function getTypeStyles(type: string) {
+    const styles: Record<string, { border: string; gradient: string; icon: string }> = {
+        event: {
+            border: 'border-l-blue-500',
+            gradient: 'bg-gradient-to-r from-blue-50/30 to-transparent dark:from-blue-950/20',
+            icon: 'Calendar',
+        },
+        collaboration: {
+            border: 'border-l-green-500',
+            gradient: 'bg-gradient-to-r from-green-50/30 to-transparent dark:from-green-950/20',
+            icon: 'Workflow',
+        },
+        volunteer: {
+            border: 'border-l-purple-500',
+            gradient: 'bg-gradient-to-r from-purple-50/30 to-transparent dark:from-purple-950/20',
+            icon: 'HandHeart',
+        },
+        post: {
+            border: 'border-l-orange-500',
+            gradient: 'bg-gradient-to-r from-orange-50/30 to-transparent dark:from-orange-950/20',
+            icon: 'MessageSquare',
+        },
     };
-    return colors[type] || 'bg-gray-500';
+    return styles[type] || styles.post;
 }
 
 function getTypeLabel(type: string) {
@@ -380,7 +396,11 @@ function getTypeLabel(type: string) {
                 <div
                     v-for="item in filteredFeed"
                     :key="item.type + '-' + item.id"
-                    class="group transform cursor-pointer space-y-4 rounded-2xl border border-gray-200 bg-white p-4 shadow transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg dark:border-gray-700 dark:bg-gray-800 dark:hover:shadow-gray-700"
+                    :class="[
+                        'group transform cursor-pointer space-y-4 rounded-2xl border-y border-r border-l-4 bg-white p-4 shadow transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg dark:border-y-gray-700 dark:border-r-gray-700 dark:bg-gray-800 dark:hover:shadow-gray-700',
+                        getTypeStyles(item.type).border,
+                        getTypeStyles(item.type).gradient,
+                    ]"
                     @click="navigateToItem(item)"
                 >
                     <!-- Header -->
@@ -409,11 +429,25 @@ function getTypeLabel(type: string) {
                                     >
                                         Komunitas
                                     </div>
-                                    <span :class="getTypeColor(item.type)" class="rounded-full px-4 py-1 text-sm font-semibold text-white">
-                                        {{ getTypeLabel(item.type) }}
-                                    </span>
                                 </div>
-                                <div class="flex items-center gap-1 text-xs text-gray-500">
+                                <div class="flex items-center gap-2 text-xs text-gray-500">
+                                    <!-- Type Icon -->
+                                    <div
+                                        class="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                                        :class="{
+                                            'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300': item.type === 'event',
+                                            'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': item.type === 'collaboration',
+                                            'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300': item.type === 'volunteer',
+                                            'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300': item.type === 'post',
+                                        }"
+                                    >
+                                        <Calendar v-if="item.type === 'event'" class="h-3 w-3" />
+                                        <Workflow v-if="item.type === 'collaboration'" class="h-3 w-3" />
+                                        <HandHeart v-if="item.type === 'volunteer'" class="h-3 w-3" />
+                                        <MessageSquare v-if="item.type === 'post'" class="h-3 w-3" />
+                                        <span>{{ getTypeLabel(item.type) }}</span>
+                                    </div>
+                                    <span class="text-gray-400">•</span>
                                     <Clock class="h-3 w-3" />
                                     <span>{{ formatDate(item.created_at) }}</span>
                                 </div>
