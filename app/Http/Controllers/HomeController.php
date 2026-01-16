@@ -146,13 +146,29 @@ class HomeController extends Controller
         $id = Hashids::decode($hashId)[0] ?? null;
         if (!$id) abort(404);
 
-        $user = User::withCount(['posts', 'comments'])->findOrFail($id);
+        $user = User::withCount(['posts', 'comments'])
+            ->selectRaw('users.*, (SELECT COUNT(*) FROM collaborations WHERE collaborations.user_id = users.id) as collaborations_count')
+            ->findOrFail($id);
 
         $posts = Post::where('user_id', $id)->latest()->paginate(10);
         $comments = CommentModel::where('user_id', $id)->latest()->paginate(10);
 
         return Inertia::render('user/UserProfile', [
-            'user' => $user,
+            'user' => [
+                'id' => $user->id,
+                'hash_id' => $user->hash_id,
+                'name' => $user->name,
+                'clean_name' => $user->clean_name,
+                'role' => $user->role,
+                'created_at' => $user->created_at,
+                'posts_count' => $user->posts_count,
+                'comments_count' => $user->comments_count,
+                'collaborations_count' => $user->collaborations_count ?? 0,
+                'collaboration_interests_count' => \App\Models\CollaborationInterest::where('user_id', $id)->count(),
+                'private_post' => $user->private_post,
+                'private_comment' => $user->private_comment,
+                'bio' => $user->bio,
+            ],
             'posts' => $posts->toArray(),
             'comments' => $comments->toArray(),
         ]);
@@ -163,8 +179,69 @@ class HomeController extends Controller
         $id = Hashids::decode($hashId)[0] ?? null;
         if (!$id) abort(404);
 
-        $posts = Post::where('user_id', $id)->latest()->paginate(10);
-        return response()->json($posts);
+        $filter = $request->input('filter', 'all');
+
+        // Get posts
+        $posts = Post::where('user_id', $id)
+            ->latest()
+            ->get()
+            ->map(function ($post) {
+                return [
+                    'id' => $post->id,
+                    'hash_id' => $post->hash_id,
+                    'type' => 'post',
+                    'content' => $post->content,
+                    'image' => $post->image,
+                    'created_at' => $post->created_at,
+                ];
+            });
+
+        // Get collaborations and volunteers
+        $collaborations = Collaboration::where('user_id', $id)
+            ->latest()
+            ->get()
+            ->map(function ($collab) {
+                return [
+                    'id' => $collab->id,
+                    'hash_id' => $collab->hash_id,
+                    'type' => $collab->type,
+                    'title' => $collab->title,
+                    'content' => $collab->description,
+                    'description' => $collab->description,
+                    'image' => $collab->image,
+                    'location' => $collab->location,
+                    'start_date' => $collab->start_date,
+                    'end_date' => $collab->end_date,
+                    'participants_needed' => $collab->participants_needed,
+                    'created_at' => $collab->created_at,
+                ];
+            });
+
+        // Combine and sort
+        $combined = $posts->concat($collaborations)
+            ->sortByDesc('created_at')
+            ->values();
+
+        // Filter by type if not 'all'
+        if ($filter !== 'all') {
+            $combined = $combined->filter(function ($item) use ($filter) {
+                return $item['type'] === $filter;
+            })->values();
+        }
+
+        // Paginate manually
+        $page = $request->input('page', 1);
+        $perPage = 10;
+        $total = $combined->count();
+        $items = $combined->forPage($page, $perPage)->values();
+
+        return response()->json([
+            'data' => $items,
+            'current_page' => (int) $page,
+            'last_page' => (int) ceil($total / $perPage),
+            'per_page' => $perPage,
+            'total' => $total,
+        ]);
     }
 
     public function userComments(Request $request, $hashId)

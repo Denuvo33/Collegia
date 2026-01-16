@@ -1,13 +1,14 @@
 <script setup lang="ts">
+import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useRemember } from '@inertiajs/vue3';
+import { Head, router, useRemember } from '@inertiajs/vue3';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Clock, Lock, MessageCircle, Share2 } from 'lucide-vue-next';
+import { Clock, Lock } from 'lucide-vue-next';
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css';
@@ -21,6 +22,13 @@ type post = {
     hash_id: string;
     image: string | null;
     created_at: string;
+    type: 'post' | 'collaboration' | 'volunteer';
+    title?: string;
+    description?: string;
+    location?: string;
+    start_date?: string;
+    end_date?: string;
+    participants_needed?: number;
 };
 
 type comment = {
@@ -41,8 +49,11 @@ const props = defineProps<{
         created_at: string;
         posts_count: number;
         comments_count: number;
+        collaborations_count: number;
+        collaboration_interests_count: number;
         private_post: boolean;
         private_comment: boolean;
+        bio?: string;
     };
     posts: {
         data: post[];
@@ -58,13 +69,91 @@ const props = defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [];
 
-const activeTabs = useRemember(ref<'posts' | 'comments' | 'inkrip'>('posts'), 'activeTabs');
+const activeTabs = useRemember(ref<'posts' | 'comments'>('posts'), 'activeTabs');
+
+// Post filter
+const POST_FILTER_CACHE_KEY = 'userprofile_post_filter_cache';
+const postFilters = ['all', 'post', 'collaboration', 'volunteer'] as const;
+type PostFilterType = (typeof postFilters)[number];
+
+const savedPostFilter = sessionStorage.getItem(POST_FILTER_CACHE_KEY) as PostFilterType | null;
+const activePostFilter = ref<PostFilterType>(savedPostFilter || 'all');
+
+watch(activePostFilter, (newFilter) => {
+    sessionStorage.setItem(POST_FILTER_CACHE_KEY, newFilter);
+
+    // Check if data for this filter is already cached
+    const cachedData = postsCacheMap.get(newFilter);
+    if (cachedData) {
+        posts.value = cachedData.posts;
+        postPage.value = cachedData.page;
+        postLastPage.value = cachedData.lastPage;
+        return;
+    }
+
+    // Reset posts when filter changes and no cache
+    posts.value = [];
+    postPage.value = 0;
+    postLastPage.value = 1;
+    loadMorePosts();
+});
+
+function getPostFilterLabel(filter: PostFilterType) {
+    const labels: Record<PostFilterType, string> = {
+        all: 'Semua',
+        post: 'Cerita',
+        collaboration: 'Kolaborasi',
+        volunteer: 'Relawan',
+    };
+    return labels[filter];
+}
+
+function getTypeStyles(type: string) {
+    const styles: Record<string, { border: string; gradient: string; icon: string }> = {
+        collaboration: {
+            border: 'border-l-green-500',
+            gradient: 'bg-gradient-to-r from-green-50/30 to-transparent dark:from-green-950/20',
+            icon: 'Workflow',
+        },
+        volunteer: {
+            border: 'border-l-purple-500',
+            gradient: 'bg-gradient-to-r from-purple-50/30 to-transparent dark:from-purple-950/20',
+            icon: 'HandHeart',
+        },
+        post: {
+            border: 'border-l-orange-500',
+            gradient: 'bg-gradient-to-r from-orange-50/30 to-transparent dark:from-orange-950/20',
+            icon: 'MessageSquare',
+        },
+    };
+    return styles[type] || styles.post;
+}
+
+function getTypeLabel(type: string) {
+    const labels: Record<string, string> = {
+        collaboration: 'Kolaborasi',
+        volunteer: 'Relawan',
+        post: 'Cerita',
+    };
+    return labels[type] || type;
+}
+
+function navigateToItem(item: post) {
+    if (item.type === 'post') {
+        router.visit(`/user/post/${item.hash_id}`);
+    } else {
+        router.visit(`/user/collaboration/${item.hash_id}`);
+    }
+}
 
 // --- POSTS ---
-const posts = ref<post[]>([...props.posts.data]);
-const postPage = ref(props.posts.current_page);
-const postLastPage = ref(props.posts.last_page);
+const posts = ref<post[]>([]);
+const postPage = ref(0);
+const postLastPage = ref(1);
 const postLoading = ref(false);
+
+// Posts cache
+const postsCacheMap = new Map<PostFilterType, { posts: post[]; page: number; lastPage: number }>();
 
 // Comments loading state
 const comments = ref<comment[]>([...props.comments.data]);
@@ -76,17 +165,26 @@ const commentLoading = ref(false);
 const loadMorePosts = async () => {
     if (postLoading.value || postPage.value >= postLastPage.value) return;
     postLoading.value = true;
-    console.log('Loading more posts...');
 
     try {
         const res = await axios.get(`/user/${props.user.hash_id}/${props.user.name.toLowerCase().replace(/\s+/g, '-')}/posts`, {
-            params: { page: postPage.value + 1 },
+            params: {
+                page: postPage.value + 1,
+                filter: activePostFilter.value,
+            },
             headers: { Accept: 'application/json' },
         });
         const newData = res.data;
         posts.value.push(...newData.data);
         postPage.value = newData.current_page;
         postLastPage.value = newData.last_page;
+
+        // Update cache
+        postsCacheMap.set(activePostFilter.value, {
+            posts: [...posts.value],
+            page: postPage.value,
+            lastPage: postLastPage.value,
+        });
     } finally {
         postLoading.value = false;
     }
@@ -187,6 +285,10 @@ function formatTime(date: string) {
 onMounted(() => {
     setupObservers();
     observeCurrentTab();
+    // Load initial data for current filter
+    if (posts.value.length === 0) {
+        loadMorePosts();
+    }
 });
 
 onBeforeUnmount(() => {
@@ -229,10 +331,16 @@ function copyPostUrl(hashId: string) {
                     {{ user.name.charAt(0).toUpperCase() }}
                 </div>
 
-                <!-- Name + Join -->
-                <div class="text-center">
+                <!-- Name + Role + Bio -->
+                <div class="w-full text-center">
                     <div class="flex flex-wrap items-center justify-center gap-2">
                         <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ user.role == 'user' ? user.clean_name : user.name }}</h1>
+                        <span
+                            v-if="user.role === 'user'"
+                            class="rounded-md bg-green-100 px-2 py-1 text-sm font-medium text-green-700 dark:bg-green-900 dark:text-green-300"
+                        >
+                            Mahasiswa
+                        </span>
                         <span
                             v-if="user.role === 'moderator'"
                             class="rounded-md bg-blue-100 px-2 py-1 text-sm font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300"
@@ -250,13 +358,30 @@ function copyPostUrl(hashId: string) {
                         <Clock class="h-4 w-4" />
                         <p>Bergabung {{ formatTime(user.created_at) }}</p>
                     </div>
+
+                    <!-- Bio Section (Read-only) -->
+                    <div v-if="user.bio" class="mx-auto mt-4 max-w-md">
+                        <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-700/50">
+                            <p class="text-sm text-gray-700 dark:text-gray-300">{{ user.bio }}</p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Stats -->
-                <div class="flex gap-8">
+                <div class="flex flex-wrap gap-8">
                     <div class="text-center">
                         <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ user.posts_count }}</p>
-                        <p class="text-sm text-gray-500">Postingan</p>
+                        <p class="text-sm text-gray-500">Cerita</p>
+                    </div>
+                    <div class="h-12 w-px bg-gray-200 dark:bg-gray-700"></div>
+                    <div class="text-center">
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ user.collaborations_count }}</p>
+                        <p class="text-sm text-gray-500">Kolaborasi/Relawan</p>
+                    </div>
+                    <div class="h-12 w-px bg-gray-200 dark:bg-gray-700"></div>
+                    <div class="text-center">
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ user.collaboration_interests_count }}</p>
+                        <p class="text-sm text-gray-500">Kolaborasi / Relawan Diminati</p>
                     </div>
                     <div class="h-12 w-px bg-gray-200 dark:bg-gray-700"></div>
                     <div class="text-center">
@@ -293,18 +418,6 @@ function copyPostUrl(hashId: string) {
                     >
                         Komentar
                     </button>
-
-                    <button
-                        class="border-b-2 px-6 py-3 text-sm font-medium transition-colors"
-                        :class="
-                            activeTabs == 'inkrip'
-                                ? 'border-gray-900 text-gray-900 dark:border-white dark:text-white'
-                                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                        "
-                        @click="activeTabs = 'inkrip'"
-                    >
-                        Inkrip
-                    </button>
                 </div>
             </div>
         </div>
@@ -312,11 +425,34 @@ function copyPostUrl(hashId: string) {
         <div class="px-8">
             <!-- POSTS -->
             <div v-if="activeTabs == 'posts'">
+                <!-- Filter Tabs -->
+                <div
+                    class="sticky top-0 z-30 -mx-8 mb-4 bg-slate-50/95 px-8 py-3 backdrop-blur supports-[backdrop-filter]:bg-slate-50/60 dark:bg-slate-950/95 dark:supports-[backdrop-filter]:bg-slate-950/60"
+                >
+                    <div class="flex gap-2 overflow-x-auto pb-1">
+                        <Button
+                            v-for="filter in postFilters"
+                            :key="filter"
+                            :variant="activePostFilter === filter ? 'default' : 'outline'"
+                            size="sm"
+                            @click="activePostFilter = filter"
+                            class="shrink-0"
+                        >
+                            {{ getPostFilterLabel(filter) }}
+                        </Button>
+                    </div>
+                </div>
+
                 <div
                     v-if="user.private_post == false"
                     v-for="post in posts"
-                    :key="post.id"
-                    class="mb-4 rounded-lg border border-gray-200 bg-white transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+                    :key="post.type + '-' + post.id"
+                    :class="[
+                        'mb-4 cursor-pointer overflow-hidden rounded-2xl border-y border-r border-l-4 bg-white shadow transition-shadow hover:shadow-lg dark:border-y-gray-700 dark:border-r-gray-700 dark:bg-gray-800',
+                        getTypeStyles(post.type).border,
+                        getTypeStyles(post.type).gradient,
+                    ]"
+                    @click="navigateToItem(post)"
                 >
                     <div class="p-5">
                         <div class="mb-3 flex items-center gap-3">
@@ -327,29 +463,54 @@ function copyPostUrl(hashId: string) {
                             </div>
                             <div>
                                 <p class="font-medium text-gray-900 dark:text-white">{{ user.clean_name }}</p>
-                                <div class="flex items-center gap-1 text-xs text-gray-500">
+                                <div class="flex items-center gap-2 text-xs text-gray-500">
+                                    <!-- Type Badge -->
+                                    <div
+                                        class="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                                        :class="{
+                                            'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300': post.type === 'collaboration',
+                                            'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300': post.type === 'volunteer',
+                                            'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300': post.type === 'post',
+                                        }"
+                                    >
+                                        <Workflow v-if="post.type === 'collaboration'" class="h-3 w-3" />
+                                        <HandHeart v-if="post.type === 'volunteer'" class="h-3 w-3" />
+                                        <MessageSquare v-if="post.type === 'post'" class="h-3 w-3" />
+                                        <span>{{ getTypeLabel(post.type) }}</span>
+                                    </div>
+                                    <span class="text-gray-400">•</span>
                                     <Clock class="h-3 w-3"></Clock>
                                     <p>dibuat {{ formatTime(post.created_at) }}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <p class="mb-3 text-gray-700 dark:text-gray-300">{{ post.content }}</p>
-                        <img v-if="post.image" :src="`/storage/${post.image}`" class="max-h-80 max-w-80 rounded-lg object-contain" alt="post image" />
-                    </div>
-                    <div class="border-t border-gray-100 px-5 py-3 dark:border-gray-700">
-                        <div class="flex gap-4">
-                            <Button
-                                @click="$inertia.visit(route('user.post.details', post.hash_id))"
-                                class="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-                                ><MessageCircle class="h-4 w-4" /> Komentar</Button
-                            >
+                        <!-- Title for collaboration/volunteer -->
+                        <div v-if="post.title" class="mb-2 text-xl font-bold text-gray-900 dark:text-white">
+                            {{ post.title }}
+                        </div>
 
-                            <Button
-                                @click="copyPostUrl(post.hash_id)"
-                                class="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
-                                ><Share2 class="h-4 w-4" /> Bagikan</Button
-                            >
+                        <!-- Image -->
+                        <img
+                            v-if="post.image"
+                            :src="`/storage/${post.image}`"
+                            class="mb-3 max-h-[500px] w-auto max-w-full rounded-lg object-cover"
+                            alt="post image"
+                        />
+
+                        <!-- Content -->
+                        <p class="whitespace-pre-wrap text-gray-700 dark:text-gray-300">{{ post.content }}</p>
+
+                        <!-- Collaboration/Volunteer details -->
+                        <div v-if="post.type === 'collaboration' || post.type === 'volunteer'" class="mt-4 flex flex-wrap gap-4 text-sm">
+                            <div v-if="post.location" class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                <MapPin class="h-4 w-4" />
+                                <span>{{ post.location }}</span>
+                            </div>
+                            <div v-if="post.participants_needed" class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                                <Users class="h-4 w-4" />
+                                <span>Dibutuhkan: {{ post.participants_needed }} orang</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -401,14 +562,6 @@ function copyPostUrl(hashId: string) {
                 <div v-if="commentLoading" class="flex justify-center py-8 text-sm text-gray-500">Loading comments...</div>
                 <div v-else-if="commentPage >= commentLastPage && comments.length > 0" class="py-8 text-center text-sm text-gray-500">
                     No more comments to load
-                </div>
-            </div>
-
-            <!-- INKRIP -->
-            <div v-else-if="activeTabs == 'inkrip'">
-                <div class="py-20 text-center">
-                    <h2 class="mb-2 text-xl font-semibold text-gray-900 dark:text-white">Segera Hadir!</h2>
-                    <p class="text-sm text-gray-500">Fitur Inkrip sedang dalam tahap pengembangan.</p>
                 </div>
             </div>
         </div>
