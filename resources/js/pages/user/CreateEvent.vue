@@ -6,8 +6,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useForm, usePage } from '@inertiajs/vue3';
-import axios from 'axios';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { Calendar, FileText, Image, MapPin, Pen, Users, Wallet } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
 
@@ -45,94 +44,17 @@ function handleFile(event: Event) {
 }
 
 function submit() {
-    const userRole = usePage().props.auth.user.role;
-
-    // Check if user is community, admin, or moderator - they can create for free
-    if (['community', 'admin', 'moderator'].includes(userRole)) {
-        form.post(route('user.event.store'), {
-            onSuccess: () => {
-                form.reset();
-                preview.value = null;
-                toast.success('Event berhasil dibuat!');
-            },
-            onError: (errors) => {
-                console.error('Failed to create event', errors);
-                toast.error('Gagal membuat event');
-            },
-        });
-    } else {
-        // Regular users need to pay - use axios for JSON response
-        form.processing = true;
-
-        // Create FormData for image upload
-        const formData = new FormData();
-        formData.append('title', form.title);
-        formData.append('content', form.content);
-        formData.append('price', form.price.toString());
-        formData.append('location', form.location);
-        formData.append('organizer', form.organizer);
-        formData.append('date_event', form.date_event);
-        formData.append('status', form.status);
-        formData.append('user_id', form.user_id.toString());
-        if (form.image) {
-            formData.append('image', form.image);
-        }
-
-        axios
-            .post(route('user.event.payment.initiate'), formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            })
-            .then((response) => {
-                const snapToken = response.data.snap_token;
-
-                if (snapToken && (window as any).snap) {
-                    // Open Midtrans Snap payment popup
-                    (window as any).snap.pay(snapToken, {
-                        onSuccess: function () {
-                            toast.success('Pembayaran berhasil! Event Anda akan segera terlihat.');
-                            setTimeout(() => {
-                                router.visit(route('user.profile'));
-                            }, 1500);
-                        },
-                        onPending: function () {
-                            toast.info('Pembayaran sedang diproses.');
-                            setTimeout(() => {
-                                router.visit(route('user.profile'));
-                            }, 1500);
-                        },
-                        onError: function () {
-                            toast.error('Terjadi kesalahan. Silakan cek transaksi Anda.');
-                            setTimeout(() => {
-                                router.visit(route('user.profile'));
-                            }, 1500);
-                        },
-                        onClose: function () {
-                            // User closed popup - navigate to transaction page
-                            // This handles both: before selecting payment & after selecting payment
-                            toast.info('Cek status pembayaran di menu Transaksi.');
-                            form.processing = false;
-                            router.visit(route('user.transaction'));
-                        },
-                    });
-                } else {
-                    toast.error('Gagal memuat sistem pembayaran. Silakan refresh halaman dan coba lagi.');
-                    form.processing = false;
-                }
-            })
-            .catch((error) => {
-                console.error('Failed to initiate payment', error);
-                if (error.response?.data?.errors) {
-                    // Show validation errors
-                    Object.keys(error.response.data.errors).forEach((key) => {
-                        form.errors[key as keyof typeof form.errors] = error.response.data.errors[key][0];
-                    });
-                }
-                toast.error(error.response?.data?.message || 'Gagal memulai pembayaran');
-                form.processing = false;
-            });
-    }
+    form.post(route('user.event.store'), {
+        onSuccess: () => {
+            form.reset();
+            preview.value = null;
+            toast.success('Event berhasil dibuat!');
+        },
+        onError: (errors) => {
+            console.error('Failed to create event', errors);
+            toast.error('Gagal membuat event');
+        },
+    });
 }
 
 // Load Midtrans Snap script
@@ -217,12 +139,6 @@ onMounted(() => {
 
                     <div>
                         <Button class="mt-5" @click="submit">Buat Event</Button>
-                    </div>
-                    <div class="w-fit rounded bg-black/40 p-2 font-bold text-white uppercase shadow">
-                        <span>
-                            Jika pembayaran terputus, Anda dapat melanjutkanya di Halaman Transaksi.<br />
-                            Event dapat dilihat di profile dengan status Tidak Terlihat hingga pembayaran selesai.
-                        </span>
                     </div>
                 </div>
             </CardContent>

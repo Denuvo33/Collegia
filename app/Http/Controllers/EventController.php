@@ -155,22 +155,14 @@ class EventController extends Controller
     public function store(EventRequest $request)
     {
         try {
-            $user = Auth::user();
             $data = $request->validated();
-
-            // Check if user role allows free event creation
-            if (in_array($user->role, ['community', 'admin', 'moderator'])) {
-                // Free event creation for community, admin, and moderator
-                if ($request->hasFile('image')) {
-                    $data['image'] = $request->file('image')->store('images', 'public');
-                }
-                $data['is_visible'] = true;
-                EventModel::create($data);
-                return redirect()->route('user.event')->with('success', 'Event telah dibuat');
-            } else {
-                // Regular users need to pay - redirect  to frontend will handle payment initiation
-                return redirect()->back()->with('error', 'Pengguna biasa perlu membayar untuk membuat event. Silakan gunakan tombol Buat Event dengan pembayaran.');
+            // Free event creation for community, admin, and moderator
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('images', 'public');
             }
+            $data['is_visible'] = true;
+            EventModel::create($data);
+            return redirect()->route('user.event')->with('success', 'Event telah dibuat');
         } catch (Exception $e) {
             return redirect()->back()->with('failed', 'Event gagal dibuat');
         }
