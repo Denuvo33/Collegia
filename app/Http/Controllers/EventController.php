@@ -40,6 +40,7 @@ class EventController extends Controller
                 ELSE NULL
             END AS sort_promoted_till
         ", [$today])
+            ->withCount('interests')
             ->where('is_visible', true);
 
         // Apply global search if provided
@@ -79,6 +80,7 @@ class EventController extends Controller
                     ->orderByDesc('created_at');
                 break;
         }
+
 
         $events = $query->paginate(10)->toArray();
 
@@ -176,7 +178,7 @@ class EventController extends Controller
         $decoded = Hashids::decode($hashId);
 
         $id = $decoded[0];
-        $event = EventModel::with('user')->findOrFail($id);
+        $event = EventModel::with(['user', 'interestedUsers'])->withCount('interests')->findOrFail($id);
 
         // Check if event is invisible
         if (!$event->is_visible) {
@@ -186,8 +188,11 @@ class EventController extends Controller
             }
         }
 
+        $isInterested = Auth::check() ? $event->interestedUsers->contains(Auth::id()) : false;
+
         return Inertia::render('user/DetailEvent', [
             'event' => $event,
+            'isInterested' => $isInterested,
         ]);
     }
 
@@ -266,5 +271,36 @@ class EventController extends Controller
             ]);
             return redirect()->back()->with('failed', 'Event gagal dihapus');
         }
+    }
+
+    /**
+     * Toggle user's interest in an event
+     */
+    public function toggleInterest($hashId)
+    {
+        $decoded = Hashids::decode($hashId);
+
+        if (empty($decoded)) {
+            return response()->json(['error' => 'Event tidak ditemukan'], 404);
+        }
+
+        $id = $decoded[0];
+        $event = EventModel::findOrFail($id);
+        $userId = Auth::id();
+
+        $existingInterest = $event->interests()->where('user_id', $userId)->first();
+
+        if ($existingInterest) {
+            $existingInterest->delete();
+            $isInterested = false;
+        } else {
+            $event->interests()->create(['user_id' => $userId]);
+            $isInterested = true;
+        }
+
+        return response()->json([
+            'isInterested' => $isInterested,
+            'interestsCount' => $event->interests()->count(),
+        ]);
     }
 }

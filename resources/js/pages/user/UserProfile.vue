@@ -3,12 +3,12 @@ import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router, useRemember } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Clock, Lock } from 'lucide-vue-next';
+import { Building2, Clock, Lock } from 'lucide-vue-next';
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css';
@@ -31,6 +31,19 @@ type post = {
     participants_needed?: number;
 };
 
+type event = {
+    id: number;
+    hash_id: string;
+    title: string;
+    content: string;
+    image: string | null;
+    date_event: string;
+    location: string;
+    organizer: string;
+    price: number;
+    created_at: string;
+};
+
 type comment = {
     id: number;
     post_id: number;
@@ -49,6 +62,7 @@ const props = defineProps<{
         created_at: string;
         posts_count: number;
         comments_count: number;
+        events_count: number;
         collaboration_interests_count: number;
         private_post: boolean;
         private_comment: boolean;
@@ -64,11 +78,19 @@ const props = defineProps<{
         current_page: number;
         last_page: number;
     };
+    events: {
+        data: event[];
+        current_page: number;
+        last_page: number;
+    };
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [];
 
-const activeTabs = useRemember(ref<'posts' | 'comments'>('posts'), 'activeTabs');
+// Active tab state with session storage persistence
+const ACTIVE_TAB_CACHE_KEY = 'userprofile_active_tab';
+const savedActiveTab = sessionStorage.getItem(ACTIVE_TAB_CACHE_KEY) as 'posts' | 'comments' | 'events' | null;
+const activeTabs = ref<'posts' | 'comments' | 'events'>(savedActiveTab || 'posts');
 
 // Post filter
 const POST_FILTER_CACHE_KEY = 'userprofile_post_filter_cache';
@@ -160,6 +182,15 @@ const commentPage = ref(props.comments.current_page);
 const commentLastPage = ref(props.comments.last_page);
 const commentLoading = ref(false);
 
+// Events loading state
+const events = ref<event[]>([...props.events.data]);
+const eventPage = ref(props.events.current_page);
+const eventLastPage = ref(props.events.last_page);
+const eventLoading = ref(false);
+
+// Events cache
+const eventsCacheMap = new Map<string, { events: event[]; page: number; lastPage: number }>();
+
 // Load more posts
 const loadMorePosts = async () => {
     if (postLoading.value || postPage.value >= postLastPage.value) return;
@@ -209,11 +240,39 @@ const loadMoreComments = async () => {
     }
 };
 
+// Load more events
+const loadMoreEvents = async () => {
+    if (eventLoading.value || eventPage.value >= eventLastPage.value) return;
+    eventLoading.value = true;
+
+    try {
+        const res = await axios.get(`/user/${props.user.hash_id}/${props.user.name.toLowerCase().replace(/\s+/g, '-')}/events`, {
+            params: { page: eventPage.value + 1 },
+            headers: { Accept: 'application/json' },
+        });
+        const newData = res.data;
+        events.value.push(...newData.data);
+        eventPage.value = newData.current_page;
+        eventLastPage.value = newData.last_page;
+
+        // Update cache
+        eventsCacheMap.set('events', {
+            events: [...events.value],
+            page: eventPage.value,
+            lastPage: eventLastPage.value,
+        });
+    } finally {
+        eventLoading.value = false;
+    }
+};
+
 const postSentinel = ref<HTMLElement | null>(null);
 const commentSentinel = ref<HTMLElement | null>(null);
+const eventSentinel = ref<HTMLElement | null>(null);
 
 let postObserver: IntersectionObserver | null = null;
 let commentObserver: IntersectionObserver | null = null;
+let eventObserver: IntersectionObserver | null = null;
 
 // Function to setup observers
 const setupObservers = () => {
@@ -225,6 +284,10 @@ const setupObservers = () => {
     if (commentObserver) {
         commentObserver.disconnect();
         commentObserver = null;
+    }
+    if (eventObserver) {
+        eventObserver.disconnect();
+        eventObserver = null;
     }
 
     // Create post observer
@@ -250,6 +313,18 @@ const setupObservers = () => {
         },
         { rootMargin: '200px' },
     );
+
+    // Create event observer
+    eventObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting && activeTabs.value === 'events') {
+                    loadMoreEvents();
+                }
+            });
+        },
+        { rootMargin: '200px' },
+    );
 };
 
 // Function to observe current tab's sentinel
@@ -259,18 +334,26 @@ const observeCurrentTab = () => {
             postObserver.observe(postSentinel.value);
         } else if (activeTabs.value === 'comments' && commentSentinel.value && commentObserver) {
             commentObserver.observe(commentSentinel.value);
+        } else if (activeTabs.value === 'events' && eventSentinel.value && eventObserver) {
+            eventObserver.observe(eventSentinel.value);
         }
     });
 };
 
 // Watch for tab changes
 watch(activeTabs, (newTab) => {
+    // Save to session storage
+    sessionStorage.setItem(ACTIVE_TAB_CACHE_KEY, newTab);
+
     // Unobserve all sentinels first
     if (postObserver && postSentinel.value) {
         postObserver.unobserve(postSentinel.value);
     }
     if (commentObserver && commentSentinel.value) {
         commentObserver.unobserve(commentSentinel.value);
+    }
+    if (eventObserver && eventSentinel.value) {
+        eventObserver.unobserve(eventSentinel.value);
     }
 
     // Observe the current tab's sentinel
@@ -293,6 +376,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     if (postObserver) postObserver.disconnect();
     if (commentObserver) commentObserver.disconnect();
+    if (eventObserver) eventObserver.disconnect();
 });
 function copyPostUrl(hashId: string) {
     const postUrl = `${window.location.origin}/user/post/${hashId}`;
@@ -374,6 +458,11 @@ function copyPostUrl(hashId: string) {
                     </div>
                     <div class="h-12 w-px bg-gray-200 dark:bg-gray-700"></div>
                     <div class="text-center">
+                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ user.events_count }}</p>
+                        <p class="text-sm text-gray-500">Event</p>
+                    </div>
+                    <div class="h-12 w-px bg-gray-200 dark:bg-gray-700"></div>
+                    <div class="text-center">
                         <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ user.collaboration_interests_count }}</p>
                         <p class="text-sm text-gray-500">Kolaborasi / Relawan Diminati</p>
                     </div>
@@ -411,6 +500,17 @@ function copyPostUrl(hashId: string) {
                         @click="activeTabs = 'comments'"
                     >
                         Komentar
+                    </button>
+                    <button
+                        class="border-b-2 px-6 py-3 text-sm font-medium transition-colors"
+                        :class="
+                            activeTabs == 'events'
+                                ? 'border-gray-900 text-gray-900 dark:border-white dark:text-white'
+                                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                        "
+                        @click="activeTabs = 'events'"
+                    >
+                        Event
                     </button>
                 </div>
             </div>
@@ -557,6 +657,81 @@ function copyPostUrl(hashId: string) {
                 <div v-else-if="commentPage >= commentLastPage && comments.length > 0" class="py-8 text-center text-sm text-gray-500">
                     No more comments to load
                 </div>
+            </div>
+
+            <!-- EVENTS -->
+            <div v-else-if="activeTabs == 'events'">
+                <div
+                    v-for="event in events"
+                    :key="event.id"
+                    @click="$inertia.visit(`/user/event/${event.hash_id}/${event.title.toLowerCase().replace(/\s+/g, '-')}`)"
+                    class="mb-4 cursor-pointer rounded-lg border border-gray-200 bg-white p-5 transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+                >
+                    <div class="mb-3 flex items-center gap-3">
+                        <div
+                            class="flex h-9 w-9 items-center justify-center rounded-full bg-gray-200 text-sm font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200"
+                        >
+                            {{ user.name.charAt(0).toUpperCase() }}
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">{{ user.clean_name }}</p>
+                            <div class="flex items-center gap-1 text-xs text-gray-500">
+                                <Clock class="h-3 w-3" />
+                                <p>dibuat {{ formatTime(event.created_at) }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Event Title -->
+                    <h3 class="mb-2 text-xl font-bold text-gray-900 dark:text-white">{{ event.title }}</h3>
+
+                    <!-- Event Image -->
+                    <img
+                        v-if="event.image"
+                        :src="`/storage/${event.image}`"
+                        class="mb-3 max-h-[500px] w-auto max-w-full rounded-lg object-cover"
+                        alt="event image"
+                    />
+
+                    <!-- Event Content -->
+                    <p class="mb-3 line-clamp-3 whitespace-pre-wrap text-gray-700 dark:text-gray-300">{{ event.content }}</p>
+
+                    <!-- Event Details -->
+                    <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div class="flex items-center gap-1">
+                            <Clock class="h-4 w-4" />
+                            <span>{{ dayjs(event.date_event).format('DD MMM YYYY') }}</span>
+                        </div>
+                        <div v-if="event.location" class="flex items-center gap-1">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                                />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            <span>{{ event.location }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <Building2 class="h-4 w-4" />
+                            <span>{{ event.organizer }}</span>
+                        </div>
+                        <div v-if="event.price > 0" class="flex items-center gap-1 font-medium text-green-600 dark:text-green-400">
+                            <span>Rp {{ event.price.toLocaleString('id-ID') }}</span>
+                        </div>
+                        <div v-else class="flex items-center gap-1 font-medium text-green-600 dark:text-green-400">
+                            <span>Gratis</span>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="eventPage < eventLastPage" ref="eventSentinel" class="h-1"></div>
+                <div v-if="eventLoading" class="flex justify-center py-8 text-sm text-gray-500">Loading events...</div>
+                <div v-else-if="eventPage >= eventLastPage && events.length > 0" class="py-8 text-center text-sm text-gray-500">
+                    No more events to load
+                </div>
+                <div v-else-if="events.length === 0 && !eventLoading" class="py-8 text-center text-sm text-gray-500">Belum ada event</div>
             </div>
         </div>
     </AppLayout>

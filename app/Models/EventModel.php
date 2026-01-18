@@ -36,6 +36,16 @@ class EventModel extends Model
         return $this->belongsTo(Transaction::class, 'user_pay_transaction_id');
     }
 
+    public function interests()
+    {
+        return $this->hasMany(EventInterest::class, 'event_id');
+    }
+
+    public function interestedUsers()
+    {
+        return $this->belongsToMany(User::class, 'event_interests', 'event_id', 'user_id')->withTimestamps();
+    }
+
     public function scopeVisible($query)
     {
         return $query->where('is_visible', true);

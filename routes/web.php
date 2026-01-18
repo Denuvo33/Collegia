@@ -78,6 +78,11 @@ Route::get('/user/{hashId}/{name}/posts', [HomeController::class, 'userPosts'])
 Route::get('/user/{hashId}/{name}/comments', [HomeController::class, 'userComments'])
     ->middleware(['auth'])
     ->name('user.comments');
+// API khusus load events di profile user
+Route::get('/user/{hashId}/{name}/events', [HomeController::class, 'userEvents'])
+    ->middleware(['auth'])
+    ->name('user.events');
+
 
 // Payment routes with rate limiting
 Route::post('/user/event/initiate-payment', [TransactionController::class, 'initiatePayment'])
@@ -96,6 +101,8 @@ Route::post('/user/create-collaboration', [CollaborationController::class, 'stor
 Route::put('/user/collaboration/{hashId}', [CollaborationController::class, 'update'])->middleware(['auth', 'verified'])->name('user.collaboration.update');
 
 Route::post('/user/collaboration/{hashId}/interest', [CollaborationController::class, 'toggleInterest'])->middleware(['auth'])->name('user.collaboration.interest');
+
+Route::post('/user/event/{hashId}/interest', [EventController::class, 'toggleInterest'])->middleware(['auth'])->name('user.event.interest');
 
 Route::delete('/user/collaboration/{hashId}', [CollaborationController::class, 'destroy'])->middleware(['auth', 'verified'])->name('user.collaboration.delete');
 

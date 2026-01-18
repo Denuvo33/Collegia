@@ -19,10 +19,11 @@ import { Separator } from '@/components/ui/separator';
 import { Toaster } from '@/components/ui/sonner';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { ArrowLeft, Building2, Calendar, Clock, EllipsisVertical, MapPin, Share2, User } from 'lucide-vue-next';
+import { ArrowLeft, Building2, Calendar, Clock, EllipsisVertical, Heart, MapPin, Share2, User } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css';
@@ -43,7 +44,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const reportValue = ref('spam');
 
-defineProps<{
+const props = defineProps<{
     event: {
         id: number;
         title: string;
@@ -55,6 +56,8 @@ defineProps<{
         image: string | null;
         created_at: string;
         status: string;
+        hash_id: string;
+        interests_count?: number;
 
         user: {
             id: number;
@@ -63,7 +66,12 @@ defineProps<{
             clean_name: string;
         };
     };
+    isInterested: boolean;
 }>();
+
+const isInterested = ref(props.isInterested);
+const interestsCount = ref(props.event.interests_count || 0);
+const isLoading = ref(false);
 
 function goBack() {
     window.history.back();
@@ -166,6 +174,27 @@ function formatPrice(price: number) {
         currency: 'IDR',
         minimumFractionDigits: 0,
     }).format(price);
+}
+
+async function toggleInterest() {
+    if (isLoading.value) return;
+    isLoading.value = true;
+
+    try {
+        const response = await axios.post(route('user.event.interest', props.event.hash_id));
+        isInterested.value = response.data.isInterested;
+        interestsCount.value = response.data.interestsCount;
+
+        if (isInterested.value) {
+            toast.success('Anda tertarik dengan event ini!');
+        } else {
+            toast.info('Anda sudah tidak tertarik lagi.');
+        }
+    } catch (error) {
+        toast.error('Gagal memproses permintaan.');
+    } finally {
+        isLoading.value = false;
+    }
 }
 </script>
 
@@ -365,6 +394,32 @@ function formatPrice(price: number) {
                                             {{ formatPrice(event.price) }}
                                         </div>
                                         <p class="text-sm text-slate-600 dark:text-slate-400">per tiket</p>
+                                    </div>
+
+                                    <Separator class="mb-8" />
+
+                                    <!-- Interest Section -->
+                                    <div
+                                        class="mb-8 flex items-center justify-between rounded-lg bg-gradient-to-r from-pink-50 to-red-50 p-4 dark:from-pink-950 dark:to-red-950"
+                                    >
+                                        <div class="flex items-center gap-3">
+                                            <Heart :class="isInterested ? 'fill-red-500 text-red-500' : 'text-gray-400'" class="h-6 w-6" />
+                                            <div>
+                                                <p class="font-semibold text-slate-900 dark:text-white">{{ interestsCount }} orang tertarik</p>
+                                                <p class="text-sm text-slate-600 dark:text-slate-400">
+                                                    {{ isInterested ? 'Termasuk Anda' : 'Klik untuk menunjukkan minat' }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            :variant="isInterested ? 'default' : 'outline'"
+                                            :disabled="isLoading"
+                                            @click="toggleInterest"
+                                            size="sm"
+                                        >
+                                            <Heart :class="isInterested ? 'fill-current' : ''" class="mr-2 h-4 w-4" />
+                                            {{ isInterested ? 'Tertarik' : 'Saya Tertarik' }}
+                                        </Button>
                                     </div>
 
                                     <Separator class="mb-8" />

@@ -148,10 +148,16 @@ class HomeController extends Controller
 
         $user = User::withCount(['posts', 'comments'])
             ->selectRaw('users.*, (SELECT COUNT(*) FROM collaborations WHERE collaborations.user_id = users.id) as collaborations_count')
+            ->selectRaw('(SELECT COUNT(*) FROM event WHERE event.user_id = users.id AND event.is_visible = 1) as events_count')
             ->findOrFail($id);
 
+        // Load first page of all tabs for better UX and performance
         $posts = Post::where('user_id', $id)->latest()->paginate(10);
         $comments = CommentModel::where('user_id', $id)->latest()->paginate(10);
+        $events = EventModel::where('user_id', $id)
+            ->where('is_visible', true)
+            ->latest()
+            ->paginate(10);
 
         return Inertia::render('user/UserProfile', [
             'user' => [
@@ -163,7 +169,7 @@ class HomeController extends Controller
                 'created_at' => $user->created_at,
                 'posts_count' => $user->posts_count,
                 'comments_count' => $user->comments_count,
-
+                'events_count' => $user->events_count,
                 'collaboration_interests_count' => \App\Models\CollaborationInterest::where('user_id', $id)->count(),
                 'private_post' => $user->private_post,
                 'private_comment' => $user->private_comment,
@@ -171,6 +177,7 @@ class HomeController extends Controller
             ],
             'posts' => $posts->toArray(),
             'comments' => $comments->toArray(),
+            'events' => $events->toArray(),
         ]);
     }
 
@@ -252,6 +259,20 @@ class HomeController extends Controller
         $comments = CommentModel::where('user_id', $id)->latest()->paginate(10);
         return response()->json($comments);
     }
+
+    public function userEvents(Request $request, $hashId)
+    {
+        $id = Hashids::decode($hashId)[0] ?? null;
+        if (!$id) abort(404);
+
+        $events = EventModel::where('user_id', $id)
+            ->where('is_visible', true)
+            ->latest()
+            ->paginate(10);
+
+        return response()->json($events);
+    }
+
 
 
 

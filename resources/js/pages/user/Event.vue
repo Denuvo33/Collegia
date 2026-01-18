@@ -22,7 +22,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Calendar, Clock, EllipsisVertical, Eye, Filter, Flag, Gem, MapPin, Plus, Search, Share2, Trash2, User } from 'lucide-vue-next';
+import { Calendar, Clock, EllipsisVertical, Eye, Filter, Flag, Gem, Heart, MapPin, Plus, Search, Share2, Trash2, User } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 
@@ -51,6 +51,7 @@ type Event = {
     location: string;
     hash_id: string;
     promoted_till: string | null;
+    interests_count?: number;
 
     user: {
         id: number;
@@ -639,6 +640,12 @@ function copyEvent(hashId: string) {
                             <div class="flex items-center gap-3 text-xs text-slate-500">
                                 <Clock class="h-3 w-3" />
                                 <span>Dibuat {{ formatTime(event.created_at) }}</span>
+                            </div>
+
+                            <!-- Interests Count -->
+                            <div v-if="event.interests_count !== undefined" class="flex items-center gap-3 text-xs text-pink-600 dark:text-pink-400">
+                                <Heart class="h-3 w-3" :class="event.interests_count > 0 ? 'fill-current' : ''" />
+                                <span>{{ event.interests_count }} orang tertarik</span>
                             </div>
                         </div>
 
