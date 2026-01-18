@@ -49,7 +49,6 @@ const props = defineProps<{
         created_at: string;
         posts_count: number;
         comments_count: number;
-        collaborations_count: number;
         collaboration_interests_count: number;
         private_post: boolean;
         private_comment: boolean;
@@ -371,12 +370,7 @@ function copyPostUrl(hashId: string) {
                 <div class="flex flex-wrap gap-8">
                     <div class="text-center">
                         <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ user.posts_count }}</p>
-                        <p class="text-sm text-gray-500">Cerita</p>
-                    </div>
-                    <div class="h-12 w-px bg-gray-200 dark:bg-gray-700"></div>
-                    <div class="text-center">
-                        <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ user.collaborations_count }}</p>
-                        <p class="text-sm text-gray-500">Kolaborasi/Relawan</p>
+                        <p class="text-sm text-gray-500">Postingan</p>
                     </div>
                     <div class="h-12 w-px bg-gray-200 dark:bg-gray-700"></div>
                     <div class="text-center">

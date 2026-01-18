@@ -163,7 +163,7 @@ class HomeController extends Controller
                 'created_at' => $user->created_at,
                 'posts_count' => $user->posts_count,
                 'comments_count' => $user->comments_count,
-                'collaborations_count' => $user->collaborations_count ?? 0,
+
                 'collaboration_interests_count' => \App\Models\CollaborationInterest::where('user_id', $id)->count(),
                 'private_post' => $user->private_post,
                 'private_comment' => $user->private_comment,
