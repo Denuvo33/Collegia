@@ -3,7 +3,7 @@ import UserInfo from '@/components/UserInfo.vue';
 import { DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import type { User } from '@/types';
 import { Link, router } from '@inertiajs/vue3';
-import { LogOut, Settings } from 'lucide-vue-next';
+import { LogOut, Settings, UserIcon, Wallet } from 'lucide-vue-next';
 
 interface Props {
     user: User;
@@ -24,6 +24,18 @@ defineProps<Props>();
     </DropdownMenuLabel>
     <DropdownMenuSeparator />
     <DropdownMenuGroup>
+        <DropdownMenuItem :as-child="true">
+            <Link class="block w-full" :href="route('user.profile')" prefetch as="button">
+                <UserIcon class="mr-2 h-4 w-4" />
+                Profile
+            </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem :as-child="true">
+            <Link class="block w-full" :href="route('user.transaction')" prefetch as="button">
+                <Wallet class="mr-2 h-4 w-4" />
+                Transaksi
+            </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem :as-child="true">
             <Link class="block w-full" :href="route('appearance')" prefetch as="button">
                 <Settings class="mr-2 h-4 w-4" />
