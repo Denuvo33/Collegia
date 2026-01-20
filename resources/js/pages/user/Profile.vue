@@ -338,13 +338,14 @@ watch(activatedTabs, () => {
     observeCurrentTab();
 });
 
-function deletePost(id: number) {
-    return router.delete(route('user.post.delete', id), {
+function deletePost(hashId: string) {
+    return router.delete(route('user.post.delete', hashId), {
         onError: (errors) => {
             console.error('error: ', errors);
+            toast.error('Gagal menghapus post');
         },
         onSuccess: () => {
-            posts.value = posts.value.filter((post) => post.id !== id);
+            posts.value = posts.value.filter((post) => post.hash_id !== hashId);
             // Clear cache since data changed
             postsCacheMap.clear();
             // Re-cache current filter
@@ -353,6 +354,7 @@ function deletePost(id: number) {
                 page: postPage.value,
                 lastPage: postLastPage.value,
             });
+            toast.success('Post berhasil dihapus');
         },
     });
 }
@@ -478,14 +480,16 @@ function copyPostUrl(hashId: string) {
 }
 
 // Delete event
-const deleteEvent = (eventId: number) => {
-    router.delete(route('user.delete.event', eventId), {
+const deleteEvent = (hashId: string) => {
+    router.delete(route('user.delete.event', hashId), {
         onSuccess: () => {
             // Remove event from the list
-            props.data.events = props.data.events.filter((e) => e.id !== eventId);
+            props.data.events = props.data.events.filter((e) => e.hash_id !== hashId);
+            toast.success('Event berhasil dihapus');
         },
         onError: (errors) => {
             console.error('Failed to delete event:', errors);
+            toast.error('Gagal menghapus event');
         },
     });
 };
@@ -708,7 +712,7 @@ const deleteEvent = (eventId: number) => {
                             <DropdownMenuContent>
                                 <DropdownMenuItem
                                     v-if="post.type === 'post'"
-                                    @click.stop="deletePost(post.id)"
+                                    @click.stop="deletePost(post.hash_id)"
                                     class="text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
                                 >
                                     Hapus
@@ -867,7 +871,7 @@ const deleteEvent = (eventId: number) => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent>
                                 <DropdownMenuItem
-                                    @click="deleteEvent(event.id)"
+                                    @click="deleteEvent(event.hash_id)"
                                     class="cursor-pointer text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
                                 >
                                     Hapus

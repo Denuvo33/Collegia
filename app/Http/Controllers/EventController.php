@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\SecurityHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EventRequest;
 use App\Models\EventModel;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Vinkla\Hashids\Facades\Hashids;
 
@@ -158,15 +160,65 @@ class EventController extends Controller
     {
         try {
             $data = $request->validated();
-            // Free event creation for community, admin, and moderator
-            if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('images', 'public');
+
+            // Sanitize text fields to prevent XSS
+            $data['title'] = SecurityHelper::sanitizeHtml($data['title']);
+            $data['content'] = SecurityHelper::sanitizeHtml($data['content']);
+            $data['organizer'] = SecurityHelper::sanitizeHtml($data['organizer']);
+            $data['location'] = SecurityHelper::sanitizeHtml($data['location']);
+
+            // Check for spam content
+            if (SecurityHelper::containsSpam($data['content']) || SecurityHelper::containsSpam($data['title'])) {
+                return redirect()->back()
+                    ->withErrors(['error' => 'Konten terdeteksi sebagai spam. Mohon gunakan kata-kata yang lebih sopan.'])
+                    ->withInput();
             }
+
+            // Check for duplicate content (within last 24 hours)
+            if (SecurityHelper::isDuplicate($data['content'], 'event', Auth::id(), 24)) {
+                return redirect()->back()
+                    ->withErrors(['error' => 'Event dengan konten yang sama sudah dibuat dalam 24 jam terakhir.'])
+                    ->withInput();
+            }
+
+            $data['user_id'] = Auth::id();
+
+            // Handle image upload with security checks
+            if ($request->hasFile('image')) {
+                // Additional image safety validation
+                if (!SecurityHelper::validateImageSafety($request->file('image'))) {
+                    return redirect()->back()
+                        ->withErrors(['image' => 'File gambar tidak valid atau berpotensi berbahaya.'])
+                        ->withInput();
+                }
+
+                $data['image'] = $request->file('image')->storeAs(
+                    'events',
+                    Str::uuid() . '.' . $request->image->extension(),
+                    'public'
+                );
+            }
+
+            // Store content hash for duplicate detection
+            $data['content_hash'] = SecurityHelper::getContentHash($data['content']);
             $data['is_visible'] = true;
+
             EventModel::create($data);
+
+            Log::info('Event created successfully', [
+                'user_id' => Auth::id(),
+                'title' => $data['title'],
+            ]);
+
             return redirect()->route('user.event')->with('success', 'Event telah dibuat');
         } catch (Exception $e) {
-            return redirect()->back()->with('failed', 'Event gagal dibuat');
+            Log::error('Failed to create event: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return redirect()->back()
+                ->withErrors(['error' => 'Event gagal dibuat. Silakan coba lagi.'])
+                ->withInput();
         }
     }
 
@@ -196,29 +248,23 @@ class EventController extends Controller
         ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
 
     /**
      * Remove the specified resource from storage.
      * Also deletes associated pending transaction if event is invisible
      */
-    public function destroy(string $id)
+    public function destroy(string $hashId)
     {
         try {
+            // Decode hashId to get real ID
+            $decoded = Hashids::decode($hashId);
+
+            if (empty($decoded)) {
+                return redirect()->back()->with('failed', 'Event tidak ditemukan');
+            }
+
+            $id = $decoded[0];
+
             DB::beginTransaction();
 
             $event = EventModel::findOrFail($id);

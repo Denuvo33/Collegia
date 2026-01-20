@@ -272,15 +272,6 @@ class HomeController extends Controller
 
         return response()->json($events);
     }
-
-
-
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create() {}
-
     /**
      * Store a newly created resource in storage.
      */
@@ -295,37 +286,5 @@ class HomeController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal membuat post: ' . $e->getMessage());
         }
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(HomeRequest $home)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(HomeRequest $home)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, HomeRequest $home)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(HomeRequest $home)
-    {
-        //
     }
 }

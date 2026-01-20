@@ -22,6 +22,7 @@ class EventModel extends Model
         'promoted_till',
         'is_visible',
         'user_pay_transaction_id',
+        'content_hash',
     ];
 
     protected $appends = ['hash_id',];

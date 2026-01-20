@@ -342,11 +342,13 @@ function formatTime(date: string) {
     return dayjs(date).fromNow();
 }
 
-function deleteEvent(id: number) {
-    router.delete(route('user.delete.event', { id: id, userId: usePage().props.auth.user.id }), {
+function deleteEvent(hashId: string) {
+    router.delete(route('user.delete.event', hashId), {
         preserveScroll: true,
+        onSuccess: () => toast.success('Event berhasil dihapus'),
         onError: (errors) => {
             console.error('error delete event: ', errors);
+            toast.error('Gagal menghapus event');
         },
         preserveState: false,
     });
@@ -531,7 +533,7 @@ function copyEvent(hashId: string) {
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction @click="deleteEvent(event.id)">Continue</AlertDialogAction>
+                                                    <AlertDialogAction @click="deleteEvent(event.hash_id)">Continue</AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>

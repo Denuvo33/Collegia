@@ -94,15 +94,15 @@ Route::post('/user/event/promotion/initiate', [TransactionController::class, 'in
     ->name('user.event.promotion.initiate');
 
 // User Routes Post
-Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified'])->name('user.post.store');
+Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified', 'throttle:10,1'])->name('user.post.store');
 
 Route::post('/user/create-collaboration', [CollaborationController::class, 'store'])->middleware(['auth', 'verified'])->name('user.collaboration.store');
 
 Route::put('/user/collaboration/{hashId}', [CollaborationController::class, 'update'])->middleware(['auth', 'verified'])->name('user.collaboration.update');
 
-Route::post('/user/collaboration/{hashId}/interest', [CollaborationController::class, 'toggleInterest'])->middleware(['auth'])->name('user.collaboration.interest');
+Route::post('/user/collaboration/{hashId}/interest', [CollaborationController::class, 'toggleInterest'])->middleware(['auth', 'throttle:10,1'])->name('user.collaboration.interest');
 
-Route::post('/user/event/{hashId}/interest', [EventController::class, 'toggleInterest'])->middleware(['auth'])->name('user.event.interest');
+Route::post('/user/event/{hashId}/interest', [EventController::class, 'toggleInterest'])->middleware(['auth', 'throttle:10,1'])->name('user.event.interest');
 
 Route::delete('/user/collaboration/{hashId}', [CollaborationController::class, 'destroy'])->middleware(['auth', 'verified'])->name('user.collaboration.delete');
 
@@ -112,7 +112,7 @@ Route::post('/user/post/report', [ReportController::class, 'store'])->middleware
 Route::post('/user/event/report', [ReportController::class, 'reportEvent'])->middleware('auth')->name('user.event.report');
 Route::post('/user/comment/report', [ReportController::class, 'reportComment'])->middleware('auth')->name('user.comment.report');
 
-Route::post('/user/create-event', [EventController::class, 'store'])->middleware(['auth', 'verified'])->name('user.event.store');
+Route::post('/user/create-event', [EventController::class, 'store'])->middleware(['auth', 'verified', 'throttle:5,1'])->name('user.event.store');
 
 
 Route::post('/midtrans/webhook', [TransactionController::class, 'handleWebhook'])
@@ -131,11 +131,11 @@ Route::post('/user/transaction/cancel/{orderId}', [TransactionController::class,
     ->name('user.transaction.cancel');
 
 //user Routes Destroy
-Route::delete('/user/post/comment/${id}', [CommentController::class, 'destroy'])->middleware('auth')->name('user.comment.delete');
+Route::delete('/user/post/comment/{id}', [CommentController::class, 'destroy'])->middleware('auth')->name('user.comment.delete');
 
-Route::delete('/user/post/delete/{id}', [ProfileController::class, 'destroy'])->middleware('auth')->name('user.post.delete');
+Route::delete('/user/post/delete/{hashId}', [ProfileController::class, 'destroy'])->middleware('auth')->name('user.post.delete');
 
-Route::delete('/user/event/delete/{id}', [EventController::class, 'destroy'])->middleware('auth')->name('user.delete.event');
+Route::delete('/user/event/delete/{hashId}', [EventController::class, 'destroy'])->middleware('auth')->name('user.delete.event');
 
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/admin/dashboard', [CommunityController::class, 'adminDashboard'])->name('admin.dashboard');

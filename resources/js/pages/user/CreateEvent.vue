@@ -8,9 +8,9 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { Calendar, FileText, Image, MapPin, Pen, Users, Wallet } from 'lucide-vue-next';
+import { ref } from 'vue';
 import { toast } from 'vue-sonner';
 
-import { onMounted, ref } from 'vue';
 const preview = ref<string | null>(null);
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -51,19 +51,15 @@ function submit() {
             toast.success('Event berhasil dibuat!');
         },
         onError: (errors) => {
-            console.error('Failed to create event', errors);
+            if (errors.error) {
+                toast.error('Gagal membuat event : ' + errors.error);
+                return;
+            }
+            // console.error(errors);
             toast.error('Gagal membuat event');
         },
     });
 }
-
-// Load Midtrans Snap script
-onMounted(() => {
-    const script = document.createElement('script');
-    script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
-    script.setAttribute('data-client-key', usePage().props.midtrans_client_key as string);
-    document.head.appendChild(script);
-});
 </script>
 
 <template>

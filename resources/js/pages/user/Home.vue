@@ -185,9 +185,10 @@ function reportPost(postId: number) {
     );
 }
 
-function deletePost(id: number) {
-    router.delete(route('user.post.delete', id), {
+function deletePost(hashId: string) {
+    router.delete(route('user.post.delete', hashId), {
         preserveScroll: true,
+        onSuccess: () => toast.success('Post berhasil dihapus'),
         onError: () => toast.error('Gagal menghapus.'),
     });
 }

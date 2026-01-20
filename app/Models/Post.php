@@ -15,20 +15,21 @@ class Post extends Model
         'user_id',
         'content',
         'image',
+        'content_hash',
     ];
-    protected $appends = ['hash_id']; 
+    protected $appends = ['hash_id'];
 
-     public function user()
+    public function user()
     {
-        return $this->belongsTo(User::class,'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
-    
+
 
     public function comments()
     {
         return $this->hasMany(CommentModel::class, 'post_id');
     }
-     public function getHashIdAttribute()
+    public function getHashIdAttribute()
     {
         return Hashids::encode($this->id);
     }

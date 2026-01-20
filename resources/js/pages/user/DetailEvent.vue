@@ -115,8 +115,14 @@ function getEventStatus(dateEvent: string): 'Akan Datang' | 'Sedang Berjalan' | 
     }
 }
 
-function deleteEvent(id: number) {
-    router.delete(route('user.delete.event', { id: id, userId: usePage().props.auth.user.id }));
+function deleteEvent(hashId: string) {
+    router.delete(route('user.delete.event', hashId), {
+        onSuccess: () => toast.success('Event berhasil dihapus'),
+        onError: (errors) => {
+            console.error('Failed to delete event:', errors);
+            toast.error('Gagal menghapus event');
+        },
+    });
 }
 
 function reportEvent(id: number) {
@@ -256,7 +262,7 @@ async function toggleInterest() {
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                                 <AlertDialogCancel>Batal</AlertDialogCancel>
-                                                <AlertDialogAction @click="deleteEvent(event.id)" class="bg-red-600 hover:bg-red-700">
+                                                <AlertDialogAction @click="deleteEvent(event.hash_id)" class="bg-red-600 hover:bg-red-700">
                                                     Hapus
                                                 </AlertDialogAction>
                                             </AlertDialogFooter>
@@ -372,7 +378,6 @@ async function toggleInterest() {
                             </div>
 
                             <Separator />
-
                             <!-- Event Description -->
                             <div class="prose prose-slate dark:prose-invert max-w-none">
                                 <h3 class="text-xl font-semibold text-slate-900 dark:text-slate-100">Tentang Event</h3>
@@ -490,7 +495,7 @@ async function toggleInterest() {
                                                         usePage().props.auth.user.id == event.user.id ||
                                                         usePage().props.auth.user.role == 'moderator'
                                                     "
-                                                    @click="deleteEvent(event.id)"
+                                                    @click="deleteEvent(event.hash_id)"
                                                     class="w-full bg-red-500"
                                                     >Delete</Button
                                                 >

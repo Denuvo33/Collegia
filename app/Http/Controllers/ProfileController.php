@@ -174,50 +174,6 @@ class ProfileController extends Controller
         }
     }
 
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Profile $profile)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Profile $profile)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Profile $profile)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function updateBio(Request $request)
     {
         try {
@@ -243,10 +199,19 @@ class ProfileController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function destroy($hashId)
     {
         try {
+            // Decode hashId to get real ID
+            $decoded = \Vinkla\Hashids\Facades\Hashids::decode($hashId);
+
+            if (empty($decoded)) {
+                return redirect()->back()->with('error', 'Postingan tidak ditemukan');
+            }
+
+            $id = $decoded[0];
             $data = Post::findOrFail($id);
+
             if ($data->user_id == Auth::id() || Auth::user()->role == 'admin' || Auth::user()->role == 'moderator') {
                 $data->delete();
 
@@ -254,7 +219,10 @@ class ProfileController extends Controller
             } else {
                 return redirect()->back()->with('error', 'Gagal menghapus postingan');
             }
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->back()->with('error', 'Postingan tidak ditemukan');
         } catch (Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat menghapus postingan');
         }
     }
 }

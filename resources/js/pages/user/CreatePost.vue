@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/vue3';
 import { Image } from 'lucide-vue-next';
 import { ref } from 'vue';
+import { toast } from 'vue-sonner';
+import 'vue-sonner/style.css';
 
 const preview = ref<string | null>(null);
 
@@ -53,9 +56,14 @@ function submit() {
         onSuccess: () => {
             form.reset();
             preview.value = null;
+            toast.success('Post berhasil dibuat!');
         },
         onError: (errors) => {
-            console.error('Failed to create post', errors);
+            if (errors.error) {
+                toast.error(errors.error);
+            } else {
+                toast.error('Gagal membuat post');
+            }
         },
     });
 }
@@ -65,6 +73,7 @@ function submit() {
     <Head title="Create Post" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
+        <Toaster />
         <div class="p-4">
             <Input placeholder="Apa yg sedang kamu pikirkan?" v-model="form.content" type="text" class="w-8/12"></Input>
             <div v-if="form.errors.content" class="text-red-500">{{ form.errors.content }}</div>

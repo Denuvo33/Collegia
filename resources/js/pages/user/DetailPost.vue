@@ -22,10 +22,10 @@ import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { AlertTriangle, CheckCircle, Clock, EllipsisVertical, Image as ImageIcon, MessageSquare, Send, X } from 'lucide-vue-next';
+import { AlertTriangle, CheckCircle, Clock, EllipsisVertical, Image as ImageIcon, MessageSquare, Send, Share2, X } from 'lucide-vue-next';
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { toast } from 'vue-sonner';
+import { toast, Toaster } from 'vue-sonner';
 
 dayjs.locale('id');
 dayjs.extend(relativeTime);
@@ -375,13 +375,19 @@ function reportPost(postId: number) {
         },
     );
 }
-function deletePost(id: number) {
-    return router.delete(route('user.post.delete', id), {
+function deletePost(hashId: string) {
+    return router.delete(route('user.post.delete', hashId), {
         onError: (errors) => {
             console.error('error: ', errors);
-            successComment.value = 'Terjadi kesalahan saat menghapus.';
+            toast.error('Terjadi kesalahan saat menghapus postingan');
         },
-        onSuccess: (success) => {},
+        onSuccess: () => {
+            toast.success('Postingan berhasil dihapus');
+            // Redirect to home after successful deletion
+            setTimeout(() => {
+                router.visit(route('user.home'));
+            }, 1000);
+        },
     });
 }
 function reportComment(commentId: number) {
@@ -574,7 +580,7 @@ const copyUrl = () => {
                                                 usePage().props.auth.user.role === 'admin' ||
                                                 usePage().props.auth.user.role === 'moderator'
                                             "
-                                            @click="deletePost(data.id)"
+                                            @click="deletePost(data.hash_id)"
                                             >Hapus</DropdownMenuItem
                                         >
                                     </DropdownMenuContent>
