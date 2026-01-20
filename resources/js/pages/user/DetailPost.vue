@@ -16,6 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
@@ -23,9 +24,10 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { AlertTriangle, CheckCircle, Clock, EllipsisVertical, Image as ImageIcon, MessageSquare, Send, Share2, X } from 'lucide-vue-next';
+import 'vue-sonner/style.css';
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { toast, Toaster } from 'vue-sonner';
+import { toast } from 'vue-sonner';
 
 dayjs.locale('id');
 dayjs.extend(relativeTime);
@@ -282,7 +284,12 @@ onUnmounted(() => {
 function submit() {
     form.post(route('post.store.comment'), {
         onError: (Errors) => {
-            console.log('erros', Errors);
+            if (Errors.error) {
+                toast.error(Errors.error);
+                return;
+            }
+
+            toast.error('Gagal Membuat Komentar');
         },
         onSuccess: () => {
             // Create the new comment object with current data
@@ -322,22 +329,26 @@ function formatTime(date: string) {
     return dayjs(date).fromNow();
 }
 
-function deleteComment(id: number) {
+function deleteComment(hashId: string) {
     try {
-        router.delete(route('user.comment.delete', id), {
+        router.delete(route('user.comment.delete', hashId), {
             preserveState: true,
             onSuccess: () => {
-                successComment.value = 'Komentar telah di hapus';
+                // Remove comment from local state
+                comments.value = comments.value.filter((c) => c.hash_id !== hashId);
                 // Invalidate cache since comment was deleted
                 invalidateCache(props.data.id);
+                toast.success('Komentar berhasil dihapus');
             },
             onError: (Errors) => {
-                console.log(Errors);
-                successComment.value = 'Gagal menghapus komentar, periksa kembali jaringan anda';
+                if (Errors.error) {
+                    toast.error(Errors.error);
+                }
+                toast.error('Gagal menghapus komentar');
             },
         });
     } catch (e) {
-        successComment.value = 'Gagal menghapus komentar, periksa kembali jaringan anda';
+        toast.error('Gagal menghapus komentar');
     }
 }
 
@@ -739,7 +750,7 @@ const copyUrl = () => {
                                                                 comment.user.id === usePage().props.auth.user.id ||
                                                                 usePage().props.auth.user.role === 'moderator'
                                                             "
-                                                            @click="deleteComment(comment.id)"
+                                                            @click="deleteComment(comment.hash_id)"
                                                             class="text-sm text-red-600 hover:bg-red-50 hover:text-red-700"
                                                         >
                                                             Hapus

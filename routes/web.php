@@ -106,7 +106,7 @@ Route::post('/user/event/{hashId}/interest', [EventController::class, 'toggleInt
 
 Route::delete('/user/collaboration/{hashId}', [CollaborationController::class, 'destroy'])->middleware(['auth', 'verified'])->name('user.collaboration.delete');
 
-Route::post('/user/create-comment', [CommentController::class, 'store'])->middleware('auth')->name('post.store.comment');
+Route::post('/user/create-comment', [CommentController::class, 'store'])->middleware(['auth', 'throttle:15,1'])->name('post.store.comment');
 
 Route::post('/user/post/report', [ReportController::class, 'store'])->middleware('auth')->name('user.post.report');
 Route::post('/user/event/report', [ReportController::class, 'reportEvent'])->middleware('auth')->name('user.event.report');
@@ -131,7 +131,7 @@ Route::post('/user/transaction/cancel/{orderId}', [TransactionController::class,
     ->name('user.transaction.cancel');
 
 //user Routes Destroy
-Route::delete('/user/post/comment/{id}', [CommentController::class, 'destroy'])->middleware('auth')->name('user.comment.delete');
+Route::delete('/user/post/comment/{hashId}', [CommentController::class, 'destroy'])->middleware('auth')->name('user.comment.delete');
 
 Route::delete('/user/post/delete/{hashId}', [ProfileController::class, 'destroy'])->middleware('auth')->name('user.post.delete');
 

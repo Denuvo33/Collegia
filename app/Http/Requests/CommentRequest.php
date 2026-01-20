@@ -22,9 +22,19 @@ class CommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'content' => 'required|max:500|string',
-            'user_id' => 'required|exists:users,id',
+            'content' => 'required|string|min:3|max:300',
             'post_id' => 'required|exists:post,id'
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'content.required' => 'Komentar tidak boleh kosong',
+            'content.min' => 'Komentar minimal 3 karakter',
+            'content.max' => 'Komentar maksimal 300 karakter',
+            'post_id.required' => 'Post ID tidak valid',
+            'post_id.exists' => 'Post tidak ditemukan',
         ];
     }
 }
