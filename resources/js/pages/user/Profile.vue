@@ -424,19 +424,6 @@ function navigateToItem(item: Post) {
     }
 }
 
-watch(
-    () => page.props.flash,
-    (flash: any) => {
-        if (flash?.success) {
-            toast.success(flash.success);
-        }
-        if (flash?.error) {
-            toast.error(flash.error);
-        }
-    },
-    { deep: true },
-);
-
 const sortList = <T extends { created_at: string }>(list: Array<T>) => {
     return list.sort((a, b) => {
         const dateA = new Date(a.created_at);

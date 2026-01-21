@@ -44,7 +44,7 @@ Route::get('/user/profile', [ProfileController::class, 'index'])->name('user.pro
 // API endpoints for infinite scroll
 Route::get('/user/profile/posts', [ProfileController::class, 'posts'])->name('user.profile.posts');
 Route::get('/user/profile/comments', [ProfileController::class, 'comments'])->name('user.profile.comments');
-Route::patch('/user/profile/bio', [ProfileController::class, 'updateBio'])->middleware('auth')->name('user.profile.bio.update');
+Route::patch('/user/profile/bio', [ProfileController::class, 'updateBio'])->middleware(['auth', 'throttle:3,1'])->name('user.profile.bio.update');
 
 Route::get('/user/create-post', [CreatePostController::class, 'index'])->middleware(['auth', 'verified'])->name('user.create-post');
 
@@ -96,9 +96,9 @@ Route::post('/user/event/promotion/initiate', [TransactionController::class, 'in
 // User Routes Post
 Route::post('/user/create-post', [CreatePostController::class, 'store'])->middleware(['auth', 'verified', 'throttle:10,1'])->name('user.post.store');
 
-Route::post('/user/create-collaboration', [CollaborationController::class, 'store'])->middleware(['auth', 'verified'])->name('user.collaboration.store');
+Route::post('/user/create-collaboration', [CollaborationController::class, 'store'])->middleware(['auth', 'verified', 'throttle:5,1'])->name('user.collaboration.store');
 
-Route::put('/user/collaboration/{hashId}', [CollaborationController::class, 'update'])->middleware(['auth', 'verified'])->name('user.collaboration.update');
+Route::put('/user/collaboration/{hashId}', [CollaborationController::class, 'update'])->middleware(['auth', 'verified', 'throttle:3,1'])->name('user.collaboration.update');
 
 Route::post('/user/collaboration/{hashId}/interest', [CollaborationController::class, 'toggleInterest'])->middleware(['auth', 'throttle:10,1'])->name('user.collaboration.interest');
 
@@ -108,9 +108,10 @@ Route::delete('/user/collaboration/{hashId}', [CollaborationController::class, '
 
 Route::post('/user/create-comment', [CommentController::class, 'store'])->middleware(['auth', 'throttle:15,1'])->name('post.store.comment');
 
-Route::post('/user/post/report', [ReportController::class, 'store'])->middleware('auth')->name('user.post.report');
-Route::post('/user/event/report', [ReportController::class, 'reportEvent'])->middleware('auth')->name('user.event.report');
-Route::post('/user/comment/report', [ReportController::class, 'reportComment'])->middleware('auth')->name('user.comment.report');
+Route::post('/user/post/report', [ReportController::class, 'store'])->middleware(['auth', 'throttle:5,1'])->name('user.post.report');
+Route::post('/user/event/report', [ReportController::class, 'reportEvent'])->middleware(['auth', 'throttle:5,1'])->name('user.event.report');
+Route::post('/user/comment/report', [ReportController::class, 'reportComment'])->middleware(['auth', 'throttle:5,1'])->name('user.comment.report');
+Route::post('/user/collaboration/report', [ReportController::class, 'reportCollaboration'])->middleware(['auth', 'throttle:5,1'])->name('user.collaboration.report');
 
 Route::post('/user/create-event', [EventController::class, 'store'])->middleware(['auth', 'verified', 'throttle:5,1'])->name('user.event.store');
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\SecurityHelper;
 use App\Models\Profile;
 use App\Http\Controllers\Controller;
 use App\Models\Post;
@@ -9,6 +10,7 @@ use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use App\Models\CommentModel;
 use App\Models\EventModel;
@@ -178,11 +180,14 @@ class ProfileController extends Controller
     {
         try {
             $validated = $request->validate([
-                'bio' => 'nullable|string',
+                'bio' => 'nullable|string|max:500',
             ]);
 
-            // Validate max 20 words
+            // Sanitize HTML to prevent XSS
             if ($validated['bio']) {
+                $validated['bio'] = SecurityHelper::sanitizeHtml($validated['bio']);
+
+                // Validate max 20 words (after sanitization)
                 $wordCount = str_word_count($validated['bio']);
                 if ($wordCount > 20) {
                     return back()->with('error', 'Bio maksimal 20 kata. Saat ini: ' . $wordCount . ' kata.');
@@ -193,8 +198,15 @@ class ProfileController extends Controller
             $user->bio = $validated['bio'];
             $user->save();
 
+            Log::info('Bio updated', [
+                'user_id' => Auth::id(),
+            ]);
+
             return back()->with('success', 'Bio berhasil diperbarui.');
         } catch (Exception $e) {
+            Log::error('Failed to update bio: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+            ]);
             return back()->with('error', 'Gagal memperbarui bio.');
         }
     }

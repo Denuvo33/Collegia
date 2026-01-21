@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\SecurityHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Collaboration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -21,29 +23,59 @@ class CollaborationController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
+        $validated = $request->validate([
+            'title' => 'required|string|min:5|max:255',
+            'description' => 'required|string|min:20|max:5000',
             'type' => 'required|in:collaboration,volunteer',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'location' => 'nullable|string|max:255',
-            'participants_needed' => 'nullable|integer|min:1',
+            'start_date' => 'nullable|date|after_or_equal:today',
+            'end_date' => 'nullable|date|after:start_date',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120|dimensions:min_width=200,min_height=200,max_width=4000,max_height=4000',
+            'location' => 'nullable|string|min:3|max:255',
+            'participants_needed' => 'nullable|integer|min:1|max:1000',
         ]);
 
         try {
-            $data = $request->all();
-            $data['user_id'] = Auth::id();
-
-            if ($request->hasFile('image')) {
-                $data['image'] = $request->file('image')->store('collaborations', 'public');
+            // Sanitize text fields to prevent XSS
+            $validated['title'] = SecurityHelper::sanitizeHtml($validated['title']);
+            $validated['description'] = SecurityHelper::sanitizeHtml($validated['description']);
+            if (isset($validated['location'])) {
+                $validated['location'] = SecurityHelper::sanitizeHtml($validated['location']);
             }
 
-            Collaboration::create($data);
+            // Check for spam
+            if (
+                SecurityHelper::containsSpam($validated['title']) ||
+                SecurityHelper::containsSpam($validated['description'])
+            ) {
+                return redirect()->back()
+                    ->withErrors(['error' => 'Konten terdeteksi sebagai spam. Mohon gunakan kata-kata yang lebih sopan.'])
+                    ->withInput();
+            }
+
+            $validated['user_id'] = Auth::id();
+
+            // Handle image upload with validation
+            if ($request->hasFile('image')) {
+                if (!SecurityHelper::validateImageSafety($request->file('image'))) {
+                    return redirect()->back()
+                        ->withErrors(['image' => 'File gambar tidak valid atau berbahaya']);
+                }
+                $validated['image'] = $request->file('image')->store('collaborations', 'public');
+            }
+
+            Collaboration::create($validated);
+
+            Log::info('Collaboration created', [
+                'user_id' => Auth::id(),
+                'type' => $validated['type'],
+            ]);
+
             return redirect()->route('user.home')->with('success', 'Kolaborasi berhasil dibuat!');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Gagal membuat kolaborasi: ' . $e->getMessage()]);
+            Log::error('Failed to create collaboration: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+            ]);
+            return redirect()->back()->withErrors(['error' => 'Gagal membuat kolaborasi']);
         }
     }
 
@@ -106,32 +138,63 @@ class CollaborationController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
+        $validated = $request->validate([
+            'title' => 'required|string|min:5|max:255',
+            'description' => 'required|string|min:20|max:5000',
             'type' => 'required|in:collaboration,volunteer',
-            'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'location' => 'nullable|string|max:255',
-            'participants_needed' => 'nullable|integer|min:1',
+            'start_date' => 'nullable|date|after_or_equal:today',
+            'end_date' => 'nullable|date|after:start_date',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120|dimensions:min_width=200,min_height=200,max_width=4000,max_height=4000',
+            'location' => 'nullable|string|min:3|max:255',
+            'participants_needed' => 'nullable|integer|min:1|max:1000',
         ]);
 
         try {
-            $data = $request->except(['image', '_method']);
+            // Sanitize text fields
+            $validated['title'] = SecurityHelper::sanitizeHtml($validated['title']);
+            $validated['description'] = SecurityHelper::sanitizeHtml($validated['description']);
+            if (isset($validated['location'])) {
+                $validated['location'] = SecurityHelper::sanitizeHtml($validated['location']);
+            }
+
+            // Check for spam
+            if (
+                SecurityHelper::containsSpam($validated['title']) ||
+                SecurityHelper::containsSpam($validated['description'])
+            ) {
+                return redirect()->back()
+                    ->withErrors(['error' => 'Konten terdeteksi sebagai spam'])
+                    ->withInput();
+            }
 
             if ($request->hasFile('image')) {
+                // Validate image safety
+                if (!SecurityHelper::validateImageSafety($request->file('image'))) {
+                    return redirect()->back()
+                        ->withErrors(['image' => 'File gambar tidak valid atau berbahaya']);
+                }
+
                 // Delete old image if exists
                 if ($collaboration->image) {
                     Storage::disk('public')->delete($collaboration->image);
                 }
-                $data['image'] = $request->file('image')->store('collaborations', 'public');
+                $validated['image'] = $request->file('image')->store('collaborations', 'public');
             }
 
-            $collaboration->update($data);
+            $collaboration->update($validated);
+
+            Log::info('Collaboration updated', [
+                'user_id' => Auth::id(),
+                'collaboration_id' => $id,
+            ]);
+
             return redirect()->route('user.collaboration.details', $hashId)->with('success', 'Kolaborasi berhasil diperbarui!');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Gagal memperbarui kolaborasi: ' . $e->getMessage()]);
+            Log::error('Failed to update collaboration: ' . $e->getMessage(), [
+                'user_id' => Auth::id(),
+                'collaboration_id' => $id,
+            ]);
+            return redirect()->back()->withErrors(['error' => 'Gagal memperbarui kolaborasi']);
         }
     }
 

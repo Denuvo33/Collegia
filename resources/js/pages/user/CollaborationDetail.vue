@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
     AlertDialog,
+    AlertDialogAction,
     AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
@@ -11,6 +12,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
@@ -19,7 +22,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import { Calendar, Edit, Heart, MapPin, Share2, Trash2, Users, Workflow } from 'lucide-vue-next';
+import { Calendar, Edit, Flag, Heart, MapPin, Share2, Trash2, Users, Workflow } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css';
@@ -67,6 +70,7 @@ const isInterested = ref(props.isInterested);
 const interestsCount = ref(props.collaboration.interests_count || 0);
 const interestedUsers = ref<User[]>(props.collaboration.interested_users || []);
 const isLoading = ref(false);
+const reportValue = ref('spam');
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Home', href: '/user/home' },
@@ -117,6 +121,26 @@ function deleteCollaboration() {
     router.delete(route('user.collaboration.delete', props.collaboration.hash_id), {
         onError: () => toast.error('Gagal menghapus kolaborasi.'),
     });
+}
+
+function reportCollaboration(collaborationId: number) {
+    router.post(
+        route('user.collaboration.report'),
+        {
+            collaboration_id: collaborationId,
+            reason: reportValue.value,
+        },
+        {
+            onSuccess: () => {
+                reportValue.value = 'spam';
+                return;
+            },
+            onError: (Errors) => {
+                toast.error('Gagal mengirim laporan ' + Errors.error);
+                return;
+            },
+        },
+    );
 }
 
 watch(
@@ -183,6 +207,57 @@ watch(
                             <Button variant="outline" size="icon" @click="copyUrl">
                                 <Share2 class="h-4 w-4" />
                             </Button>
+                            <template v-if="!isOwner">
+                                <AlertDialog>
+                                    <AlertDialogTrigger as-child>
+                                        <Button variant="outline" size="icon">
+                                            <Flag class="h-4 w-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Laporkan Kolaborasi</AlertDialogTitle>
+                                            <AlertDialogDescription> Pilih alasan pelaporan untuk kolaborasi ini. </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <div class="py-4">
+                                            <RadioGroup v-model="reportValue" default-value="spam" class="space-y-3">
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem value="spam" id="spam" />
+                                                    <Label for="spam" class="cursor-pointer">Spam</Label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem value="abuse" id="abuse" />
+                                                    <Label for="abuse" class="cursor-pointer">Pelecehan</Label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem value="harassment" id="harassment" />
+                                                    <Label for="harassment" class="cursor-pointer">Perundungan</Label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem value="abusive" id="abusive" />
+                                                    <Label for="abusive" class="cursor-pointer">Kasar</Label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem value="inappropriate" id="inappropriate" />
+                                                    <Label for="inappropriate" class="cursor-pointer">Tidak Pantas</Label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem value="porn" id="porn" />
+                                                    <Label for="porn" class="cursor-pointer">Pornografi</Label>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <RadioGroupItem value="pretend to be other people" id="pretend" />
+                                                    <Label for="pretend" class="cursor-pointer">Menyamar Sebagai Orang Lain</Label>
+                                                </div>
+                                            </RadioGroup>
+                                        </div>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                                            <AlertDialogAction @click="reportCollaboration(collaboration.id)">Kirim</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </template>
                             <template v-if="isOwner">
                                 <Button variant="outline" size="icon" @click="editCollaboration">
                                     <Edit class="h-4 w-4" />

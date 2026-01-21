@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\SecurityHelper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ReportRequest;
 use App\Models\ReportComment;
@@ -9,6 +10,8 @@ use App\Models\ReportEvent;
 use App\Models\ReportModel;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class ReportController extends Controller
@@ -37,16 +40,15 @@ class ReportController extends Controller
     public function store(ReportRequest $request)
     {
         try {
-            // dd($request);
             $data = $request->validated();
             ReportModel::create($data);
-
             return back()->with([
-                'success' => 'Laporan berhasil dikirim,Terima kasih karna telah berkontribusi menjaga komunitas lebih baik.'
+                'success' => 'Laporan berhasil dikirim. Terima kasih telah berkontribusi menjaga komunitas lebih baik.'
             ]);
         } catch (\Throwable $e) {
+            Log::error('Failed to submit post report: ' . $e->getMessage());
             return back()->withErrors([
-                'error' => 'Terjadi kesalahan, coba lagi nanti.' . $e->getMessage()
+                'error' => 'Terjadi kesalahan, coba lagi nanti.'
             ]);
         }
     }
@@ -56,16 +58,22 @@ class ReportController extends Controller
         try {
             $data = $request->validate([
                 'comment_id' => 'required|exists:comment,id',
-                'reason' => 'required|in:spam,abuse,harassment,abusive,other,inappropriate,porn,pretend to be other people,other',
+                'reason' => 'required|in:spam,abuse,harassment,abusive,inappropriate,porn,pretend to be other people',
             ]);
 
             ReportComment::create($data);
 
+            Log::info('Comment reported', [
+                'comment_id' => $data['comment_id'],
+                'reason' => $data['reason'],
+            ]);
+
             return back()->with([
-                'success' => 'Laporan berhasil dikirim,Terima kasih karna telah berkontribusi menjaga komunitas lebih baik.'
+                'success' => 'Laporan berhasil dikirim. Terima kasih telah berkontribusi menjaga komunitas lebih baik.'
             ]);
         } catch (Exception $e) {
-            return back()->with([
+            Log::error('Failed to submit comment report: ' . $e->getMessage());
+            return back()->withErrors([
                 'error' => 'Terjadi kesalahan, coba lagi nanti.'
             ]);
         }
@@ -73,22 +81,48 @@ class ReportController extends Controller
 
     public function reportEvent(Request $request)
     {
-
         try {
-
-            $data = $request->validate(
-                [
-                    'event_id' => 'required|exists:event,id',
-                    'reason' => 'required|in:spam,abuse,abusive,harassment,other,inappropriate,porn,pretend to be other people,other'
-                ]
-            );
-
+            $data = $request->validate([
+                'event_id' => 'required|exists:event,id',
+                'reason' => 'required|in:spam,abuse,abusive,harassment,inappropriate,porn,pretend to be other people'
+            ]);
 
             ReportEvent::create($data);
+
+            Log::info('Event reported', [
+                'event_id' => $data['event_id'],
+                'reason' => $data['reason'],
+            ]);
+
             return back()->with([
-                'success' => 'Laporan berhasil dikirim,Terima kasih karna telah berkontribusi menjaga komunitas lebih baik.'
+                'success' => 'Laporan berhasil dikirim. Terima kasih telah berkontribusi menjaga komunitas lebih baik.'
             ]);
         } catch (Exception $e) {
+            Log::error('Failed to submit event report: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Terjadi kesalahan, coba lagi nanti.']);
+        }
+    }
+
+    public function reportCollaboration(Request $request)
+    {
+        try {
+            $data = $request->validate([
+                'collaboration_id' => 'required|exists:collaborations,id',
+                'reason' => 'required|in:spam,abuse,abusive,harassment,inappropriate,porn,pretend to be other people'
+            ]);
+
+            \App\Models\ReportCollaboration::create($data);
+
+            Log::info('Collaboration reported', [
+                'collaboration_id' => $data['collaboration_id'],
+                'reason' => $data['reason'],
+            ]);
+
+            return back()->with([
+                'success' => 'Laporan berhasil dikirim. Terima kasih telah berkontribusi menjaga komunitas lebih baik.'
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to submit collaboration report: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Terjadi kesalahan, coba lagi nanti.' . $e->getMessage()]);
         }
     }
