@@ -8,6 +8,7 @@ use App\Models\EventModel;
 use App\Models\ReportComment;
 use App\Models\ReportEvent;
 use App\Models\ReportModel;
+use App\Models\ReportCollaboration;
 use App\Models\Post;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class CommunityController extends Controller
@@ -384,29 +386,9 @@ class CommunityController extends Controller
                 });
             }
 
-
-            // Debug: Log the query to see what's happening
-            \Log::info('Query SQL: ' . $query->toSql());
-            \Log::info('Query Bindings: ', $query->getBindings());
-            \Log::info('Today date: ' . $today);
-
             $events = $query->latest()->paginate(10);
 
-            // Debug: Show what we got from the query
-            // dd([
-            //     'today' => $today,
-            //     'request_status' => $request->status,
-            //     'query_result_count' => $events->total(),
-            //     'query_results' => $events->items(),
-            //     'all_events_raw' => EventModel::select('id', 'title', 'date_event')->get()->map(function ($e) {
-            //         return [
-            //             'id' => $e->id,
-            //             'title' => $e->title,
-            //             'date_event' => $e->date_event,
-            //             'date_event_formatted' => $e->date_event ? date('Y-m-d', strtotime($e->date_event)) : null,
-            //         ];
-            //     })->toArray(),
-            // ]);
+
 
             return Inertia::render('admin/events/Event', [
                 'events' => $events->toArray(),
@@ -416,7 +398,7 @@ class CommunityController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            \Log::error('Fetch events error: ' . $e->getMessage());
+
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
@@ -469,6 +451,52 @@ class CommunityController extends Controller
             return redirect()->back()->with('success', 'Laporan komentar berhasil dihapus.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus laporan komentar');
+        }
+    }
+
+    public function reportCollaborations(Request $request)
+    {
+        try {
+            $collaborations = ReportCollaboration::with('collaboration')
+                ->latest()
+                ->paginate(10);
+
+            return Inertia::render('admin/reports/ReportCollaboration', [
+                'collaborations' => $collaborations->toArray()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Fetch reported collaborations error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    public function deleteReportCollaboration($id)
+    {
+        try {
+            $report = ReportCollaboration::findOrFail($id);
+            $report->delete();
+
+            return redirect()->back()->with('success', 'Laporan kolaborasi berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus laporan kolaborasi');
+        }
+    }
+
+    public function deleteCollaborationFromReport($id)
+    {
+        try {
+            $collaboration = \App\Models\Collaboration::findOrFail($id);
+
+            // Delete image if exists
+            if ($collaboration->image) {
+                \Storage::disk('public')->delete($collaboration->image);
+            }
+
+            $collaboration->delete();
+
+            return redirect()->back()->with('success', 'Kolaborasi berhasil dihapus.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus kolaborasi: ' . $e->getMessage());
         }
     }
 }

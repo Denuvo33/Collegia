@@ -209,7 +209,7 @@ class CollaborationController extends Controller
         $id = $decoded[0];
         $collaboration = Collaboration::findOrFail($id);
 
-        if ($collaboration->user_id !== Auth::id()) {
+        if ($collaboration->user_id !== Auth::id() && !in_array(Auth::user()->role, ['admin', 'moderator'])) {
             abort(403, 'Unauthorized');
         }
 
