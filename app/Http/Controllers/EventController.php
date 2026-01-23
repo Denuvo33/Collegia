@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Vinkla\Hashids\Facades\Hashids;
@@ -195,7 +196,7 @@ class EventController extends Controller
                 $data['image'] = $request->file('image')->storeAs(
                     'events',
                     Str::uuid() . '.' . $request->image->extension(),
-                    'public'
+                    'r2'
                 );
             }
 
@@ -293,6 +294,11 @@ class EventController extends Controller
                         'user_id' => Auth::id(),
                     ]);
                 }
+            }
+
+            // Delete event image from R2 if exists
+            if ($event->image) {
+                Storage::disk('r2')->delete($event->image);
             }
 
             // Delete event

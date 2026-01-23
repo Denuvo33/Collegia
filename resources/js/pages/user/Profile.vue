@@ -722,7 +722,7 @@ const deleteEvent = (hashId: string) => {
 
                     <!-- Post Image -->
                     <div v-if="post.image" class="mb-3">
-                        <img :src="`/storage/${post.image}`" alt="post image" class="max-h-[500px] w-auto max-w-full rounded-lg object-cover" />
+                        <img :src="post.image_url" alt="post image" class="max-h-[500px] w-auto max-w-full rounded-lg object-cover" />
                     </div>
 
                     <!-- Post Content -->
@@ -841,7 +841,7 @@ const deleteEvent = (hashId: string) => {
             >
                 <!-- Event Image -->
                 <div class="relative h-48 bg-gray-200 dark:bg-gray-700">
-                    <img v-if="event.image" :src="`/storage/${event.image}`" alt="Event" class="h-full w-full object-cover" />
+                    <img v-if="event.image" :src="event.image_url" alt="Event" class="h-full w-full object-cover" />
                     <div v-else class="flex h-full items-center justify-center">
                         <Calendar class="h-12 w-12 text-gray-400" />
                     </div>

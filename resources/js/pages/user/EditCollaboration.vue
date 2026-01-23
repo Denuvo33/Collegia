@@ -33,7 +33,7 @@ const props = defineProps<{
     };
 }>();
 
-const preview = ref<string | null>(props.collaboration.image ? `/storage/${props.collaboration.image}` : null);
+const preview = ref<string | null>(props.collaboration.image_url || null);
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Home', href: '/user/home' },
@@ -58,7 +58,7 @@ function handleFile(event: Event) {
         form.image = target.files[0];
         preview.value = URL.createObjectURL(form.image);
     } else {
-        preview.value = props.collaboration.image ? `/storage/${props.collaboration.image}` : null;
+        preview.value = props.collaboration.image_url || null;
         form.image = null;
     }
 }

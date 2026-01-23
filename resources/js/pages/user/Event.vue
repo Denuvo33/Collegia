@@ -467,7 +467,7 @@ function copyEvent(hashId: string) {
                     <div class="relative h-48 bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600">
                         <img
                             v-if="event.image"
-                            :src="`/storage/${event.image}`"
+                            :src="event.image_url"
                             :alt="event.title"
                             class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                         />

@@ -63,7 +63,7 @@ class CreatePostController extends Controller
                 $data['image'] = $request->file('image')->storeAs(
                     'images',
                     Str::uuid() . '.' . $request->image->extension(),
-                    'public'
+                    'r2'
                 );
             }
 

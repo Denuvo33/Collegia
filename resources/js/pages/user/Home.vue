@@ -47,6 +47,7 @@ type FeedItem = {
     content?: string;
     description?: string;
     image?: string;
+    image_url?: string;
     hash_id: string;
     created_at: string;
     user: User;
@@ -358,7 +359,7 @@ function getTypeLabel(type: string) {
                     >
                         <div class="flex">
                             <div v-if="event.image" class="h-32 w-32 flex-shrink-0">
-                                <img :src="`/storage/${event.image}`" :alt="event.title" class="h-full w-full object-cover" />
+                                <img :src="event.image_url" :alt="event.title" class="h-full w-full object-cover" />
                             </div>
                             <div class="flex-1 p-4">
                                 <div class="mb-1 flex items-center justify-between">
@@ -493,11 +494,7 @@ function getTypeLabel(type: string) {
                     </div>
 
                     <div v-if="item.image">
-                        <img
-                            :src="`/storage/${item.image}`"
-                            class="max-h-[500px] w-auto max-w-full rounded-xl object-cover shadow-sm"
-                            alt="Post content"
-                        />
+                        <img :src="item.image_url" class="max-h-[500px] w-auto max-w-full rounded-xl object-cover shadow-sm" alt="Post content" />
                     </div>
 
                     <p v-if="item.content || item.description" class="whitespace-pre-wrap text-gray-700 dark:text-gray-300">

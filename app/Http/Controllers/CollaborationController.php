@@ -60,7 +60,7 @@ class CollaborationController extends Controller
                     return redirect()->back()
                         ->withErrors(['image' => 'File gambar tidak valid atau berbahaya']);
                 }
-                $validated['image'] = $request->file('image')->store('collaborations', 'public');
+                $validated['image'] = $request->file('image')->store('collaborations', 'r2');
             }
 
             Collaboration::create($validated);
@@ -176,9 +176,9 @@ class CollaborationController extends Controller
 
                 // Delete old image if exists
                 if ($collaboration->image) {
-                    Storage::disk('public')->delete($collaboration->image);
+                    Storage::disk('r2')->delete($collaboration->image);
                 }
-                $validated['image'] = $request->file('image')->store('collaborations', 'public');
+                $validated['image'] = $request->file('image')->store('collaborations', 'r2');
             }
 
             $collaboration->update($validated);
@@ -215,7 +215,7 @@ class CollaborationController extends Controller
 
         try {
             if ($collaboration->image) {
-                Storage::disk('public')->delete($collaboration->image);
+                Storage::disk('r2')->delete($collaboration->image);
             }
             $collaboration->delete();
             return redirect()->route('user.home')->with('success', 'Kolaborasi berhasil dihapus!');

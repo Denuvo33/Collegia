@@ -165,7 +165,7 @@ onMounted(() => {
                     <CardContent class="space-y-4">
                         <!-- Event Image -->
                         <div v-if="event.image" class="overflow-hidden rounded-lg">
-                            <img :src="`/storage/${event.image}`" :alt="event.title" class="h-48 w-full object-cover" />
+                            <img :src="event.image_url" :alt="event.title" class="h-48 w-full object-cover" />
                         </div>
 
                         <!-- Event Title -->

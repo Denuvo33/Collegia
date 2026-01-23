@@ -9,7 +9,7 @@ class Notification extends Model
 {
     protected $table = 'notification';
 
-    protected $fillable =[
+    protected $fillable = [
         'message',
         'post_id',
         'user_id',
@@ -17,7 +17,8 @@ class Notification extends Model
 
     protected $appends = ['hash_id'];
 
-    public function getHashIdAttribute(){
+    public function getHashIdAttribute()
+    {
         return Hashids::encode($this->post_id);
     }
 }

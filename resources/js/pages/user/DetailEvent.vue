@@ -331,7 +331,7 @@ async function toggleInterest() {
                         <div class="relative mb-8">
                             <div v-if="event.image" class="overflow-hidden rounded-2xl shadow-2xl">
                                 <img
-                                    :src="`/storage/${event.image}`"
+                                    :src="event.image_url"
                                     :alt="event.title"
                                     class="h-[400px] w-full object-cover transition-transform duration-300 hover:scale-105"
                                 />

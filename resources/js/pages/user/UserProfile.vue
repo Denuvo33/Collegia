@@ -587,7 +587,7 @@ function copyPostUrl(hashId: string) {
                         <!-- Image -->
                         <img
                             v-if="post.image"
-                            :src="`/storage/${post.image}`"
+                            :src="post.image_url"
                             class="mb-3 max-h-[500px] w-auto max-w-full rounded-lg object-cover"
                             alt="post image"
                         />
@@ -688,7 +688,7 @@ function copyPostUrl(hashId: string) {
                     <!-- Event Image -->
                     <img
                         v-if="event.image"
-                        :src="`/storage/${event.image}`"
+                        :src="event.image_url"
                         class="mb-3 max-h-[500px] w-auto max-w-full rounded-lg object-cover"
                         alt="event image"
                     />

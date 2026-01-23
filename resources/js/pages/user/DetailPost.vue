@@ -611,7 +611,7 @@ const copyUrl = () => {
                             <div
                                 class="relative overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-transparent"
                             >
-                                <img :src="`/storage/${data.image}`" alt="Post Image" class="h-auto max-h-96 w-full object-contain" />
+                                <img :src="data.image_url" alt="Post Image" class="h-auto max-h-96 w-full object-contain" />
                                 <div class="absolute top-3 right-3 rounded-lg bg-black/20 p-2 backdrop-blur-sm">
                                     <ImageIcon class="h-4 w-4 text-white" />
                                 </div>
