@@ -13,6 +13,7 @@ class Notification extends Model
         'message',
         'post_id',
         'user_id',
+        'type',
     ];
 
     protected $appends = ['hash_id'];
@@ -20,5 +21,13 @@ class Notification extends Model
     public function getHashIdAttribute()
     {
         return Hashids::encode($this->post_id);
+    }
+
+    /**
+     * Get the user who will receive this notification.
+     */
+    public function recipient()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

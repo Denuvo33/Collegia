@@ -20,6 +20,10 @@ const props = defineProps<{
             post_id: number;
             created_at: string;
             hash_id: string;
+            is_read: boolean;
+            type?: string;
+            event_title?: string;
+            collab_hash_id?: string;
         }>;
         current_page: number;
         last_page: number;
@@ -37,68 +41,71 @@ const observer = ref<IntersectionObserver | null>(null);
 const loadMoreTrigger = ref<HTMLElement | null>(null);
 
 // Cache configuration - smaller for notifications
-const CACHE_CONFIG = {
-    MAX_NOTIFICATIONS: 20,
-    CACHE_EXPIRY_MS: 3 * 60 * 1000, // 3 minutes
-};
+// const CACHE_CONFIG = {
+//     MAX_NOTIFICATIONS: 20,
+//     CACHE_EXPIRY_MS: 3 * 60 * 1000, // 3 minutes
+// };
 
-// Cache functions
-const CACHE_KEY = 'user_notifications';
+// // Cache functions
+// const CACHE_KEY = 'user_notifications';
 
-const getCachedNotifications = () => {
-    try {
-        const cached = sessionStorage.getItem(CACHE_KEY);
-        if (!cached) return null;
+// const getCachedNotifications = () => {
+//     try {
+//         const cached = sessionStorage.getItem(CACHE_KEY);
+//         if (!cached) return null;
 
-        const data = JSON.parse(cached);
+//         const data = JSON.parse(cached);
 
-        // Check expiry
-        if (Date.now() - data.timestamp > CACHE_CONFIG.CACHE_EXPIRY_MS) {
-            sessionStorage.removeItem(CACHE_KEY);
-            return null;
-        }
+//         // Check expiry
+//         if (Date.now() - data.timestamp > CACHE_CONFIG.CACHE_EXPIRY_MS) {
+//             sessionStorage.removeItem(CACHE_KEY);
+//             return null;
+//         }
 
-        return data;
-    } catch (e) {
-        sessionStorage.removeItem(CACHE_KEY);
-        return null;
-    }
-};
+//         return data;
+//     } catch (e) {
+//         sessionStorage.removeItem(CACHE_KEY);
+//         return null;
+//     }
+// };
 
-const setCachedNotifications = (notifs: any[], currentPage: number, total: number) => {
-    try {
-        // Limit to prevent memory bloat
-        const limitedNotifications = notifs.slice(0, CACHE_CONFIG.MAX_NOTIFICATIONS);
+// const setCachedNotifications = (notifs: any[], currentPage: number, total: number) => {
+//     try {
+//         // Limit to prevent memory bloat
+//         const limitedNotifications = notifs.slice(0, CACHE_CONFIG.MAX_NOTIFICATIONS);
 
-        const data = {
-            notifications: limitedNotifications,
-            currentPage: Math.min(currentPage, Math.ceil(CACHE_CONFIG.MAX_NOTIFICATIONS / 5)),
-            total,
-            timestamp: Date.now(),
-        };
+//         const data = {
+//             notifications: limitedNotifications,
+//             currentPage: Math.min(currentPage, Math.ceil(CACHE_CONFIG.MAX_NOTIFICATIONS / 5)),
+//             total,
+//             timestamp: Date.now(),
+//         };
 
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    } catch (e) {
-        console.warn('Cache quota exceeded, clearing notification cache');
-        sessionStorage.removeItem(CACHE_KEY);
-    }
-};
+//         sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+//     } catch (e) {
+//         console.warn('Cache quota exceeded, clearing notification cache');
+//         sessionStorage.removeItem(CACHE_KEY);
+//     }
+// };
 
-const invalidateCache = () => {
-    sessionStorage.removeItem(CACHE_KEY);
-};
+// const invalidateCache = () => {
+//     sessionStorage.removeItem(CACHE_KEY);
+// };
+
+// // Clear cache on page load to prevent stale data
+// invalidateCache();
 
 // Initialize from cache or props
-const cached = getCachedNotifications();
-if (cached && cached.notifications.length > 0) {
-    notifications.value = cached.notifications;
-    currentPage.value = cached.currentPage;
-    hasMoreNotifications.value = currentPage.value < Math.ceil(cached.total / 5);
-} else {
-    notifications.value = props.notification.data || [];
-    currentPage.value = props.notification.current_page || 1;
-    hasMoreNotifications.value = currentPage.value < (props.notification.last_page || 1);
-}
+// const cached = getCachedNotifications();
+// if (cached && cached.notifications.length > 0) {
+//     notifications.value = cached.notifications;
+//     currentPage.value = cached.currentPage;
+//     hasMoreNotifications.value = currentPage.value < Math.ceil(cached.total / 5);
+// } else {
+notifications.value = props.notification.data || [];
+currentPage.value = props.notification.current_page || 1;
+hasMoreNotifications.value = currentPage.value < (props.notification.last_page || 1);
+// }
 
 // Load more notifications
 const loadMoreNotifications = async () => {
@@ -115,7 +122,7 @@ const loadMoreNotifications = async () => {
             hasMoreNotifications.value = currentPage.value < data.last_page;
 
             // Update cache
-            setCachedNotifications(notifications.value, currentPage.value, data.total);
+            // setCachedNotifications(notifications.value, currentPage.value, data.total);
         } else {
             hasMoreNotifications.value = false;
         }
@@ -144,9 +151,9 @@ onMounted(() => {
     }, 100);
 
     // Cache initial data if not already cached
-    if (!getCachedNotifications()) {
-        setCachedNotifications(notifications.value, currentPage.value, props.notification.total || 0);
-    }
+    // if (!getCachedNotifications()) {
+    //     setCachedNotifications(notifications.value, currentPage.value, props.notification.total || 0);
+    // }
 });
 
 // Cleanup
@@ -156,7 +163,7 @@ onUnmounted(() => {
     }
 
     // Save current state
-    setCachedNotifications(notifications.value, currentPage.value, props.notification.total || 0);
+    // setCachedNotifications(notifications.value, currentPage.value, props.notification.total || 0);
 });
 
 function splitName(text: string) {
@@ -181,6 +188,39 @@ function formatTimeAgo(dateString: string) {
         month: 'long',
         day: 'numeric',
     });
+}
+
+// Handle notification click - mark as read and route based on type
+function handleNotificationClick(notif: any) {
+    console.log('Notification clicked:', { id: notif.id, type: notif.type, hash_id: notif.hash_id });
+
+    // Route based on type
+    let routeName = 'user.post.details';
+
+    if (notif.type === 'event') {
+        routeName = 'user.details.event';
+    } else if (notif.type === 'collaboration') {
+        routeName = 'user.collaboration.details';
+    }
+    console.log(routeName);
+
+    console.log('Routing to:', routeName, notif.hash_id);
+
+    // // Mark as read (fire and forget)
+    // fetch(`/user/notifications/${notif.id}/mark-read`, {
+    //     method: 'POST',
+    //     headers: {
+    //         'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+    //         Accept: 'application/json',
+    //     },
+    // }).catch((err) => console.error('Failed to mark as read:', err));
+
+    // Navigate
+    if (routeName == 'user.details.event') {
+        return (window.location.href = route(routeName, { hashId: notif.hash_id, title: notif.event_title }));
+    }
+
+    window.location.href = route(routeName, notif.hash_id);
 }
 
 const sortNotif = computed(() => {
@@ -225,8 +265,13 @@ const sortNotif = computed(() => {
                     <div v-for="(notif, index) in sortNotif" :key="notif.id" class="group relative">
                         <!-- Notification Card -->
                         <div
-                            class="cursor-pointer overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
-                            @click="$inertia.visit(route('user.post.details', notif.hash_id))"
+                            :class="[
+                                'cursor-pointer overflow-hidden rounded-xl border shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md',
+                                notif.is_read
+                                    ? 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
+                                    : 'border-blue-300 bg-blue-50 hover:border-blue-400 dark:border-blue-700 dark:bg-blue-950/30',
+                            ]"
+                            @click="handleNotificationClick(notif)"
                         >
                             <!-- Card Content -->
                             <div class="p-6">

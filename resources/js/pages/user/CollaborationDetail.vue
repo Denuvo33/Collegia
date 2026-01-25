@@ -48,6 +48,7 @@ type Collaboration = {
     start_date: string | null;
     end_date: string | null;
     image: string | null;
+    image_url: string | null;
     location: string | null;
     participants_needed: number | null;
     hash_id: string;
@@ -295,10 +296,12 @@ watch(
                             <Heart :class="isInterested ? 'fill-red-500 text-red-500' : 'text-gray-400'" class="h-6 w-6" />
                             <div>
                                 <p class="font-semibold">{{ interestsCount }} orang tertarik</p>
-                                <p class="text-sm text-gray-500">{{ isInterested ? 'Termasuk Anda' : 'Klik untuk menunjukkan minat' }}</p>
+                                <p class="text-sm text-gray-500">
+                                    {{ isInterested ? 'Termasuk Anda' : isOwner ? 'Kolaborasi Anda' : 'Klik untuk menunjukkan minat' }}
+                                </p>
                             </div>
                         </div>
-                        <Button :variant="isInterested ? 'default' : 'outline'" :disabled="isLoading" @click="toggleInterest">
+                        <Button v-if="!isOwner" :variant="isInterested ? 'default' : 'outline'" :disabled="isLoading" @click="toggleInterest">
                             <Heart :class="isInterested ? 'fill-current' : ''" class="mr-2 h-4 w-4" />
                             {{ isInterested ? 'Tertarik' : 'Saya Tertarik' }}
                         </Button>

@@ -244,6 +244,32 @@ class CollaborationController extends Controller
         } else {
             $collaboration->interests()->create(['user_id' => $userId]);
             $isInterested = true;
+
+            // Send notification to collaboration owner (only if not the owner themselves)
+            if ($collaboration->user_id !== $userId) {
+                $user = Auth::user();
+                $typeLabel = $collaboration->type === 'collaboration' ? 'kolaborasi' : 'relawan';
+
+                // Use updateOrCreate to prevent duplicate notifications
+                // If notification already exists, just update the timestamp
+                \App\Models\Notification::updateOrCreate(
+                    [
+                        'user_id' => $collaboration->user_id,
+                        'post_id' => $collaboration->id,
+                    ],
+                    [
+                        'message' => "{$user->name} tertarik dengan {$typeLabel} Anda: {$collaboration->title}",
+                        'type' => 'collaboration',
+                        'is_read' => false, // Reset read status
+                    ]
+                );
+
+                Log::info('Interest notification sent/updated', [
+                    'collaboration_id' => $collaboration->id,
+                    'interested_user_id' => $userId,
+                    'owner_id' => $collaboration->user_id,
+                ]);
+            }
         }
 
         return response()->json([

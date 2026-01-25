@@ -5,6 +5,26 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Bell, CalendarClock, Home, Telescope } from 'lucide-vue-next';
+import { onMounted, ref } from 'vue';
+
+const unreadCount = ref(0);
+
+// Fetch unread count
+const fetchUnreadCount = async () => {
+    try {
+        const response = await fetch('/user/notifications/unread-count');
+        const data = await response.json();
+        unreadCount.value = data.count;
+    } catch (error) {
+        console.error('Failed to fetch unread count:', error);
+    }
+};
+
+onMounted(() => {
+    fetchUnreadCount();
+    // Refresh every minute
+    setInterval(fetchUnreadCount, 60000);
+});
 
 const mainNavItems: NavItem[] = [
     {
@@ -26,6 +46,7 @@ const mainNavItems: NavItem[] = [
         title: 'Notifikasi',
         href: '/user/notifications',
         icon: Bell,
+        badge: unreadCount,
     },
 ];
 

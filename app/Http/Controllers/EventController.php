@@ -348,6 +348,31 @@ class EventController extends Controller
         } else {
             $event->interests()->create(['user_id' => $userId]);
             $isInterested = true;
+
+            // Send notification to event owner (only if not the owner themselves)
+            if ($event->user_id !== $userId) {
+                $user = Auth::user();
+
+                // Use updateOrCreate to prevent duplicate notifications
+                // If notification already exists, just update the timestamp
+                \App\Models\Notification::updateOrCreate(
+                    [
+                        'user_id' => $event->user_id,
+                        'post_id' => $event->id,
+                    ],
+                    [
+                        'message' => "{$user->name} tertarik dengan event Anda: {$event->title}",
+                        'type' => 'event',
+                        'is_read' => false, // Reset read status
+                    ]
+                );
+
+                Log::info('Event interest notification sent/updated', [
+                    'event_id' => $event->id,
+                    'interested_user_id' => $userId,
+                    'owner_id' => $event->user_id,
+                ]);
+            }
         }
 
         return response()->json([

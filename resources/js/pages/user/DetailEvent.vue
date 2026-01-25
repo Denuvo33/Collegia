@@ -54,6 +54,7 @@ const props = defineProps<{
         organizer: string;
         date_event: string;
         image: string | null;
+        image_url: string | null;
         created_at: string;
         status: string;
         hash_id: string;
@@ -68,6 +69,10 @@ const props = defineProps<{
     };
     isInterested: boolean;
 }>();
+
+const page = usePage();
+const currentUser = page.props.auth?.user as any;
+const isOwner = currentUser?.id === props.event.user.id;
 
 const isInterested = ref(props.isInterested);
 const interestsCount = ref(props.event.interests_count || 0);
@@ -412,11 +417,12 @@ async function toggleInterest() {
                                             <div>
                                                 <p class="font-semibold text-slate-900 dark:text-white">{{ interestsCount }} orang tertarik</p>
                                                 <p class="text-sm text-slate-600 dark:text-slate-400">
-                                                    {{ isInterested ? 'Termasuk Anda' : 'Klik untuk menunjukkan minat' }}
+                                                    {{ isInterested ? 'Termasuk Anda' : isOwner ? 'Event Anda' : 'Klik untuk menunjukkan minat' }}
                                                 </p>
                                             </div>
                                         </div>
                                         <Button
+                                            v-if="!isOwner"
                                             :variant="isInterested ? 'default' : 'outline'"
                                             :disabled="isLoading"
                                             @click="toggleInterest"
