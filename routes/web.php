@@ -39,7 +39,7 @@ Route::get('/user/transaction/paginate', [TransactionController::class, 'getTran
 // API endpoint for fetching paginated notifications
 Route::get('/user/notifications/paginate', [NotificationController::class, 'getNotifications'])->middleware(['auth', 'verified'])->name('user.notifications.paginate');
 // API endpoint for unread count
-// Route::get('/user/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->middleware(['auth'])->name('user.notifications.unread');
+Route::get('/user/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->middleware(['auth'])->name('user.notifications.unread');
 // Mark notification as read
 Route::post('/user/notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->middleware(['auth', 'throttle:30,1'])->name('user.notification.mark-read');
 

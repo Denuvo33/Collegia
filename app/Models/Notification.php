@@ -14,6 +14,7 @@ class Notification extends Model
         'post_id',
         'user_id',
         'type',
+        'is_read'
     ];
 
     protected $appends = ['hash_id'];

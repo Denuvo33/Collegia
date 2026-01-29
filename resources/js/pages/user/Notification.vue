@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
+import axios from 'axios';
 import { Bell, ChevronRight, Clock, MessageCircle } from 'lucide-vue-next';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 
@@ -41,71 +42,71 @@ const observer = ref<IntersectionObserver | null>(null);
 const loadMoreTrigger = ref<HTMLElement | null>(null);
 
 // Cache configuration - smaller for notifications
-// const CACHE_CONFIG = {
-//     MAX_NOTIFICATIONS: 20,
-//     CACHE_EXPIRY_MS: 3 * 60 * 1000, // 3 minutes
-// };
+const CACHE_CONFIG = {
+    MAX_NOTIFICATIONS: 20,
+    CACHE_EXPIRY_MS: 3 * 60 * 1000, // 3 minutes
+};
 
-// // Cache functions
-// const CACHE_KEY = 'user_notifications';
+// Cache functions
+const CACHE_KEY = 'user_notifications';
 
-// const getCachedNotifications = () => {
-//     try {
-//         const cached = sessionStorage.getItem(CACHE_KEY);
-//         if (!cached) return null;
+const getCachedNotifications = () => {
+    try {
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (!cached) return null;
 
-//         const data = JSON.parse(cached);
+        const data = JSON.parse(cached);
 
-//         // Check expiry
-//         if (Date.now() - data.timestamp > CACHE_CONFIG.CACHE_EXPIRY_MS) {
-//             sessionStorage.removeItem(CACHE_KEY);
-//             return null;
-//         }
+        // Check expiry
+        if (Date.now() - data.timestamp > CACHE_CONFIG.CACHE_EXPIRY_MS) {
+            sessionStorage.removeItem(CACHE_KEY);
+            return null;
+        }
 
-//         return data;
-//     } catch (e) {
-//         sessionStorage.removeItem(CACHE_KEY);
-//         return null;
-//     }
-// };
+        return data;
+    } catch (e) {
+        sessionStorage.removeItem(CACHE_KEY);
+        return null;
+    }
+};
 
-// const setCachedNotifications = (notifs: any[], currentPage: number, total: number) => {
-//     try {
-//         // Limit to prevent memory bloat
-//         const limitedNotifications = notifs.slice(0, CACHE_CONFIG.MAX_NOTIFICATIONS);
+const setCachedNotifications = (notifs: any[], currentPage: number, total: number) => {
+    try {
+        // Limit to prevent memory bloat
+        const limitedNotifications = notifs.slice(0, CACHE_CONFIG.MAX_NOTIFICATIONS);
 
-//         const data = {
-//             notifications: limitedNotifications,
-//             currentPage: Math.min(currentPage, Math.ceil(CACHE_CONFIG.MAX_NOTIFICATIONS / 5)),
-//             total,
-//             timestamp: Date.now(),
-//         };
+        const data = {
+            notifications: limitedNotifications,
+            currentPage: Math.min(currentPage, Math.ceil(CACHE_CONFIG.MAX_NOTIFICATIONS / 5)),
+            total,
+            timestamp: Date.now(),
+        };
 
-//         sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
-//     } catch (e) {
-//         console.warn('Cache quota exceeded, clearing notification cache');
-//         sessionStorage.removeItem(CACHE_KEY);
-//     }
-// };
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    } catch (e) {
+        console.warn('Cache quota exceeded, clearing notification cache');
+        sessionStorage.removeItem(CACHE_KEY);
+    }
+};
 
-// const invalidateCache = () => {
-//     sessionStorage.removeItem(CACHE_KEY);
-// };
+const invalidateCache = () => {
+    sessionStorage.removeItem(CACHE_KEY);
+};
 
-// // Clear cache on page load to prevent stale data
-// invalidateCache();
+// Clear cache on page load to prevent stale data
+invalidateCache();
 
 // Initialize from cache or props
-// const cached = getCachedNotifications();
-// if (cached && cached.notifications.length > 0) {
-//     notifications.value = cached.notifications;
-//     currentPage.value = cached.currentPage;
-//     hasMoreNotifications.value = currentPage.value < Math.ceil(cached.total / 5);
-// } else {
-notifications.value = props.notification.data || [];
-currentPage.value = props.notification.current_page || 1;
-hasMoreNotifications.value = currentPage.value < (props.notification.last_page || 1);
-// }
+const cached = getCachedNotifications();
+if (cached && cached.notifications.length > 0) {
+    notifications.value = cached.notifications;
+    currentPage.value = cached.currentPage;
+    hasMoreNotifications.value = currentPage.value < Math.ceil(cached.total / 5);
+} else {
+    notifications.value = props.notification.data || [];
+    currentPage.value = props.notification.current_page || 1;
+    hasMoreNotifications.value = currentPage.value < (props.notification.last_page || 1);
+}
 
 // Load more notifications
 const loadMoreNotifications = async () => {
@@ -151,9 +152,9 @@ onMounted(() => {
     }, 100);
 
     // Cache initial data if not already cached
-    // if (!getCachedNotifications()) {
-    //     setCachedNotifications(notifications.value, currentPage.value, props.notification.total || 0);
-    // }
+    if (!getCachedNotifications()) {
+        setCachedNotifications(notifications.value, currentPage.value, props.notification.total || 0);
+    }
 });
 
 // Cleanup
@@ -163,7 +164,7 @@ onUnmounted(() => {
     }
 
     // Save current state
-    // setCachedNotifications(notifications.value, currentPage.value, props.notification.total || 0);
+    setCachedNotifications(notifications.value, currentPage.value, props.notification.total || 0);
 });
 
 function splitName(text: string) {
@@ -190,37 +191,30 @@ function formatTimeAgo(dateString: string) {
     });
 }
 
-// Handle notification click - mark as read and route based on type
-function handleNotificationClick(notif: any) {
+async function handleNotificationClick(notif: any) {
     console.log('Notification clicked:', { id: notif.id, type: notif.type, hash_id: notif.hash_id });
+
+    // Mark as read menggunakan axios
+    try {
+        await axios.post(`/user/notifications/${notif.id}/mark-read`);
+
+        notif.is_read = true;
+    } catch (err) {
+        console.error('Failed to mark as read:', err);
+    }
 
     // Route based on type
     let routeName = 'user.post.details';
+    let params: any = notif.hash_id;
 
     if (notif.type === 'event') {
         routeName = 'user.details.event';
+        params = { hashId: notif.hash_id, title: notif.event_title };
     } else if (notif.type === 'collaboration') {
         routeName = 'user.collaboration.details';
     }
-    console.log(routeName);
 
-    console.log('Routing to:', routeName, notif.hash_id);
-
-    // // Mark as read (fire and forget)
-    // fetch(`/user/notifications/${notif.id}/mark-read`, {
-    //     method: 'POST',
-    //     headers: {
-    //         'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
-    //         Accept: 'application/json',
-    //     },
-    // }).catch((err) => console.error('Failed to mark as read:', err));
-
-    // Navigate
-    if (routeName == 'user.details.event') {
-        return (window.location.href = route(routeName, { hashId: notif.hash_id, title: notif.event_title }));
-    }
-
-    window.location.href = route(routeName, notif.hash_id);
+    router.visit(route(routeName, params), { preserveScroll: true });
 }
 
 const sortNotif = computed(() => {
@@ -240,7 +234,7 @@ const sortNotif = computed(() => {
                 <!-- Header Section -->
                 <div class="mb-8">
                     <div class="mb-4 flex items-center gap-3">
-                        <div class="rounded-xl bg-indigo-100 p-3">
+                        <div class="rounded-xl p-3">
                             <Bell class="h-6 w-6 text-black" />
                         </div>
                         <div>
@@ -287,9 +281,7 @@ const sortNotif = computed(() => {
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-start justify-between gap-4">
                                             <div class="flex-1">
-                                                <h3
-                                                    class="mb-1 text-lg font-semibold text-gray-900 transition-colors group-hover:text-indigo-700 dark:text-white"
-                                                >
+                                                <h3 class="mb-1 text-lg font-semibold text-gray-900 transition-colors dark:text-white">
                                                     {{ splitName(notif.message).name }}
                                                 </h3>
                                                 <p class="mb-3 leading-relaxed text-gray-600">
@@ -313,11 +305,6 @@ const sortNotif = computed(() => {
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Subtle border accent -->
-                            <div
-                                class="h-1 bg-gradient-to-r from-black to-blue-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                            ></div>
                         </div>
 
                         <!-- Connecting line for multiple notifications -->

@@ -15,33 +15,34 @@ use App\Models\User;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
-Route::get('/auth/google', function () {
-    return Socialite::driver('google')->redirect();
-})->name('google.login');
+Route::middleware('web')->group(function () {
 
-Route::get('/auth/google/callback', function () {
-    $googleUser = Socialite::driver('google')->user();
+    Route::get('/auth/google', function () {
+        return Socialite::driver('google')->redirect();
+    })->name('google.login');
 
+    Route::get('/auth/google/callback', function () {
+        $googleUser = Socialite::driver('google')->user();
 
-    if (!str_ends_with($googleUser->getEmail(), '@student.unri.ac.id')) {
-        return redirect('/')->withErrors([
-            'email' => 'Hanya email dengan domain @student.unri.ac.id yang diizinkan.'
-        ]);
-    }
+        if (!str_ends_with($googleUser->getEmail(), '@student.unri.ac.id')) {
+            return redirect('/')->withErrors([
+                'email' => 'Hanya email dengan domain @student.unri.ac.id yang diizinkan.'
+            ]);
+        }
 
+        $user = User::updateOrCreate(
+            ['email' => $googleUser->getEmail()],
+            [
+                'name' => $googleUser->getName(),
+                'password' => bcrypt(Str::random(16)),
+                'role' => 'user',
+            ]
+        );
 
-    $user = User::updateOrCreate(
-        ['email' => $googleUser->getEmail()],
-        [
-            'name' => $googleUser->getName(),
-            'password' => bcrypt(Str::random(16)),
-            'role' => 'user',
-        ]
-    );
+        Auth::login($user);
 
-    Auth::login($user);
-
-    return redirect('/user/home');
+        return redirect()->route('user.home');
+    });
 });
 
 Route::middleware('guest')->group(function () {

@@ -90,6 +90,7 @@ class NotificationController extends Controller
 
         $notification->update(['is_read' => true]);
 
+
         return response()->json([
             'success' => true,
             'message' => 'Notification marked as read'
@@ -99,14 +100,14 @@ class NotificationController extends Controller
     /**
      * Get unread notification count
      */
-    // public function getUnreadCount()
-    // {
-    //     $count = Notification::where('user_id', Auth::id())
-    //         ->where('is_read', false)
-    //         ->count();
+    public function getUnreadCount()
+    {
+        $count = Notification::where('user_id', Auth::id())
+            ->where('is_read', false)
+            ->count();
 
-    //     return response()->json(['count' => $count]);
-    // }
+        return response()->json(['count' => $count]);
+    }
 
     /**
      * Show the form for creating a new resource.

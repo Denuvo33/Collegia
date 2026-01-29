@@ -15,6 +15,7 @@ const fetchUnreadCount = async () => {
         const response = await fetch('/user/notifications/unread-count');
         const data = await response.json();
         unreadCount.value = data.count;
+        console.log(unreadCount.value);
     } catch (error) {
         console.error('Failed to fetch unread count:', error);
     }
@@ -46,7 +47,7 @@ const mainNavItems: NavItem[] = [
         title: 'Notifikasi',
         href: '/user/notifications',
         icon: Bell,
-        badge: unreadCount,
+        badge: unreadCount.value,
     },
 ];
 
