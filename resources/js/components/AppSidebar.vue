@@ -23,8 +23,6 @@ const fetchUnreadCount = async () => {
 
 onMounted(() => {
     fetchUnreadCount();
-    // Refresh every minute
-    setInterval(fetchUnreadCount, 60000);
 });
 
 const mainNavItems: NavItem[] = [
