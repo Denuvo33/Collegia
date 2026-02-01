@@ -162,10 +162,8 @@ function getRoleBadgeInfo(role: string) {
 
                     <!-- Empty State for No Search -->
                     <div v-else-if="!searchUser && props.users.data.length === 0" class="py-16 text-center">
-                        <div
-                            class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-indigo-100"
-                        >
-                            <Users class="h-10 w-10 text-purple-600" />
+                        <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white">
+                            <Users class="h-10 w-10 text-black" />
                         </div>
                         <h3 class="mb-2 text-xl font-semibold text-gray-500">Tidak Ada Komunitas</h3>
                         <p class="mx-auto max-w-md text-gray-500">

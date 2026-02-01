@@ -501,7 +501,7 @@ function copyEvent(hashId: string) {
                         <!-- Price Badge -->
                         <div class="absolute top-4 right-4 rounded-lg bg-white/90 px-3 py-1 shadow-lg backdrop-blur-sm">
                             <span v-if="event.price" class="text-sm font-bold text-slate-800">
-                                {{ event.price == 0 ? 'GRATIS' : `Rp ${event.price.toLocaleString()}` }}
+                                {{ event.price == 0 ? 'GRATIS' : `Rp ${Number(event.price).toLocaleString('id-ID')}` }}
                             </span>
                         </div>
 

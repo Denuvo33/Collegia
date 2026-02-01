@@ -502,7 +502,7 @@ async function toggleInterest() {
                                                         usePage().props.auth.user.role == 'moderator'
                                                     "
                                                     @click="deleteEvent(event.hash_id)"
-                                                    class="w-full bg-red-500"
+                                                    class="mt-4 w-full bg-red-500"
                                                     >Delete</Button
                                                 >
                                             </div>

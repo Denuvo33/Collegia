@@ -41,15 +41,17 @@ const loadingNotifications = ref(false);
 const observer = ref<IntersectionObserver | null>(null);
 const loadMoreTrigger = ref<HTMLElement | null>(null);
 
-// Cache configuration - smaller for notifications
+// Cache keys
+const CACHE_KEY = 'user_notifications_cache';
+const SCROLL_CACHE_KEY = 'notification_scroll_cache';
+
+// Cache configuration
 const CACHE_CONFIG = {
-    MAX_NOTIFICATIONS: 20,
-    CACHE_EXPIRY_MS: 3 * 60 * 1000, // 3 minutes
+    MAX_NOTIFICATIONS: 50, // Increased for better caching
+    CACHE_EXPIRY_MS: 5 * 60 * 1000, // 5 minutes
 };
 
-// Cache functions
-const CACHE_KEY = 'user_notifications';
-
+// Get cached data
 const getCachedNotifications = () => {
     try {
         const cached = sessionStorage.getItem(CACHE_KEY);
@@ -60,6 +62,7 @@ const getCachedNotifications = () => {
         // Check expiry
         if (Date.now() - data.timestamp > CACHE_CONFIG.CACHE_EXPIRY_MS) {
             sessionStorage.removeItem(CACHE_KEY);
+            sessionStorage.removeItem(SCROLL_CACHE_KEY);
             return null;
         }
 
@@ -70,14 +73,15 @@ const getCachedNotifications = () => {
     }
 };
 
-const setCachedNotifications = (notifs: any[], currentPage: number, total: number) => {
+// Save to cache
+const setCachedNotifications = (notifs: any[], page: number, lastPage: number, total: number) => {
     try {
-        // Limit to prevent memory bloat
         const limitedNotifications = notifs.slice(0, CACHE_CONFIG.MAX_NOTIFICATIONS);
 
         const data = {
             notifications: limitedNotifications,
-            currentPage: Math.min(currentPage, Math.ceil(CACHE_CONFIG.MAX_NOTIFICATIONS / 5)),
+            currentPage: page,
+            lastPage: lastPage,
             total,
             timestamp: Date.now(),
         };
@@ -89,20 +93,16 @@ const setCachedNotifications = (notifs: any[], currentPage: number, total: numbe
     }
 };
 
-const invalidateCache = () => {
-    sessionStorage.removeItem(CACHE_KEY);
-};
+// Try to restore from cache
+const cachedData = getCachedNotifications();
 
-// Clear cache on page load to prevent stale data
-invalidateCache();
-
-// Initialize from cache or props
-const cached = getCachedNotifications();
-if (cached && cached.notifications.length > 0) {
-    notifications.value = cached.notifications;
-    currentPage.value = cached.currentPage;
-    hasMoreNotifications.value = currentPage.value < Math.ceil(cached.total / 5);
+if (cachedData && cachedData.notifications && cachedData.notifications.length > 0) {
+    // Use cached data
+    notifications.value = cachedData.notifications;
+    currentPage.value = cachedData.currentPage;
+    hasMoreNotifications.value = cachedData.currentPage < cachedData.lastPage;
 } else {
+    // Use fresh props
     notifications.value = props.notification.data || [];
     currentPage.value = props.notification.current_page || 1;
     hasMoreNotifications.value = currentPage.value < (props.notification.last_page || 1);
@@ -123,7 +123,7 @@ const loadMoreNotifications = async () => {
             hasMoreNotifications.value = currentPage.value < data.last_page;
 
             // Update cache
-            // setCachedNotifications(notifications.value, currentPage.value, data.total);
+            setCachedNotifications(notifications.value, currentPage.value, data.last_page, data.total);
         } else {
             hasMoreNotifications.value = false;
         }
@@ -131,6 +131,21 @@ const loadMoreNotifications = async () => {
         console.error('Error loading notifications:', error);
     } finally {
         loadingNotifications.value = false;
+    }
+};
+
+// Save scroll position
+const saveScrollPosition = () => {
+    sessionStorage.setItem(SCROLL_CACHE_KEY, String(window.scrollY));
+};
+
+// Restore scroll position
+const restoreScrollPosition = () => {
+    const savedScroll = sessionStorage.getItem(SCROLL_CACHE_KEY);
+    if (savedScroll && cachedData) {
+        requestAnimationFrame(() => {
+            window.scrollTo(0, parseInt(savedScroll, 10));
+        });
     }
 };
 
@@ -153,8 +168,11 @@ onMounted(() => {
 
     // Cache initial data if not already cached
     if (!getCachedNotifications()) {
-        setCachedNotifications(notifications.value, currentPage.value, props.notification.total || 0);
+        setCachedNotifications(notifications.value, currentPage.value, props.notification.last_page || 1, props.notification.total || 0);
     }
+
+    // Restore scroll position
+    setTimeout(restoreScrollPosition, 100);
 });
 
 // Cleanup
@@ -163,8 +181,9 @@ onUnmounted(() => {
         observer.value.disconnect();
     }
 
-    // Save current state
-    setCachedNotifications(notifications.value, currentPage.value, props.notification.total || 0);
+    // Save scroll position and current state
+    saveScrollPosition();
+    setCachedNotifications(notifications.value, currentPage.value, props.notification.last_page || 1, props.notification.total || 0);
 });
 
 function splitName(text: string) {
@@ -247,7 +266,7 @@ const sortNotif = computed(() => {
 
                 <!-- Empty State -->
                 <div v-if="notifications.length === 0" class="flex flex-col items-center justify-center px-4 py-16">
-                    <div class="mb-6 rounded-full bg-white p-6 shadow-lg">
+                    <div class="mb-6 rounded-full bg-white p-6 shadow-lg dark:bg-gray-800">
                         <Bell class="h-12 w-12 text-black" />
                     </div>
                     <h3 class="mb-2 text-xl font-semibold text-gray-700">Belum ada notifikasi</h3>
@@ -263,7 +282,7 @@ const sortNotif = computed(() => {
                                 'cursor-pointer overflow-hidden rounded-xl border shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md',
                                 notif.is_read
                                     ? 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
-                                    : 'border-blue-300 bg-blue-50 hover:border-blue-400 dark:border-blue-700 dark:bg-blue-950/30',
+                                    : 'border-blue-300 bg-blue-50 hover:border-blue-400 dark:bg-blue-950/30',
                             ]"
                             @click="handleNotificationClick(notif)"
                         >

@@ -73,8 +73,12 @@ const props = defineProps<{
     feed?: PaginatedFeed;
 }>();
 
-// Filter configuration
+// Cache keys
 const FILTER_CACHE_KEY = 'home_filter_cache';
+const FEED_CACHE_KEY = 'home_feed_cache';
+const SCROLL_CACHE_KEY = 'home_scroll_cache';
+
+// Filter configuration
 const filters = ['all', 'event', 'collaboration', 'volunteer', 'post'] as const;
 type FilterType = (typeof filters)[number];
 
@@ -87,11 +91,46 @@ watch(activeFilter, (newFilter) => {
     sessionStorage.setItem(FILTER_CACHE_KEY, newFilter);
 });
 
-const feed = ref<FeedItem[]>(props.feed?.data || []);
-const pinnedEvents = ref<FeedItem[]>(props.pinnedEvents || []);
-const currentPage = ref(props.feed?.current_page || 1);
-const lastPage = ref(props.feed?.last_page || 1);
+// Try to restore feed from cache
+const getCachedFeed = () => {
+    try {
+        const cached = sessionStorage.getItem(FEED_CACHE_KEY);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+    } catch (e) {
+        console.error('Failed to parse cached feed:', e);
+    }
+    return null;
+};
+
+const cachedFeed = getCachedFeed();
+
+// Use cached data if available, otherwise use props
+const feed = ref<FeedItem[]>(cachedFeed?.feed || props.feed?.data || []);
+const pinnedEvents = ref<FeedItem[]>(cachedFeed?.pinnedEvents || props.pinnedEvents || []);
+const currentPage = ref(cachedFeed?.currentPage || props.feed?.current_page || 1);
+const lastPage = ref(cachedFeed?.lastPage || props.feed?.last_page || 1);
 const isLoadingMore = ref(false);
+
+// Save feed to cache whenever it changes
+const saveFeedToCache = () => {
+    try {
+        const cacheData = {
+            feed: feed.value,
+            pinnedEvents: pinnedEvents.value,
+            currentPage: currentPage.value,
+            lastPage: lastPage.value,
+            timestamp: Date.now(),
+        };
+        sessionStorage.setItem(FEED_CACHE_KEY, JSON.stringify(cacheData));
+    } catch (e) {
+        console.error('Failed to save feed to cache:', e);
+    }
+};
+
+// Watch for feed changes and save to cache
+watch([feed, currentPage, lastPage], saveFeedToCache, { deep: true });
 
 const filteredFeed = computed(() => {
     if (activeFilter.value === 'all') {
@@ -130,12 +169,35 @@ function handleScroll() {
     }
 }
 
+// Save scroll position before leaving
+const saveScrollPosition = () => {
+    sessionStorage.setItem(SCROLL_CACHE_KEY, String(window.scrollY));
+};
+
+// Restore scroll position
+const restoreScrollPosition = () => {
+    const savedScroll = sessionStorage.getItem(SCROLL_CACHE_KEY);
+    if (savedScroll && cachedFeed) {
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+            window.scrollTo(0, parseInt(savedScroll, 10));
+        });
+    }
+};
+
 onMounted(() => {
     window.addEventListener('scroll', handleScroll);
+    window.addEventListener('beforeunload', saveScrollPosition);
+
+    // Restore scroll position after a short delay to ensure content is rendered
+    setTimeout(restoreScrollPosition, 100);
 });
 
 onBeforeUnmount(() => {
     window.removeEventListener('scroll', handleScroll);
+    window.removeEventListener('beforeunload', saveScrollPosition);
+    // Save scroll position when navigating away
+    saveScrollPosition();
 });
 
 function formatDate(date: string) {
@@ -184,14 +246,6 @@ function reportPost(postId: number) {
             onError: () => toast.error('Gagal mengirim laporan.'),
         },
     );
-}
-
-function deletePost(hashId: string) {
-    router.delete(route('user.post.delete', hashId), {
-        preserveScroll: true,
-        onSuccess: () => toast.success('Post berhasil dihapus'),
-        onError: () => toast.error('Gagal menghapus.'),
-    });
 }
 
 watch(
@@ -354,7 +408,7 @@ function getTypeLabel(type: string) {
                     <div
                         v-for="event in pinnedEvents"
                         :key="'pinned-' + event.id"
-                        class="group cursor-pointer overflow-hidden rounded-xl border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-white shadow transition-all hover:shadow-lg dark:border-blue-800 dark:from-blue-950 dark:to-gray-900"
+                        class="group cursor-pointer overflow-hidden rounded-xl border-2 border-blue-200 transition-all hover:shadow-lg dark:border-gray-800 dark:from-gray-950 dark:to-gray-900"
                         @click="navigateToItem(event)"
                     >
                         <div class="flex">
@@ -401,7 +455,7 @@ function getTypeLabel(type: string) {
                     :class="[
                         'group transform cursor-pointer space-y-4 rounded-2xl border-y border-r border-l-4 bg-white p-4 shadow transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-lg dark:border-y-gray-700 dark:border-r-gray-700 dark:bg-gray-800 dark:hover:shadow-gray-700',
                         getTypeStyles(item.type).border,
-                        getTypeStyles(item.type).gradient,
+                        // getTypeStyles(item.type).gradient,
                     ]"
                     @click="navigateToItem(item)"
                 >
@@ -590,6 +644,18 @@ function getTypeLabel(type: string) {
                         </AlertDialogContent>
                     </AlertDialog>
                     <div class="mt-4">Tidak ada konten untuk ditampilkan</div>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div v-if="isLoadingMore" class="flex flex-col items-center justify-center py-8">
+                    <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+                    <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">Memuat konten...</p>
+                </div>
+
+                <!-- End of Content -->
+                <div v-else-if="currentPage >= lastPage && filteredFeed.length > 0" class="flex flex-col items-center justify-center py-8">
+                    <div class="h-1 w-16 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+                    <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">Semua konten sudah ditampilkan</p>
                 </div>
             </div>
 

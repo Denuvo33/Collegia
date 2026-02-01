@@ -49,6 +49,7 @@ type Post = {
     start_date?: string;
     end_date?: string;
     participants_needed?: number;
+    image_url: string | null;
 };
 
 type Comment = {
@@ -73,6 +74,7 @@ type Event = {
     is_visible: boolean;
     order_id: string | null;
     transaction_status: string | null;
+    image_url: string | null;
 };
 
 const props = defineProps<{
@@ -654,7 +656,6 @@ const deleteEvent = (hashId: string) => {
                 :class="[
                     'cursor-pointer overflow-hidden rounded-2xl border-y border-r border-l-4 bg-white shadow transition-shadow hover:shadow-lg dark:border-y-gray-700 dark:border-r-gray-700 dark:bg-gray-800',
                     getTypeStyles(post.type).border,
-                    getTypeStyles(post.type).gradient,
                 ]"
                 @click="navigateToItem(post)"
             >
