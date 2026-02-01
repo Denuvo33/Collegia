@@ -22,13 +22,12 @@ class HomeRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'content' => 'required|string|min:10|max:5000',
-            'image'   => 'nullable|image|mimes:jpeg,png,jpg|max:5120|dimensions:min_width=200,min_height=200,max_width=4000,max_height=4000',
+            'content' => 'required|string|min:1|max:5000',
+            'image'   => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
             'user_id' => 'required|exists:users,id',
             'type'    => 'nullable|in:post,collaboration,volunteer',
         ];
     }
-
     /**
      * Get custom validation messages
      */
@@ -36,11 +35,11 @@ class HomeRequest extends FormRequest
     {
         return [
             'content.required' => 'Konten post tidak boleh kosong.',
-            'content.min' => 'Konten post minimal 10 karakter.',
+            'content.min' => 'Konten post minimal 1 karakter.',
             'content.max' => 'Konten post maksimal 5000 karakter.',
             'image.mimes' => 'Gambar harus berformat JPEG, PNG, atau JPG.',
             'image.max' => 'Ukuran gambar maksimal 5MB.',
-            'image.dimensions' => 'Gambar harus berukuran minimal 200x200 pixel dan maksimal 4000x4000 pixel.',
+
         ];
     }
 }

@@ -22,13 +22,13 @@ class EventRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'organizer'  => 'required|string|min:3|max:255',
-            'title'      => 'required|string|min:5|max:255',
-            'content'    => 'required|string|min:50|max:5000',
+            'organizer'  => 'required|string|min:1|max:255',
+            'title'      => 'required|string|min:1|max:255',
+            'content'    => 'required|string|min:1|max:5000',
             'date_event' => 'required|date|after:today',
-            'image'      => 'nullable|image|mimes:jpeg,png,jpg|max:5120|dimensions:min_width=300,min_height=300,max_width=4000,max_height=4000',
+            'image'      => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
             'price'      => 'nullable|numeric|min:0|max:100000000',
-            'location'   => 'required|string|min:3|max:255',
+            'location'   => 'required|string|min:1|max:255',
             'status'     => 'required|in:upcoming,ongoing,finished',
         ];
     }
@@ -39,15 +39,15 @@ class EventRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'title.min' => 'Judul event minimal 5 karakter.',
+            'title.min' => 'Judul event minimal 1 karakter.',
             'title.max' => 'Judul event maksimal 255 karakter.',
-            'content.min' => 'Deskripsi event minimal 50 karakter.',
+            'content.min' => 'Deskripsi event minimal 1 karakter.',
             'content.max' => 'Deskripsi event maksimal 5000 karakter.',
-            'organizer.min' => 'Nama penyelenggara minimal 3 karakter.',
-            'location.min' => 'Lokasi minimal 3 karakter.',
+            'organizer.min' => 'Nama penyelenggara minimal 1 karakter.',
+            'location.min' => 'Lokasi minimal 1 karakter.',
             'image.mimes' => 'Gambar harus berformat JPEG, PNG, atau JPG.',
             'image.max' => 'Ukuran gambar maksimal 5MB.',
-            'image.dimensions' => 'Gambar harus berukuran minimal 300x300 pixel dan maksimal 4000x4000 pixel.',
+
             'date_event.after' => 'Tanggal event harus setelah hari ini.',
             'price.max' => 'Harga tidak boleh lebih dari 100 juta.',
         ];
