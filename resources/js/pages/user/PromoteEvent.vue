@@ -7,10 +7,9 @@ import { Separator } from '@/components/ui/separator';
 import { Toaster } from '@/components/ui/sonner';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { BreadcrumbItem } from '@/types';
-import { Head, router, usePage } from '@inertiajs/vue3';
-import axios from 'axios';
+import { Head, router } from '@inertiajs/vue3';
 import { ArrowLeft, Calendar, Clock, Gem, MapPin, Sparkles } from 'lucide-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import { toast } from 'vue-sonner';
 
 interface Event {
@@ -51,78 +50,20 @@ const formatCurrency = (amount: number) => {
     }).format(amount);
 };
 
-const initiatePromotion = async () => {
-    try {
-        if (new Date(startDate.value) >= new Date(endDate.value)) {
-            toast.error('Tanggal akhir harus setelah tanggal mulai');
-            return;
-        }
+const goToPayment = () => {
+    if (new Date(startDate.value) >= new Date(endDate.value)) {
+        toast.error('Tanggal akhir harus setelah tanggal mulai');
+        return;
+    }
 
-        const response = await axios.post(route('user.event.promotion.initiate'), {
-            event_id: props.event.id,
+    router.visit(
+        route('user.event.promote.payment', {
+            id: props.event.id,
             start_date: startDate.value,
             end_date: endDate.value,
-        });
-
-        const snapToken = response.data.snap_token;
-        const orderId = response.data.order_id;
-
-        if (snapToken && (window as any).snap) {
-            let paymentMethodSelected = false;
-
-            (window as any).snap.pay(snapToken, {
-                onSuccess: function () {
-                    paymentMethodSelected = true;
-                    toast.success('Pembayaran promosi berhasil! Event Anda akan dipromosikan.');
-                    setTimeout(() => {
-                        router.visit(route('user.event'));
-                    }, 1500);
-                },
-                onPending: function () {
-                    paymentMethodSelected = true;
-                    toast.info('Pembayaran sedang diproses.');
-                    setTimeout(() => {
-                        router.visit(route('user.transaction'));
-                    }, 1500);
-                },
-                onError: function () {
-                    paymentMethodSelected = true;
-                    toast.error('Terjadi kesalahan. Silakan cek transaksi Anda.');
-                    setTimeout(() => {
-                        router.visit(route('user.transaction'));
-                    }, 1500);
-                },
-                onClose: function () {
-                    if (!paymentMethodSelected) {
-                        axios
-                            .post(route('user.transaction.cancel', orderId))
-                            .then(() => {
-                                toast.info('Pembayaran dibatalkan.');
-                            })
-                            .catch((error) => {
-                                console.error('Failed to cancel transaction:', error);
-                            });
-                    } else {
-                        toast.info('Cek status pembayaran di menu Transaksi.');
-                        router.visit(route('user.transaction'));
-                    }
-                },
-            });
-        } else {
-            toast.error('Gagal memuat sistem pembayaran. Silakan refresh halaman dan coba lagi.');
-        }
-    } catch (error: any) {
-        console.error('Failed to initiate promotion payment', error);
-        toast.error(error.response?.data?.message || error.response?.data?.error || 'Gagal memulai pembayaran promosi');
-    }
+        }),
+    );
 };
-
-onMounted(() => {
-    const script = document.createElement('script');
-    script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
-    script.setAttribute('data-client-key', usePage().props.midtrans_client_key as string);
-    document.head.appendChild(script);
-});
 </script>
 
 <template>
@@ -274,11 +215,10 @@ onMounted(() => {
 
                         <!-- Action Button -->
                         <Button
-                            @click="initiatePromotion"
+                            @click="goToPayment"
                             class="hover:shadow-3xl w-full transform bg-gradient-to-r from-gray-900 to-black py-6 text-lg font-bold text-white shadow-2xl transition-all hover:scale-105 dark:from-gray-100 dark:to-white dark:text-black"
                         >
-                            <Gem class="mr-2 h-5 w-5" />
-                            Promosikan Sekarang
+                            Pilih Metode Pembayaran
                         </Button>
 
                         <p class="text-center text-xs text-gray-500 dark:text-gray-400">

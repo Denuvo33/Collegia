@@ -70,6 +70,8 @@ Route::get('/user/collaboration/{hashId}/edit', [CollaborationController::class,
 
 Route::get('/user/event/promote/{id}', [EventController::class, 'promoteForm'])->middleware(['auth', 'verified'])->name('user.event.promote.form');
 
+Route::get('/user/event/promote/{id}/payment', [EventController::class, 'promotePaymentForm'])->middleware(['auth', 'verified'])->name('user.event.promote.payment');
+
 Route::get('/user/event/{hashId}/{title}', [EventController::class, 'show'])->middleware(['auth'])->name('user.details.event');
 
 // This wildcard route must be LAST to avoid catching specific routes above

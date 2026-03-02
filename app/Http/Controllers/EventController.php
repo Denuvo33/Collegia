@@ -147,6 +147,68 @@ class EventController extends Controller
     }
 
     /**
+     * Show payment selection form for event promotion
+     */
+    public function promotePaymentForm(Request $request, $eventId)
+    {
+        try {
+            $event = EventModel::findOrFail($eventId);
+
+            // Only allow owner to promote
+            if (Auth::id() != $event->user_id) {
+                return redirect()->back()->with('failed', 'Anda tidak memiliki izin untuk mempromosikan event ini');
+            }
+
+            // Check if event is visible
+            if (!$event->is_visible) {
+                return redirect()->back()->with('failed', 'Event harus terlihat sebelum dapat dipromosikan');
+            }
+
+            // Validate query params
+            $startDate = $request->query('start_date');
+            $endDate = $request->query('end_date');
+
+            if (!$startDate || !$endDate) {
+                return redirect()->route('user.event.promote.form', $eventId)->with('failed', 'Tanggal promosi harus diisi');
+            }
+
+            // Calculate promotion cost server-side
+            $start = \Carbon\Carbon::parse($startDate);
+            $end = \Carbon\Carbon::parse($endDate);
+            $promotionDays = max(1, $start->diffInDays($end));
+            $costPerDay = 5000;
+            $totalCost = $promotionDays * $costPerDay;
+
+            return Inertia::render('user/PromoteEventPayment', [
+                'event' => [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'content' => $event->content,
+                    'image' => $event->image,
+                    'date_event' => $event->date_event,
+                    'location' => $event->location,
+                    'organizer' => $event->organizer,
+                    'price' => $event->price,
+                ],
+                'promotion' => [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'days' => $promotionDays,
+                    'cost_per_day' => $costPerDay,
+                    'total_cost' => $totalCost,
+                ],
+                'payment_methods' => [
+                    ['id' => 'other_qris', 'name' => 'QRIS', 'description' => 'Scan QR untuk bayar dari e-wallet manapun', 'icon' => 'qris'],
+                    ['id' => 'gopay', 'name' => 'GoPay', 'description' => 'Bayar dengan GoPay', 'icon' => 'gopay'],
+                    ['id' => 'shopeepay', 'name' => 'ShopeePay', 'description' => 'Bayar dengan ShopeePay', 'icon' => 'shopeepay'],
+                ],
+            ]);
+        } catch (Exception $e) {
+            return redirect()->route('user.event')->with('failed', 'Event tidak ditemukan');
+        }
+    }
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()
@@ -286,13 +348,6 @@ class EventController extends Controller
                 if ($transaction) {
                     $deletedTransactionId = $transaction->order_id;
                     $transaction->delete();
-
-                    Log::info('Pending transaction deleted along with invisible event', [
-                        'transaction_id' => $deletedTransactionId,
-                        'event_id' => $event->id,
-                        'event_title' => $event->title,
-                        'user_id' => Auth::id(),
-                    ]);
                 }
             }
 
@@ -366,12 +421,6 @@ class EventController extends Controller
                         'is_read' => false, // Reset read status
                     ]
                 );
-
-                Log::info('Event interest notification sent/updated', [
-                    'event_id' => $event->id,
-                    'interested_user_id' => $userId,
-                    'owner_id' => $event->user_id,
-                ]);
             }
         }
 

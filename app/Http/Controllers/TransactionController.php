@@ -234,6 +234,7 @@ class TransactionController extends Controller
                 'event_id' => 'required|exists:event,id',
                 'start_date' => 'required|date|after_or_equal:today',
                 'end_date' => 'required|date|after:start_date',
+                'payment_method' => 'required|in:other_qris,gopay,shopeepay',
             ]);
 
             $user = Auth::user();
@@ -316,10 +317,7 @@ class TransactionController extends Controller
                 'item_details' => $itemDetails,
                 'customer_details' => $customerDetails,
                 'enabled_payments' => [
-                    // E-wallets only (scan to pay, no linking required)
-                    'other_qris',      // Universal QR payment
-                    'gopay',     // GoPay QR scan
-                    'shopeepay', // ShopeePay QR scan
+                    $validated['payment_method'], // Only the selected payment method
                 ],
                 'expiry' => [
                     'unit' => 'minutes',
