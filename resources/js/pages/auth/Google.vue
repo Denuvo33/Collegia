@@ -3,15 +3,15 @@ function loginWithGoogle() {
     window.location.href = '/auth/google';
 }
 
-import { Podcast, ShieldCheck } from 'lucide-vue-next';
+import { ShieldCheck } from 'lucide-vue-next';
 </script>
 
 <template>
     <div class="flex min-h-screen items-center justify-center bg-gray-50">
         <div class="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
             <div class="mb-6 flex items-center justify-center gap-2 text-gray-900">
-                <Podcast class="h-6 w-6" />
-                <h1 class="text-2xl font-bold tracking-tight">Dev Rat</h1>
+                <img src="/favicon.png" alt="Collegia Logo" class="h-26 w-26" />
+                <!-- <h1 class="text-2xl font-bold tracking-tight">Collegia</h1> -->
             </div>
 
             <p class="mb-8 text-sm leading-relaxed text-gray-600">
@@ -36,7 +36,7 @@ import { Podcast, ShieldCheck } from 'lucide-vue-next';
                 <span>Komunitas aman dan eksklusif untuk mahasiswa</span>
             </div>
             <div>
-                <p class="mt-4 text-xs text-gray-400">© 2025 Dev Rat. Dikembangkan oleh Neutral Teams</p>
+                <p class="mt-4 text-xs text-gray-400">© 2025 Collegia. Dikembangkan oleh Neutral Teams</p>
             </div>
         </div>
     </div>
